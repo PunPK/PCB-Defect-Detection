@@ -1,27 +1,22 @@
-import logo from './logo.svg';
-import './App.css';
+import {
+  Link,
+  Navigate,
+  BrowserRouter as Router,
+  Route,
+  Routes,
+} from "react-router-dom";
+import React, { useState } from "react";
+import Home from "./page/homePage.js";
 
 function App() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
-    <div className="App">
-      <h1 className="text-3xl font-bold underline">
-        Hello world!
-      </h1>
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }
 
