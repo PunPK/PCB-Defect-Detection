@@ -139,7 +139,7 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # กำหนดช่วงสีทองแดงใน HSV
-        lower_copper = np.array([5, 50, 50])  # 5 0 0
+        lower_copper = np.array([5, 0, 0])
         upper_copper = np.array([45, 255, 255])
 
         # สร้าง mask สำหรับสีทองแดง
@@ -231,58 +231,70 @@ def detect_and_extract_pcb(expand_percentage=0.05):
     return image_pcb
 
 
-def hsv_process_pcb_image(image_pcb):
-    """
-    ประมวลผลภาพ PCB
+def detect_copper_wires(image_pcb):
+    # โหลดภาพและแปลงสี
+    # image = cv2.imread(image_path)
+    image_rgb = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2RGB)
 
-    Args:
-        image_pcb: ภาพ PCB ที่ต้องการประมวลผล
-
-    Returns:
-        None: แสดงผลลัพธ์ด้วย matplotlib
-    """
-    if image_pcb is None:
-        print("No PCB image to process")
-        return
-
-    image_rgb = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2RGB)  # แปลงเป็น RGB สำหรับแสดงผล
-
-    # แปลงภาพเป็น HSV (เหมาะสำหรับการเลือกสี)
+    # แปลงเป็น HSV สำหรับการตรวจจับสีที่ดีขึ้น
     hsv = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2HSV)
 
     # กำหนดช่วงสีทองแดงใน HSV
-    # ค่าเหล่านี้可能需要ปรับตามภาพจริงของคุณ
-    lower_copper = np.array([5, 50, 50])  # Hue=0-10 (สีส้ม-แดง)
-    upper_copper = np.array([20, 255, 255])  # ปรับค่า Hue สูงสุดตามต้องการ
+    lower_copper = np.array([120, 50, 50])
+    upper_copper = np.array([300, 255, 255])
 
-    # สร้าง Mask สำหรับสีทองแดง
-    copper_mask = cv2.inRange(hsv, lower_copper, upper_copper)
+    # สร้าง mask สำหรับสีทองแดง
+    mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
-    # นำ Mask มาทับภาพต้นฉบับ (แสดงเฉพาะทองแดง)
-    copper_only = cv2.bitwise_and(image_rgb, image_rgb, mask=copper_mask)
+    # ลบ noise ด้วย morphological operations
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # แสดงผล
-    plt.figure(figsize=(15, 5))
-    plt.subplot(1, 3, 1), plt.imshow(image_rgb), plt.title("Original Image")
-    plt.subplot(1, 3, 2), plt.imshow(copper_mask, cmap="gray"), plt.title("Copper Mask")
-    plt.subplot(1, 3, 3), plt.imshow(copper_only), plt.title("Copper Only")
-    plt.show()
+    # หาเส้น轮廓
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+    # วาดเส้น轮廓ที่พบ
+    result = image_rgb.copy()
+    cv2.drawContours(result, contours, -1, (0, 255, 0), 2)
 
-def gray_process_pcb_image(image_pcb):
-
-    # แปลงเป็น Grayscale
+    # ตรวจสอบและทำเครื่องหมายรู (holes)
     gray = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2GRAY)
+    corners = cv2.goodFeaturesToTrack(gray, 200, 0.05, 10)
 
-    # ใช้ Threshold เพื่อแยกสีทองแดงออกมา
-    _, binary = cv2.threshold(gray, 110, 255, cv2.THRESH_BINARY)
+    if corners is not None:
+        corners = np.int0(corners)
+        holes = []
+        for i in range(len(corners)):
+            for j in range(i + 1, len(corners)):
+                x1, y1 = corners[i].ravel()
+                x2, y2 = corners[j].ravel()
+                if abs(x1 - x2) <= 30 and abs(y1 - y2) <= 30:
+                    holes.append((int((x1 + x2) / 2), int((y1 + y2) / 2)))
 
-    # แสดงผล
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 3, 1), plt.imshow(image_pcb, cmap="gray"), plt.title("Init Image")
-    plt.subplot(1, 3, 2), plt.imshow(gray, cmap="gray"), plt.title("Gray Image")
-    plt.subplot(1, 3, 3), plt.imshow(binary, cmap="gray"), plt.title("Binary Mask")
+        # วาดรูที่พบ
+        for hole in holes:
+            cv2.circle(result, hole, 7, (255, 0, 255), -1)
+
+    # แสดงผลลัพธ์
+    plt.figure(figsize=(15, 10))
+
+    plt.subplot(2, 2, 1)
+    plt.imshow(image_rgb)
+    plt.title("Original Image")
+
+    plt.subplot(2, 2, 2)
+    plt.imshow(mask, cmap="gray")
+    plt.title("Copper Mask")
+
+    plt.subplot(2, 2, 3)
+    plt.imshow(result)
+    plt.title("Detected Wires & Holes")
+
+    plt.tight_layout()
     plt.show()
+
+    return result
 
 
 if __name__ == "__main__":
@@ -291,7 +303,6 @@ if __name__ == "__main__":
 
     # ประมวลผลภาพ PCB ที่ได้
     if image_pcb is not None:
-        # hsv_process_pcb_image(image_pcb)
-        gray_process_pcb_image(image_pcb)
+        detect_copper_wires(image_pcb)
     else:
         print("Could not detect PCB")
