@@ -8,6 +8,7 @@ import {
 import React, { useState } from "react";
 import Home from "./page/homePage.js";
 import NavBar from "./components/NavBar.js";
+import HomeTest from "./page/homeTest.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -17,6 +18,7 @@ function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/test" element={<HomeTest />} />
       </Routes>
     </Router>
   );
