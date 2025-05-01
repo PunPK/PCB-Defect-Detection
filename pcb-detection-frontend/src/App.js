@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import Home from "./page/homePage.js";
 import NavBar from "./components/NavBar.js";
 import HomeTest from "./page/homeTest.js";
+import ImageUpload from "./page/testOpenCam.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
