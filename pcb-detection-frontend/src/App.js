@@ -9,7 +9,7 @@ import React, { useState } from "react";
 import Home from "./page/homePage.js";
 import NavBar from "./components/NavBar.js";
 import HomeTest from "./page/homeTest.js";
-import ImageUpload from "./page/testOpenCam.js";
+import TestOpenCam from "./page/testOpenCam.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -20,6 +20,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/test" element={<HomeTest />} />
+        <Route path="/testcam" element={<TestOpenCam />} />
       </Routes>
     </Router>
   );
