@@ -139,7 +139,7 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # กำหนดช่วงสีทองแดงใน HSV
-        lower_copper = np.array([5, 50, 50])  # 5 0 0
+        lower_copper = np.array([5, 10, 10])  # 5 10 10
         upper_copper = np.array([45, 255, 255])
 
         # สร้าง mask สำหรับสีทองแดง
