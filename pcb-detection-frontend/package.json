@@ -5,6 +5,7 @@
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
+    "@material-tailwind/react": "^2.1.10",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -14,7 +15,8 @@
     "react-dom": "^19.1.0",
     "react-router": "^7.5.0",
     "react-router-dom": "^7.5.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "tailwind-scrollbar-hide": "^2.0.0"
   },
   "scripts": {
     "start": "react-scripts start",

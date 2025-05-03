@@ -2,3 +2,4 @@
 content
 .ipynb_checkpoints
 __pycache__
+pcb-env
