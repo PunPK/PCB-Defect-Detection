@@ -23,7 +23,6 @@ app.add_middleware(
 )
 
 
-# Utility Functions (must be defined before they're used)
 def expand_contour(contour, percentage):
     """Expand contour boundaries by given percentage"""
     M = cv2.moments(contour)
@@ -129,7 +128,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 break
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower_copper = np.array([5, 50, 50])
+            lower_copper = np.array([5, 30, 30])
             upper_copper = np.array([45, 255, 255])
             mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
@@ -142,10 +141,13 @@ async def websocket_endpoint(websocket: WebSocket):
             )
 
             display_frame = frame.copy()
+            pcb_frame = None
+
             if contours:
                 largest_contour = max(contours, key=cv2.contourArea)
                 expanded_contour = expand_contour(largest_contour, 0.05)
                 hull = cv2.convexHull(expanded_contour)
+
                 cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
 
                 epsilon = 0.02 * cv2.arcLength(hull, True)
@@ -154,15 +156,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 if len(approx) == 4:
                     approx = order_points(approx.reshape(4, 2))
                     pcb_frame = four_point_transform(frame, approx)
-                    _, buffer = cv2.imencode(".jpg", pcb_frame)
-                    await websocket.send_bytes(buffer.tobytes())
-                    # await asyncio.sleep(camera_manager.frame_interval) #################################################################
-                    continue
 
-            # Send regular frame if no PCB detected
-            _, buffer = cv2.imencode(".jpg", display_frame)
-            await websocket.send_bytes(buffer.tobytes())
-            # await asyncio.sleep(camera_manager.frame_interval)   ####################################################################
+            _, display_buffer = cv2.imencode(".jpg", display_frame)
+            await websocket.send_bytes(display_buffer.tobytes())
+
+            if pcb_frame is not None:
+                _, pcb_buffer = cv2.imencode(".jpg", pcb_frame)
+                await websocket.send_bytes(pcb_buffer.tobytes())
+            else:
+
+                empty_frame = np.zeros(
+                    (100, 100, 3), dtype=np.uint8
+                )  # Send empty frame if no PCB detected
+                _, empty_buffer = cv2.imencode(".jpg", empty_frame)
+                await websocket.send_bytes(empty_buffer.tobytes())
+
+            await asyncio.sleep(camera_manager.frame_interval)
 
     except WebSocketDisconnect:
         logger.info("Client disconnected normally")

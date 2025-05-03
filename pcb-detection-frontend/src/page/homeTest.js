@@ -10,15 +10,44 @@ export default function PCBLiveDetection() {
     const wsRef = useRef(null)
     const frameCountRef = useRef(0)
     const timerRef = useRef(null)
+    const imageQueueRef = useRef([])
+
+    const processImageQueue = () => {
+        if (imageQueueRef.current.length >= 2) {
+            const [cameraData, pcbData] = imageQueueRef.current.splice(0, 2)
+
+            // Process camera feed
+            const cameraBlob = new Blob([cameraData], { type: 'image/jpeg' })
+            const cameraUrl = URL.createObjectURL(cameraBlob)
+            setCameraFeed(prev => {
+                if (prev) URL.revokeObjectURL(prev)
+                return cameraUrl
+            })
+
+            // Process PCB image
+            if (pcbData && pcbData.length > 100) { // Check if not empty frame
+                const pcbBlob = new Blob([pcbData], { type: 'image/jpeg' })
+                const pcbUrl = URL.createObjectURL(pcbBlob)
+                setPcbImage(prev => {
+                    if (prev) URL.revokeObjectURL(prev)
+                    return pcbUrl
+                })
+            } else {
+                setPcbImage(null)
+            }
+
+            frameCountRef.current++
+        }
+    }
 
     const createWebSocket = () => {
-        // Close existing connection if any
         if (wsRef.current) {
             wsRef.current.close()
         }
 
         setStatus('Connecting...')
         setIsConnected(false)
+        imageQueueRef.current = []
 
         const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/pcb-detection`)
         wsRef.current = ws
@@ -30,19 +59,13 @@ export default function PCBLiveDetection() {
         }
 
         ws.onmessage = (event) => {
-            frameCountRef.current++
-
-            try {
-                const blob = new Blob([event.data], { type: 'image/jpeg' })
-                const imageUrl = URL.createObjectURL(blob)
-                setCameraFeed(imageUrl)
-
-                // Clean up previous URL if exists
-                if (cameraFeed) {
-                    URL.revokeObjectURL(cameraFeed)
+            if (event.data instanceof Blob) {
+                const reader = new FileReader()
+                reader.onload = () => {
+                    imageQueueRef.current.push(new Uint8Array(reader.result))
+                    processImageQueue()
                 }
-            } catch (error) {
-                console.error('Error processing frame:', error)
+                reader.readAsArrayBuffer(event.data)
             }
         }
 
@@ -70,8 +93,8 @@ export default function PCBLiveDetection() {
         setIsConnected(false)
         setStatus('Disconnected')
         setFps(0)
+        imageQueueRef.current = []
 
-        // Clean up image URLs
         if (cameraFeed) {
             URL.revokeObjectURL(cameraFeed)
             setCameraFeed(null)
@@ -128,7 +151,7 @@ export default function PCBLiveDetection() {
                 <div className="flex items-center gap-2">
                     <span className="font-medium">Status:</span>
                     <span className={`font-medium ${status.includes('Detected') ? 'text-green-600' :
-                            status.includes('Error') ? 'text-red-600' : 'text-blue-600'
+                        status.includes('Error') ? 'text-red-600' : 'text-blue-600'
                         }`}>
                         {status}
                     </span>
@@ -140,13 +163,14 @@ export default function PCBLiveDetection() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Camera Feed with PCB Outline */}
                 <div className="border border-gray-300 rounded-md p-2">
-                    <h2 className="text-lg font-semibold mb-2">Camera Feed</h2>
+                    <h2 className="text-lg font-semibold mb-2">Camera View</h2>
                     {cameraFeed ? (
                         <img
                             src={cameraFeed}
-                            alt="Camera Feed"
+                            alt="Camera Feed with PCB Outline"
                             className="w-full h-auto max-h-[70vh] object-contain"
                         />
                     ) : (
@@ -156,9 +180,28 @@ export default function PCBLiveDetection() {
                             </p>
                         </div>
                     )}
+                    <p className="text-sm text-gray-500 mt-2">Green outline shows detected PCB</p>
+                </div>
+
+                {/* Cropped PCB Image */}
+                <div className="border border-gray-300 rounded-md p-2">
+                    <h2 className="text-lg font-semibold mb-2">Cropped PCB</h2>
+                    {pcbImage ? (
+                        <img
+                            src={pcbImage}
+                            alt="Cropped PCB"
+                            className="w-full h-auto max-h-[70vh] object-contain"
+                        />
+                    ) : (
+                        <div className="bg-gray-100 h-48 flex items-center justify-center">
+                            <p className="text-gray-500">
+                                {isConnected ? 'No PCB detected' : 'PCB view inactive'}
+                            </p>
+                        </div>
+                    )}
+                    <p className="text-sm text-gray-500 mt-2">Perspective-corrected PCB view</p>
                 </div>
             </div>
-
             <div className="mt-4 text-sm text-gray-600">
                 <p>Running on Raspberry Pi 4 - WebSocket Stream</p>
                 <p>Camera resolution: 640x480 @ ~10 FPS</p>
