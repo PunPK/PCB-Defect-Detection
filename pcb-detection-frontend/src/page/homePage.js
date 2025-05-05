@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, X, RefreshCw, Check, Hexagon, Cpu, Scan } from "lucide-react"
-// import { Button } from "@/components/ui/button"
+import { Upload, X, RefreshCw, Check, Hexagon, Cpu, Scan, Webcam, BadgeCheck } from "lucide-react"
 import { motion } from "framer-motion"
 
 const customStyles = `
@@ -22,29 +21,31 @@ const customStyles = `
   }
 `
 
-export default function UploadFilePage() {
-    const [image, setImage] = useState(null)
+export default function HomePage() {
+    const [originalImage, setOriginalImage] = useState(null)
     const [isUploading, setIsUploading] = useState(false)
     const [showCamera, setShowCamera] = useState(false)
     const videoRef = useRef(null)
     const canvasRef = useRef(null)
     const fileInputRef = useRef(null)
     const [stream, setStream] = useState(null)
+    const [checkedImage, setCheckedImage] = useState(null)
+    const [previewImage, setPreviewImage] = useState(null)
 
     useEffect(() => {
-        const savedImage = sessionStorage.getItem("uploadedImage")
+        const savedImage = sessionStorage.getItem("OriginalImage")
         if (savedImage) {
-            setImage(savedImage)
+            setOriginalImage(JSON.parse(savedImage))
         }
     }, [])
 
     useEffect(() => {
-        if (image) {
-            sessionStorage.setItem("uploadedImage", image)
+        if (originalImage) {
+            sessionStorage.setItem("OriginalImage", JSON.stringify(originalImage))
         } else {
-            sessionStorage.removeItem("uploadedImage")
+            sessionStorage.removeItem("OriginalImage")
         }
-    }, [image])
+    }, [originalImage])
 
     // Clean up camera stream when component unmounts or camera is closed
     useEffect(() => {
@@ -56,10 +57,10 @@ export default function UploadFilePage() {
     }, [stream])
 
     const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0]
+        const fileList = e.target.files;
+        if (fileList && fileList[0]) {
+            const file = fileList[0]
 
-            // Check if file is an image
             if (!file.type.startsWith("image/")) {
                 alert("Please upload an image file only")
                 return
@@ -70,7 +71,13 @@ export default function UploadFilePage() {
             const reader = new FileReader()
             reader.onload = (event) => {
                 if (event.target?.result) {
-                    setImage(event.target.result)
+                    const newImage = {
+                        id: Math.random().toString(36).substring(2, 9),
+                        name: file.name,
+                        url: event.target.result,
+                        file
+                    }
+                    setOriginalImage(newImage)
                     setIsUploading(false)
                 }
             }
@@ -79,7 +86,10 @@ export default function UploadFilePage() {
     }
 
     const removeImage = () => {
-        setImage(null)
+        if (originalImage && originalImage.url) {
+            URL.revokeObjectURL(originalImage.url)
+        }
+        setOriginalImage(null)
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
@@ -128,7 +138,11 @@ export default function UploadFilePage() {
 
                 // Convert canvas to data URL and set as image
                 const imageData = canvas.toDataURL("image/jpeg")
-                setImage(imageData)
+                setOriginalImage({
+                    id: Math.random().toString(36).substring(2, 9),
+                    name: "Camera Capture",
+                    url: imageData
+                })
 
                 // Stop camera after capturing
                 stopCamera()
@@ -136,9 +150,16 @@ export default function UploadFilePage() {
         }
     }
 
+    const openPreview = (image) => {
+        setPreviewImage(image)
+    }
+
+    const closePreview = () => {
+        setPreviewImage(null)
+    }
+
     return (
         <>
-
             <style jsx>{customStyles}</style>
 
             <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
@@ -182,57 +203,75 @@ export default function UploadFilePage() {
                                 </div>
 
                                 <div className="flex justify-center gap-4">
-                                    {/* <Button
+                                    <button
                                         onClick={captureImage}
                                         className="relative overflow-hidden group bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 border border-cyan-700"
                                     >
                                         <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0 group-hover:animate-shine"></span>
                                         <Check className="h-4 w-4 mr-2" />
                                         ถ่ายภาพ
-                                    </Button>
+                                    </button>
 
-                                    <Button
+                                    <button
                                         onClick={stopCamera}
                                         variant="outline"
                                         className="border-gray-700 hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300"
                                     >
                                         <X className="h-4 w-4 mr-2" />
                                         ยกเลิก
-                                    </Button> */}
+                                    </button>
                                 </div>
                             </div>
-                        ) : image ? (
+                        ) : originalImage ? (
                             <div className="space-y-6">
-                                <div className="relative">
-                                    <div className="absolute inset-0 rounded-lg border-2 border-cyan-500/30 pointer-events-none"></div>
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-purple-500 opacity-70 rounded-t-lg"></div>
-                                    <img
-                                        src={image || "/placeholder.svg"}
-                                        alt="Uploaded image"
-                                        className="w-full h-auto rounded-lg object-contain max-h-[300px] bg-black/50"
-                                    />
-                                    <button
-                                        onClick={removeImage}
-                                        className="absolute top-3 right-3 bg-gray-900/80 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors duration-300 border border-gray-700 hover:border-red-400 shadow-lg"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-
-                                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-mono text-cyan-300 border border-cyan-900/50">
-                                        IMAGE_CAPTURED.JPG
+                                <div className="mt-4">
+                                    <div className="flex flex-col items-center">
+                                        <div
+                                            className="relative group cursor-pointer"
+                                            onClick={() => openPreview(originalImage)}
+                                        >
+                                            <img
+                                                src={originalImage.url}
+                                                alt={originalImage.name}
+                                                className="h-40 w-full object-contain rounded-md border border-gray-200"
+                                            />
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                                <span className="text-white opacity-0 group-hover:opacity-100">คลิกเพื่อดูรูปภาพเต็ม</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between w-full mt-2 bg-gray-50 p-2 rounded-md">
+                                            <span className="text-sm text-gray-700 truncate flex-1">
+                                                {originalImage.name || "Webcam Capture"}
+                                            </span>
+                                            <button
+                                                onClick={removeImage}
+                                                className="text-red-500 hover:text-red-700 ml-2"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* <div className="flex justify-center">
-                                    <Button
-                                        onClick={removeImage}
-                                        className="relative overflow-hidden group bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 border border-cyan-700/50"
+                                    <button
+                                        // onClick={() => }
+                                        type="button"
+                                        className="relative w-full h-14 mt-3 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                                     >
-                                        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0 group-hover:animate-shine"></span>
-                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                        อัปโหลดใหม่
-                                    </Button>
-                                </div> */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                                        <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                                            <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                                            <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                                                ดำเนินการตรวจจับ
+                                            </span>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <div className="space-y-8">
@@ -240,34 +279,21 @@ export default function UploadFilePage() {
                                     whileHover={{ scale: 1.02 }}
                                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onClick={() => startCamera()}
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
 
                                     <div className="flex flex-col items-center justify-center gap-4 relative z-10">
                                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
-                                            <Upload className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+                                            <Webcam className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
                                         </div>
                                         <div>
                                             <h3 className="text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
-                                                อัปโหลดรูปภาพต้นแบบของแผ่น PCB
+                                                ระบบตรวจจับต้นแบบของแผ่น PCB
                                             </h3>
                                             <p className="text-gray-400 mb-5 group-hover:text-gray-300 transition-colors">
-                                                คลิกเพื่อเลือกไฟล์รูปภาพ
+                                                คลิกเพื่อเปิดกล้อง
                                             </p>
-
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleFileChange}
-                                            />
-
-                                            {/* <Button className="relative overflow-hidden group bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 border border-cyan-700/50">
-                                                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0 group-hover:animate-shine"></span>
-                                                เลือกรูปภาพ
-                                            </Button> */}
                                         </div>
                                     </div>
                                 </motion.div>
@@ -278,16 +304,28 @@ export default function UploadFilePage() {
                                 </div>
 
                                 <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                                    {/* <Button
-                                        onClick={startCamera}
-                                        variant="outline"
-                                        className="w-full h-14 border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group"
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        type="button"
+                                        className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                                     >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700 rounded-md"></div>
-                                        <Scan className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
-                                        <span className="text-gray-300 group-hover:text-cyan-300 transition-colors">เปิดกล้อง</span>
-                                    </Button> */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                                        <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                                            <Upload className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                                            <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                                                อัปโหลด/วาง รูปภาพต้นแบบของแผ่น PCB
+                                            </span>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                    </button>
                                 </motion.div>
+
                                 <p className="text-red-400 font-bold flex items-center justify-center">อัปโหลดรูปภาพได้เพียง 1 รูปเท่านั้น</p>
                             </div>
                         )}
@@ -308,6 +346,28 @@ export default function UploadFilePage() {
                             <span>Running on Raspberry Pi 4</span>
                         </div>
                     </div>
+                    {previewImage && (
+                        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={closePreview}>
+                            <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                <button
+                                    className="absolute -top-10 right-0 text-white hover:text-gray-300"
+                                    onClick={closePreview}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                <img
+                                    src={previewImage.url}
+                                    alt={previewImage.name}
+                                    className="max-w-full max-h-[80vh] object-contain mx-auto"
+                                />
+                                <div className="mt-2 text-center text-white">
+                                    {previewImage.name}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
