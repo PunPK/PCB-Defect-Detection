@@ -8,7 +8,7 @@ import {
 import React, { useState } from "react";
 import Home from "./page/homePage.js";
 import NavBar from "./components/NavBar.js";
-import UploadPage from "./page/uploadPage.js";
+import CamDetectPCB from "./page/CamdetectPCB.js";
 import TestOpenCam from "./page/testOpenCam.js";
 import PCBLiveDetection from "./page/testPCBdetector.js";
 
@@ -20,7 +20,7 @@ function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/test" element={<UploadPage />} />
+        <Route path="/camDetectPCB" element={<CamDetectPCB />} />
         <Route path="/testcam" element={<TestOpenCam />} />
         <Route path="/testDetection" element={<PCBLiveDetection />} />
       </Routes>
