@@ -88,7 +88,9 @@ export default function HomePage() {
             //     video: { facingMode: "environment" },
             // })
 
-            navigate("/camDetectPCB")
+            navigate("/camDetectPCB", {
+                state: { PCB: "OriginalImage" },
+            })
             // setShowCamera(true)
         } catch (err) {
             console.error("Error accessing camera:", err)
@@ -168,7 +170,7 @@ export default function HomePage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => navigate("/fileDetectPCB")}
+                                    onClick={() => navigate(`/fileDetectPCB`)}
                                     type="button"
                                     className="relative w-full h-14 mt-3 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                                 >
@@ -248,8 +250,11 @@ export default function HomePage() {
                                     />
                                 </div>
                             </motion.div>
+                            <p className="text-gray-700 font-bold flex items-center justify-center text-center">
+                                กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น<br />
+                                รองรับไฟล์ JPG, PNG
+                            </p>
 
-                            <p className="text-gray-700 font-bold flex items-center justify-center">Supports JPG, PNG</p>
                         </div>
                     )}
 

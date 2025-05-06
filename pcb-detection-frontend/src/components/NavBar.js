@@ -5,7 +5,7 @@ const navigation = [
     { name: 'HomePage', href: '/', current: true },
     { name: 'Test', href: '/test', current: false },
     { name: 'TestCam', href: '/testcam', current: false },
-    { name: 'testDetection', href: '/testDetection', current: false },
+    { name: 'testDetection', href: '/PCBVerification', current: false },
 ]
 
 function classNames(...classes) {

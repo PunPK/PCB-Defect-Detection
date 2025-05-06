@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from "react-router";
 import "./HomePage.css"
 
 export default function CamDetectPCB() {
+    const location = useLocation();
+    const { PCB } = location.state || {};
     const [cameraFeed, setCameraFeed] = useState(null)
     const [pcbImage, setPcbImage] = useState(null)
     const [isConnected, setIsConnected] = useState(false)
@@ -155,7 +158,7 @@ export default function CamDetectPCB() {
                 <div className="absolute bottom-1/3 -right-20 w-80 h-80 bg-cyan-700/20 rounded-full filter blur-3xl"></div>
             </div>
             <div className="container mx-auto p-4 relative z-10">
-                <h1 className="text-2xl font-bold mb-4">Detector PCB Live Detection </h1>
+                <h1 className="text-2xl font-bold mb-4">Detector {PCB || ""} PCB Live Detection </h1>
 
                 <div className="flex flex-wrap gap-4 mb-4 items-center">
                     <button

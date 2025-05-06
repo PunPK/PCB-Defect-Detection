@@ -314,7 +314,9 @@ export default function PCBVerificationPage() {
                                                     whileHover={{ scale: 1.02 }}
                                                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                                     className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
-                                                    onClick={() => navigate("/camDetectPCB")}
+                                                    onClick={() => navigate("/camDetectPCB", {
+                                                        state: { PCB: "AnalysisImage" },
+                                                    })}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
 
@@ -368,7 +370,10 @@ export default function PCBVerificationPage() {
                                                     </div>
                                                 </motion.div>
 
-                                                <p className="text-gray-700 font-bold flex items-center justify-center">Supports JPG, PNG</p>
+                                                <p className="text-gray-700 font-bold flex items-center justify-center text-center">
+                                                    กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น<br />
+                                                    รองรับไฟล์ JPG, PNG
+                                                </p>
                                             </div>
                                         )
                                     ) : (

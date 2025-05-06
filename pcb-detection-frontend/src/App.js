@@ -25,7 +25,7 @@ function App() {
         <Route path="/camDetectPCB" element={<CamDetectPCB />} />
         <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
         <Route path="/testcam" element={<TestOpenCam />} />
-        <Route path="/testDetection" element={<PCBVerificationPage />} />
+        <Route path="/PCBVerification" element={<PCBVerificationPage />} />
       </Routes>
     </Router>
   );
