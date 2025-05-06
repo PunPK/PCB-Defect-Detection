@@ -1,11 +1,23 @@
+from fastapi import (
+    FastAPI,
+    UploadFile,
+    File,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import cv2
 import numpy as np
 import asyncio
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import logging
+import time
+import os
 from typing import Optional
+import logging
+import base64
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -107,6 +119,71 @@ class CameraManager:
 
 
 camera_manager = CameraManager()
+
+
+def image_to_base64(image):
+    _, buffer = cv2.imencode(".jpg", image)
+    return base64.b64encode(buffer).decode("utf-8")
+
+
+@app.get("/")
+async def health_check():
+    return {"status": "OK", "service": "PCB Detection Service"}
+
+
+@app.post("/api/pcb-detection/image")
+async def detect_pcb_from_image(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+        nparr = np.frombuffer(contents, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if frame is None:
+            return {"error": "Could not decode image"}
+
+        # Process the image
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        lower_copper = np.array([5, 30, 30])
+        upper_copper = np.array([45, 255, 255])
+        mask = cv2.inRange(hsv, lower_copper, upper_copper)
+
+        kernel = np.ones((5, 5), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        display_frame = frame.copy()
+        pcb_frame = None
+        result = {"detected": False}
+
+        if contours:
+            largest_contour = max(contours, key=cv2.contourArea)
+            hull = cv2.convexHull(largest_contour)
+            cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
+
+            epsilon = 0.02 * cv2.arcLength(hull, True)
+            approx = cv2.approxPolyDP(hull, epsilon, True)
+
+            if len(approx) == 4:
+                approx = order_points(approx.reshape(4, 2))
+                pcb_frame = four_point_transform(frame, approx)
+                result["detected"] = True
+
+        result["display_image"] = image_to_base64(display_frame)
+
+        if pcb_frame is not None:
+            result["pcb_image"] = image_to_base64(pcb_frame)
+        else:
+            # Create empty black image if no PCB detected
+            empty_frame = np.zeros((100, 100, 3), dtype=np.uint8)
+            result["pcb_image"] = image_to_base64(empty_frame)
+
+        return JSONResponse(content=result)
+
+    except Exception as e:
+        logger.error(f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.websocket("/ws/pcb-detection")
