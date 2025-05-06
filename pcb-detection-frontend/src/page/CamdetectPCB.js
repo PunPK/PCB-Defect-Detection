@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import "./UiPage.css"
+import "./HomePage.css"
 
 export default function CamDetectPCB() {
     const [cameraFeed, setCameraFeed] = useState(null)
@@ -108,8 +108,21 @@ export default function CamDetectPCB() {
     }
 
     const captureDetection = () => {
+        if (!pcbImage) {
+            alert('No PCB image available to capture!');
+            return;
+        }
 
-    }
+        const link = document.createElement('a');
+        link.href = pcbImage;
+        link.download = 'captureDetection.jpg';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setStatus('PCB captured successfully!');
+    };
 
     const startFpsCounter = () => {
         frameCountRef.current = 0
@@ -162,9 +175,9 @@ export default function CamDetectPCB() {
                         หยุดการตรวจจับ
                     </button>
                     <button
-                        disabled={!isConnected}
-                        className={`bg-green-700 text-white py-2 px-4 rounded-md ${!isConnected ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'
-                            }`}
+                        onClick={captureDetection}
+                        disabled={!isConnected || !pcbImage}
+                        className={`bg-green-700 text-white py-2 px-4 rounded-md ${!isConnected || !pcbImage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-600'}`}
                     >
                         ยืนยันการตรวจจับ (กดเมื่อระบบตรวจจับและแสดงได้อย่างชัดเจน)
                     </button>
