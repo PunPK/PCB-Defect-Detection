@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Upload, X, Hexagon, Cpu, Webcam, BadgeCheck } from "lucide-react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router";
-import "./UiPage.css"
+import "./HomePage.css"
 export default function HomePage() {
     const [originalImage, setOriginalImage] = useState(null)
     const [analysisImage, setAnalysisImage] = useState(null)
@@ -168,7 +168,7 @@ export default function HomePage() {
                                     </div>
                                 </div>
                                 <button
-                                    // onClick={() => }
+                                    onClick={() => navigate("/fileDetectPCB")}
                                     type="button"
                                     className="relative w-full h-14 mt-3 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                                 >
