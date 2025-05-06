@@ -11,6 +11,7 @@ import NavBar from "./components/NavBar.js";
 import CamDetectPCB from "./page/CamdetectPCB.js";
 import TestOpenCam from "./page/testOpenCam.js";
 import PCBLiveDetection from "./page/testPCBdetector.js";
+import PCBVerificationPage from "./page/uploadPCBChecked.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -22,7 +23,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/camDetectPCB" element={<CamDetectPCB />} />
         <Route path="/testcam" element={<TestOpenCam />} />
-        <Route path="/testDetection" element={<PCBLiveDetection />} />
+        <Route path="/testDetection" element={<PCBVerificationPage />} />
       </Routes>
     </Router>
   );
