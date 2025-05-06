@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import "./UiPage.css"
 export default function HomePage() {
     const [originalImage, setOriginalImage] = useState(null)
+    const [analysisImage, setAnalysisImage] = useState(null)
     const [isUploading, setIsUploading] = useState(false)
     // const [showCamera, setShowCamera] = useState(false)
     // const videoRef = useRef(null)
@@ -27,7 +28,12 @@ export default function HomePage() {
         } else {
             sessionStorage.removeItem("OriginalImage")
         }
-    }, [originalImage])
+        if (analysisImage) {
+            sessionStorage.setItem("AnalysisImage", JSON.stringify(analysisImage))
+        } else {
+            sessionStorage.removeItem("AnalysisImage")
+        }
+    }, [originalImage, analysisImage])
 
     // useEffect(() => {
     //     return () => {
@@ -214,10 +220,17 @@ export default function HomePage() {
                             </div>
 
                             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                                <button
+                                <div
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        const files = e.dataTransfer.files;
+                                        if (files.length) {
+                                            handleFileChange({ target: { files } });
+                                        }
+                                    }}
+                                    onDragOver={(e) => e.preventDefault()}
                                     onClick={() => fileInputRef.current?.click()}
-                                    type="button"
-                                    className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                                    className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden cursor-pointer"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
                                     <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
@@ -233,10 +246,10 @@ export default function HomePage() {
                                         className="hidden"
                                         onChange={handleFileChange}
                                     />
-                                </button>
+                                </div>
                             </motion.div>
 
-                            <p className="text-red-400 font-bold flex items-center justify-center">อัปโหลดรูปภาพได้เพียง 1 รูปเท่านั้น</p>
+                            <p className="text-gray-700 font-bold flex items-center justify-center">Supports JPG, PNG</p>
                         </div>
                     )}
 
