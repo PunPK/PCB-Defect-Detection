@@ -14,6 +14,7 @@ export default function CamDetectPCB() {
     const frameCountRef = useRef(0)
     const timerRef = useRef(null)
     const imageQueueRef = useRef([])
+    const navigate = useNavigate()
 
     const processImageQueue = () => {
         if (imageQueueRef.current.length >= 2) {
@@ -110,19 +111,43 @@ export default function CamDetectPCB() {
         }
     }
 
-    const captureDetection = () => {
+    const captureDetection = async () => {
         if (!pcbImage) {
             alert('No PCB image available to capture!');
             return;
         }
 
-        const link = document.createElement('a');
-        link.href = pcbImage;
-        link.download = 'captureDetection.jpg';
+        const blob = await fetch(pcbImage).then(res => res.blob());
 
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const toBase64 = (blob) =>
+            new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+
+        const base64Image = await toBase64(blob);
+
+        const newImage = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: `cropped_${PCB}_${Date.now()}.jpg`,
+            url: base64Image,
+            file: null
+        };
+
+        try {
+            if (PCB === "OriginalImage") {
+                sessionStorage.setItem("OriginalImage", JSON.stringify(newImage));
+                navigate(`/PCBVerification`)
+            }
+            else if (PCB === "AnalysisImage") {
+                sessionStorage.setItem("AnalysisImage", JSON.stringify(newImage));
+                navigate(`/PCBVerification`)
+            }
+        } catch (err) {
+            console.error("Error saving to sessionStorage:", err);
+        }
 
         setStatus('PCB captured successfully!');
     };

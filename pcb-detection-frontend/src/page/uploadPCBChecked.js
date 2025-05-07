@@ -14,13 +14,13 @@ export default function PCBVerificationPage() {
 
     // Load image from session storage on component mount
     useEffect(() => {
-        const savedImage = sessionStorage.getItem("OriginalImage")
-        const savedFileName = sessionStorage.getItem("originalPCBFileName")
-        if (savedImage) {
-            setOriginalPCB(JSON.parse(savedImage))
+        const savedOriginalImage = sessionStorage.getItem("OriginalImage")
+        const savedAnalysisImage = sessionStorage.getItem("AnalysisImage")
+        if (savedOriginalImage) {
+            setOriginalPCB(JSON.parse(savedOriginalImage))
         }
-        if (savedFileName) {
-            setFileName(savedFileName)
+        if (savedAnalysisImage) {
+            setAnalysisPCB(JSON.parse(savedAnalysisImage))
         }
     }, [])
 
@@ -238,12 +238,55 @@ export default function PCBVerificationPage() {
                                     {originalPCB ? (
                                         analysisPCB ? (
                                             <div className="w-full h-full flex flex-col">
-                                                <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-cyan-800/50 rounded-lg mb-4 relative overflow-hidden">
-                                                    <div className="scanline"></div>
+                                                <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-cyan-800/50 rounded-lg mb-4 relative overflow-hidden bg-gray-950">
+                                                    <div className="w-full h-full flex flex-col">
+                                                        <div className="relative mb-4 gradient-border-blue rounded-lg overflow-hidden">
+                                                            <img
+                                                                src={analysisPCB.url}
+                                                                alt={analysisPCB.name}
+                                                                className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
+                                                            />
+                                                            {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 mb-4 border border-gray-800">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-blue"></div>
+                                                                <span className="text-sm text-gray-300 truncate max-w-[160px]">{analysisPCB.name}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={removeImage}
+                                                                className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="mt-auto">
+                                                            <div className="flex items-center justify-center gap-2 mb-3">
+                                                                <div className="flex items-center text-green-400 text-sm">
+                                                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                                                    <span>PCB LOADED</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <Button
+                                                                variant="danger"
+                                                                className="w-full text-sm "
+                                                                onClick={removeImage}
+                                                                icon={<ArchiveX className="h-4 w-4" />}
+                                                            >
+                                                                Delete PCB IMAGE
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Icon */}
                                                     <div className="w-16 h-16 rounded-full bg-gray-800/80 flex items-center justify-center mb-4 z-10">
                                                         <Cpu className="h-8 w-8 text-cyan-400" />
                                                     </div>
 
+                                                    {/* Title */}
                                                     <h3 className="text-cyan-400 text-lg font-medium text-center mb-1 z-10">
                                                         PCB Quality Control System
                                                     </h3>
@@ -251,36 +294,28 @@ export default function PCBVerificationPage() {
                                                         Click the button "START ANALYSIS" to start verification
                                                     </p>
 
+                                                    {/* Divider */}
                                                     <div className="flex items-center my-4 z-10">
                                                         <div className="h-px w-8 bg-gray-700"></div>
-                                                        <span className="text-gray-600 text-xs mx-2">           </span>
+                                                        <span className="text-gray-600 text-xs mx-2"></span>
                                                         <div className="h-px w-8 bg-gray-700"></div>
                                                     </div>
 
-                                                    <div className="w-full max-w-md bg-gray-900/50 rounded-lg p-4 border border-gray-800 z-10">
+                                                    {/* Process Details Box */}
+                                                    <div className="w-full max-w-md bg-gray-900/60 rounded-lg p-4 border border-gray-800 z-10">
                                                         <div className="flex items-center gap-3 mb-3">
                                                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
                                                             <span className="text-xs text-cyan-400 font-mono">PROCESS DETAILS</span>
                                                             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 gap-2 text-xs">
-                                                            <div className="flex items-center gap-2 text-gray-400">
-                                                                <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                <span>Edge Detection</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-gray-400">
-                                                                <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                <span>Copper Tracing</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-gray-400">
-                                                                <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                <span>Quality Scoring</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-gray-400">
-                                                                <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                <span>Defect Mapping</span>
-                                                            </div>
+                                                        <div className="grid grid-cols-2 gap-3 text-xs">
+                                                            {["Edge Detection", "Copper Tracing", "Quality Scoring", "Defect Mapping"].map((item) => (
+                                                                <div key={item} className="flex items-center gap-2 text-gray-400">
+                                                                    <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
+                                                                    <span>{item}</span>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
                                                 </div>
