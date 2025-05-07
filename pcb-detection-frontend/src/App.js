@@ -13,6 +13,7 @@ import TestOpenCam from "./page/testOpenCam.js";
 import PCBLiveDetection from "./page/testPCBdetector.js";
 import PCBVerificationPage from "./page/uploadPCBChecked.js";
 import FileDetectPCB from "./page/FiledetectPCB.js";
+import AboutUs from "./page/aboutUsPage.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -26,6 +27,7 @@ function App() {
         <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
         <Route path="/testcam" element={<TestOpenCam />} />
         <Route path="/PCBVerification" element={<PCBVerificationPage />} />
+        <Route path="/AboutUs" element={<AboutUs />} />
       </Routes>
     </Router>
   );
