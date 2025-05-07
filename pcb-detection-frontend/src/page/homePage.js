@@ -24,14 +24,14 @@ export default function HomePage() {
 
     useEffect(() => {
         if (originalImage) {
-            sessionStorage.setItem("OriginalImage", JSON.stringify(originalImage))
+            sessionStorage.setItem("PreOriginalImage", JSON.stringify(originalImage))
         } else {
-            sessionStorage.removeItem("OriginalImage")
+            sessionStorage.removeItem("PreOriginalImage")
         }
         if (analysisImage) {
-            sessionStorage.setItem("AnalysisImage", JSON.stringify(analysisImage))
+            sessionStorage.setItem("PreAnalysisImage", JSON.stringify(analysisImage))
         } else {
-            sessionStorage.removeItem("AnalysisImage")
+            sessionStorage.removeItem("PreAnalysisImage")
         }
     }, [originalImage, analysisImage])
 
@@ -170,7 +170,11 @@ export default function HomePage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => navigate(`/fileDetectPCB`)}
+                                    onClick={() => {
+                                        navigate("/fileDetectPCB", {
+                                            state: { PCB: "OriginalImage" },
+                                        })
+                                    }}
                                     type="button"
                                     className="relative w-full h-14 mt-3 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                                 >
@@ -180,14 +184,7 @@ export default function HomePage() {
                                         <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
                                             ดำเนินการตรวจจับ
                                         </span>
-                                    </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                    />
+                                    </div>           
                                 </button>
                             </div>
                         </div>

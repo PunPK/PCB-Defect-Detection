@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, Edit2, Download, CheckCircle, AlertCircle, Cpu, Layers, X, ChevronRight, Hexagon, ArchiveX, Webcam } from "lucide-react"
+import { Upload, Edit2, Download, CheckCircle, AlertCircle, Cpu, Layers, X, ChevronRight, Hexagon, ArchiveX, Webcam, BadgeCheck } from "lucide-react"
 import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import "./uploadPage.css"
@@ -7,9 +7,11 @@ import "./uploadPage.css"
 export default function PCBVerificationPage() {
     const [originalPCB, setOriginalPCB] = useState(null)
     const [analysisPCB, setAnalysisPCB] = useState(null)
+    const [preAnalysisPCB, setPreAnalysisPCB] = useState(null)
     const [fileName, setFileName] = useState("")
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef(null)
+    const [previewImage, setPreviewImage] = useState(null)
     const navigate = useNavigate()
 
     // Load image from session storage on component mount
@@ -59,7 +61,7 @@ export default function PCBVerificationPage() {
                         url: event.target.result,
                         file
                     }
-                    setAnalysisPCB(newImage)
+                    setPreAnalysisPCB(newImage)
                     setIsUploading(false)
                 }
             }
@@ -67,7 +69,27 @@ export default function PCBVerificationPage() {
         }
     }
 
-    const removeImage = () => {
+    useEffect(() => {
+        if (preAnalysisPCB) {
+            sessionStorage.setItem("PreAnalysisImage", JSON.stringify(preAnalysisPCB))
+        } else {
+            sessionStorage.removeItem("PreAnalysisImage")
+        }
+    }, [preAnalysisPCB])
+
+    const removeAnalysisImage = () => {
+        // console.log(AnalysisPCB)
+        if (analysisPCB && analysisPCB.url) {
+            URL.revokeObjectURL(analysisPCB.url)
+            sessionStorage.removeItem("AnalysisImage")
+        }
+        setAnalysisPCB(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ""
+        }
+    }
+
+    const removeOriginalImage = () => {
         // console.log(originalPCB)
         if (originalPCB && originalPCB.url) {
             URL.revokeObjectURL(originalPCB.url)
@@ -79,7 +101,27 @@ export default function PCBVerificationPage() {
         }
     }
 
-    // Custom Button Component
+    const removePreAnalysisPCBImage = () => {
+        // console.log(originalPCB)
+        if (preAnalysisPCB && preAnalysisPCB.url) {
+            URL.revokeObjectURL(preAnalysisPCB.url)
+            sessionStorage.removeItem("PreAnalysisImage")
+        }
+        setPreAnalysisPCB(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ""
+        }
+    }
+
+
+    const openPreview = (image) => {
+        setPreviewImage(image)
+    }
+
+    const closePreview = () => {
+        setPreviewImage(null)
+    }
+
     const Button = ({ children, onClick, className, variant = "primary", icon, disabled }) => {
         const baseStyles = "px-4 py-2 rounded-md font-medium transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
 
@@ -162,7 +204,7 @@ export default function PCBVerificationPage() {
                                                     <span className="text-sm text-gray-300 truncate max-w-[160px]">{originalPCB.name}</span>
                                                 </div>
                                                 <button
-                                                    onClick={removeImage}
+                                                    onClick={removeOriginalImage}
                                                     className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                 >
                                                     <X className="h-4 w-4" />
@@ -180,7 +222,7 @@ export default function PCBVerificationPage() {
                                                 <Button
                                                     variant="danger"
                                                     className="w-full text-sm"
-                                                    onClick={removeImage}
+                                                    onClick={removeOriginalImage}
                                                     icon={<ArchiveX className="h-4 w-4" />}
                                                 >
                                                     Delete PCB IMAGE
@@ -236,182 +278,232 @@ export default function PCBVerificationPage() {
 
                                 <div className="bg-black rounded-lg p-4 min-h-[300px] flex flex-col items-center justify-center relative h-full">
                                     {originalPCB ? (
-                                        analysisPCB ? (
-                                            <div className="w-full h-full flex flex-col">
-                                                <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-cyan-800/50 rounded-lg mb-4 relative overflow-hidden bg-gray-950">
-                                                    <div className="w-full h-full flex flex-col">
-                                                        <div className="relative mb-4 gradient-border-blue rounded-lg overflow-hidden">
-                                                            <img
-                                                                src={analysisPCB.url}
-                                                                alt={analysisPCB.name}
-                                                                className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
-                                                            />
-                                                            {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 mb-4 border border-gray-800">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-blue"></div>
-                                                                <span className="text-sm text-gray-300 truncate max-w-[160px]">{analysisPCB.name}</span>
+                                        !preAnalysisPCB ? (
+                                            analysisPCB ? (
+                                                <div className="w-full h-full flex flex-col">
+                                                    <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-cyan-800/50 rounded-lg mb-4 relative overflow-hidden bg-gray-950">
+                                                        <div className="w-full h-full flex flex-col">
+                                                            <div className="relative mb-4 gradient-border-blue rounded-lg overflow-hidden">
+                                                                <img
+                                                                    src={analysisPCB.url}
+                                                                    alt={analysisPCB.name}
+                                                                    className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
+                                                                />
+                                                                {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
                                                             </div>
-                                                            <button
-                                                                onClick={removeImage}
-                                                                className="text-gray-400 hover:text-blue-500 transition-colors p-1"
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </button>
-                                                        </div>
 
-                                                        <div className="mt-auto">
-                                                            <div className="flex items-center justify-center gap-2 mb-3">
-                                                                <div className="flex items-center text-green-400 text-sm">
-                                                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                                                    <span>PCB LOADED</span>
+                                                            <div className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 mb-4 border border-gray-800">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-blue"></div>
+                                                                    <span className="text-sm text-gray-300 truncate max-w-[160px]">{analysisPCB.name}</span>
                                                                 </div>
+                                                                <button
+                                                                    onClick={removeAnalysisImage}
+                                                                    className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </button>
                                                             </div>
 
-                                                            <Button
-                                                                variant="danger"
-                                                                className="w-full text-sm "
-                                                                onClick={removeImage}
-                                                                icon={<ArchiveX className="h-4 w-4" />}
-                                                            >
-                                                                Delete PCB IMAGE
-                                                            </Button>
+                                                            <div className="mt-auto">
+                                                                <div className="flex items-center justify-center gap-2 mb-3">
+                                                                    <div className="flex items-center text-green-400 text-sm">
+                                                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                                                        <span>PCB LOADED</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <Button
+                                                                    variant="secondary"
+                                                                    className="w-full text-sm "
+                                                                    onClick={removeAnalysisImage}
+                                                                    icon={<ArchiveX className="h-4 w-4" />}
+                                                                >
+                                                                    Delete PCB IMAGE
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Icon */}
+                                                        <div className="w-16 h-16 rounded-full bg-gray-800/80 flex items-center justify-center mb-4 z-10">
+                                                            <Cpu className="h-8 w-8 text-cyan-400" />
+                                                        </div>
+
+                                                        {/* Title */}
+                                                        <h3 className="text-cyan-400 text-lg font-medium text-center mb-1 z-10">
+                                                            PCB Quality Control System
+                                                        </h3>
+                                                        <p className="text-gray-400 text-sm text-center mb-4 z-10">
+                                                            Click the button "START ANALYSIS" to start verification
+                                                        </p>
+
+                                                        {/* Divider */}
+                                                        <div className="flex items-center my-4 z-10">
+                                                            <div className="h-px w-8 bg-gray-700"></div>
+                                                            <span className="text-gray-600 text-xs mx-2"></span>
+                                                            <div className="h-px w-8 bg-gray-700"></div>
+                                                        </div>
+
+                                                        {/* Process Details Box */}
+                                                        <div className="w-full max-w-md bg-gray-900/60 rounded-lg p-4 border border-gray-800 z-10">
+                                                            <div className="flex items-center gap-3 mb-3">
+                                                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+                                                                <span className="text-xs text-cyan-400 font-mono">PROCESS DETAILS</span>
+                                                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                                                {["Edge Detection", "Copper Tracing", "Quality Scoring", "Defect Mapping"].map((item) => (
+                                                                    <div key={item} className="flex items-center gap-2 text-gray-400">
+                                                                        <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
+                                                                        <span>{item}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Icon */}
-                                                    <div className="w-16 h-16 rounded-full bg-gray-800/80 flex items-center justify-center mb-4 z-10">
-                                                        <Cpu className="h-8 w-8 text-cyan-400" />
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <Button
+                                                            variant="primary"
+                                                            className="w-full"
+                                                            icon={<Cpu className="h-4 w-4" />}
+                                                        >
+                                                            START ANALYSIS
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            icon={<Download className="h-4 w-4" />}
+                                                            disabled={true}
+                                                        >
+                                                            EXPORT REPORT
+                                                        </Button>
                                                     </div>
 
-                                                    {/* Title */}
-                                                    <h3 className="text-cyan-400 text-lg font-medium text-center mb-1 z-10">
-                                                        PCB Quality Control System
-                                                    </h3>
-                                                    <p className="text-gray-400 text-sm text-center mb-4 z-10">
-                                                        Click the button "START ANALYSIS" to start verification
+                                                    <div className="mt-4 flex items-center justify-center gap-2 text-red-400 text-sm">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        <span>ANALYSIS NOT PERFORMED YET</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-8 mt-3">
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.02 }}
+                                                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                                                        className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
+                                                        onClick={() => navigate("/camDetectPCB", {
+                                                            state: { PCB: "AnalysisImage" },
+                                                        })}
+                                                    >
+                                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
+
+                                                        <div className="flex flex-col items-center justify-center gap-4 relative z-10">
+                                                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
+                                                                <Webcam className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
+                                                                    ระบบตรวจจับแผ่น PCB ที่ต้องการตรวจสอบ
+                                                                </h3>
+                                                                <p className="text-gray-400 mb-5 group-hover:text-gray-300 transition-colors">
+                                                                    คลิกเพื่อเปิดกล้อง
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+
+                                                    <div className="text-center relative">
+                                                        <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                                                        <span className="relative bg-[#050816] px-4 text-gray-400">หรือ</span>
+                                                    </div>
+
+                                                    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                                                        <div
+                                                            onDrop={(e) => {
+                                                                e.preventDefault();
+                                                                const files = e.dataTransfer.files;
+                                                                if (files.length) {
+                                                                    handleFileChange({ target: { files } });
+                                                                }
+                                                            }}
+                                                            onDragOver={(e) => e.preventDefault()}
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden cursor-pointer"
+                                                        >
+                                                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                                                            <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                                                                <Upload className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                                                                <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                                                                    อัปโหลด/วาง รูปภาพของแผ่น PCB ที่ต้องการตรวจสอบ
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                ref={fileInputRef}
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                onChange={handleFileChange}
+                                                            />
+                                                        </div>
+                                                    </motion.div>
+                                                    <p className="text-gray-700 font-bold flex items-center justify-center text-center">
+                                                        กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น<br />
+                                                        รองรับไฟล์ JPG, PNG
                                                     </p>
 
-                                                    {/* Divider */}
-                                                    <div className="flex items-center my-4 z-10">
-                                                        <div className="h-px w-8 bg-gray-700"></div>
-                                                        <span className="text-gray-600 text-xs mx-2"></span>
-                                                        <div className="h-px w-8 bg-gray-700"></div>
-                                                    </div>
-
-                                                    {/* Process Details Box */}
-                                                    <div className="w-full max-w-md bg-gray-900/60 rounded-lg p-4 border border-gray-800 z-10">
-                                                        <div className="flex items-center gap-3 mb-3">
-                                                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
-                                                            <span className="text-xs text-cyan-400 font-mono">PROCESS DETAILS</span>
-                                                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-3 text-xs">
-                                                            {["Edge Detection", "Copper Tracing", "Quality Scoring", "Defect Mapping"].map((item) => (
-                                                                <div key={item} className="flex items-center gap-2 text-gray-400">
-                                                                    <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                    <span>{item}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
                                                 </div>
-
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <Button
-                                                        variant="primary"
-                                                        className="w-full"
-                                                        icon={<Cpu className="h-4 w-4" />}
-                                                    >
-                                                        START ANALYSIS
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        className="w-full"
-                                                        icon={<Download className="h-4 w-4" />}
-                                                        disabled={true}
-                                                    >
-                                                        EXPORT REPORT
-                                                    </Button>
-                                                </div>
-
-                                                <div className="mt-4 flex items-center justify-center gap-2 text-red-400 text-sm">
-                                                    <AlertCircle className="h-4 w-4" />
-                                                    <span>ANALYSIS NOT PERFORMED YET</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-8 mt-3">
-                                                <motion.div
-                                                    whileHover={{ scale: 1.02 }}
-                                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                                                    className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
-                                                    onClick={() => navigate("/camDetectPCB", {
-                                                        state: { PCB: "AnalysisImage" },
-                                                    })}
-                                                >
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
-
-                                                    <div className="flex flex-col items-center justify-center gap-4 relative z-10">
-                                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
-                                                            <Webcam className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
-                                                                ระบบตรวจจับแผ่น PCB
-                                                            </h3>
-                                                            <p className="text-gray-400 mb-5 group-hover:text-gray-300 transition-colors">
-                                                                คลิกเพื่อเปิดกล้อง
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-
-                                                <div className="text-center relative">
-                                                    <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
-                                                    <span className="relative bg-[#050816] px-4 text-gray-400">หรือ</span>
-                                                </div>
-
-                                                <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                                            )
+                                        ) : <div className="space-y-6">
+                                            <div className="mt-4">
+                                                <div className="flex flex-col items-center">
                                                     <div
-                                                        onDrop={(e) => {
-                                                            e.preventDefault();
-                                                            const files = e.dataTransfer.files;
-                                                            if (files.length) {
-                                                                handleFileChange({ target: { files } });
-                                                            }
-                                                        }}
-                                                        onDragOver={(e) => e.preventDefault()}
-                                                        onClick={() => fileInputRef.current?.click()}
-                                                        className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden cursor-pointer"
+                                                        className="relative group cursor-pointer"
+                                                        onClick={() => openPreview(preAnalysisPCB)}
                                                     >
-                                                        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                                                        <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                                                            <Upload className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
-                                                            <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
-                                                                อัปโหลด/วาง รูปภาพของแผ่น PCB
-                                                            </span>
-                                                        </div>
-                                                        <input
-                                                            ref={fileInputRef}
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={handleFileChange}
+                                                        <img
+                                                            src={preAnalysisPCB.url}
+                                                            alt={preAnalysisPCB.name}
+                                                            className="h-40 w-full object-contain rounded-md border border-gray-200"
                                                         />
+                                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+                                                            <span className="text-white opacity-0 group-hover:opacity-100">คลิกเพื่อดูรูปภาพเต็ม</span>
+                                                        </div>
                                                     </div>
-                                                </motion.div>
+                                                    <div className="flex items-center justify-between w-full mt-2 bg-gray-50 p-2 rounded-md">
+                                                        <span className="text-sm text-gray-700 truncate flex-1">
+                                                            {preAnalysisPCB.name || "Webcam Capture"}
+                                                        </span>
+                                                        <button
+                                                            onClick={removePreAnalysisPCBImage}
+                                                        >
 
-                                                <p className="text-gray-700 font-bold flex items-center justify-center text-center">
-                                                    กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น<br />
-                                                    รองรับไฟล์ JPG, PNG
-                                                </p>
+                                                            {/* <X className="h-5 w-5 text-red-500 group-hover:text-red-700" /> */}
+                                                            <span className="text-sm text-red-700 group-hover:text-red-300 transition-colors">
+                                                                Remove
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        navigate("/fileDetectPCB", {
+                                                            state: { PCB: "AnalysisImage" },
+                                                        })
+                                                    }}
+                                                    type="button"
+                                                    className="relative w-full h-14 mt-3 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                                                >
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                                                    <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                                                        <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                                                        <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                                                            ดำเนินการตรวจจับ
+                                                        </span>
+                                                    </div>
+                                                </button>
                                             </div>
-                                        )
-                                    ) : (
+                                        </div>) : (
                                         <div className="flex flex-col items-center justify-center text-center p-8">
                                             <div className="w-20 h-20 rounded-full bg-gray-900 flex items-center justify-center mb-6 relative">
                                                 <div className="absolute inset-0 rounded-full border-2 border-dashed border-red-900 animate-spin-slow"></div>

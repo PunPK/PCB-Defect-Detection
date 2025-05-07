@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import "./HomePage.css"
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 export default function FileDetectPCB() {
-
+    const location = useLocation();
+    const { PCB } = location.state || {};
     const [originalImage, setOriginalImage] = useState(null)
+    const [analysisImage, setAnalysisImage] = useState(null)
     const [processedImage, setProcessedImage] = useState(null)
     const [croppedPCB, setCroppedPCB] = useState(null)
     const [status, setStatus] = useState('Waiting for image...')
@@ -13,11 +15,21 @@ export default function FileDetectPCB() {
     const navigate = useNavigate()
 
     useEffect(() => {
-        const savedImage = sessionStorage.getItem("OriginalImage")
-        if (savedImage) {
-            const imgData = JSON.parse(savedImage)
-            setOriginalImage(imgData)
+        if (PCB === "AnalysisImage") {
+
+            const savedAnalysisImage = sessionStorage.getItem("PreAnalysisImage")
+            const imgData = JSON.parse(savedAnalysisImage)
+            setAnalysisImage(imgData)
             processImage(imgData.url)
+        }
+
+        else if (PCB === "OriginalImage") {
+            const savedOriginalImage = sessionStorage.getItem("PreOriginalImage")
+            if (savedOriginalImage) {
+                const imgData = JSON.parse(savedOriginalImage)
+                setOriginalImage(imgData)
+                processImage(imgData.url)
+            }
         }
     }, [])
 
@@ -45,7 +57,6 @@ export default function FileDetectPCB() {
             }
 
             const result = await apiResponse.json()
-            console.log(result)
 
             setProcessedImage(`data:image/jpeg;base64,${result.display_image}`);
             setCroppedPCB(result.pcb_image
@@ -70,19 +81,26 @@ export default function FileDetectPCB() {
 
         const newImage = {
             id: Math.random().toString(36).substring(2, 9),
-            name: `cropped_${Date.now()}.jpg`,
+            name: `cropped_${PCB}_${Date.now()}.jpg`,
             url: croppedPCB,
             file: null  // ถ้าไม่มีไฟล์ต้นฉบับ สามารถใส่ null หรือไม่ใส่ก็ได้
         };
 
         try {
-            sessionStorage.setItem("OriginalImage", JSON.stringify(newImage));
-            navigate(`/PCBVerification`)
+            if (PCB === "OriginalImage") {
+                sessionStorage.setItem("OriginalImage", JSON.stringify(newImage));
+                navigate(`/PCBVerification`)
+            }
+            else if (PCB === "AnalysisImage") {
+                sessionStorage.setItem("AnalysisImage", JSON.stringify(newImage));
+                navigate(`/PCBVerification`)
+            }
         } catch (err) {
             console.error("Error saving to sessionStorage:", err);
         }
     };
 
+    const waiting = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
     return (
         <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
@@ -93,7 +111,7 @@ export default function FileDetectPCB() {
             </div>
 
             <div className="container mx-auto p-4 relative z-10">
-                <h1 className="text-2xl font-bold mb-4">PCB Detection System</h1>
+                <h1 className="text-2xl font-bold mb-4">PCB Detection System : {PCB}</h1>
 
                 <div className="mb-6">
                     <div className="flex items-center gap-4">
@@ -117,18 +135,37 @@ export default function FileDetectPCB() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="border border-gray-300 rounded-md p-2">
-                        <h2 className="text-lg font-semibold mb-2">Original Image</h2>
-                        {originalImage ? (
-                            <img
-                                src={originalImage.url}
-                                alt="Original PCB"
-                                className="w-full h-auto max-h-[70vh] object-contain"
-                            />
-                        ) : (
-                            <div className="bg-gray-900 h-48 flex items-center justify-center">
-                                <p className="text-gray-500">
-                                    No image found in session
-                                </p>
+                        {PCB === "OriginalImage" && (
+                            <div>
+                                <h2 className="text-lg font-semibold mb-2">Original Image</h2>
+                                {originalImage ? (
+                                    <img
+                                        src={originalImage.url}
+                                        alt="Original PCB"
+                                        className="w-full h-auto max-h-[70vh] object-contain"
+                                    />
+                                ) : (
+                                    <div className="bg-gray-900 h-48 flex items-center justify-center">
+                                        <p className="text-gray-500">No Original Image found in session</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {PCB === "AnalysisImage" && (
+                            <div>
+                                <h2 className="text-lg font-semibold mb-2">Analysis Image</h2>
+                                {analysisImage ? (
+                                    <img
+                                        src={analysisImage.url}
+                                        alt="Aanalysis PCB"
+                                        className="w-full h-auto max-h-[70vh] object-contain"
+                                    />
+                                ) : (
+                                    <div className="bg-gray-900 h-48 flex items-center justify-center">
+                                        <p className="text-gray-500">No Analysis Image found in session</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -191,6 +228,8 @@ export default function FileDetectPCB() {
                                 setProcessedImage(null)
                                 setCroppedPCB(null)
                                 setStatus('Waiting for image...')
+                                waiting(2);
+                                navigate("/")
                             }}
                         >
                             Reset
@@ -198,6 +237,39 @@ export default function FileDetectPCB() {
                         <button
                             className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
                             onClick={() => processImage(originalImage.url)}
+                            disabled={isProcessing}
+                        >
+                            Reprocess Image
+                        </button>
+                    </div>
+                )}
+
+                {analysisImage && (
+                    <div className="mt-6 flex gap-4">
+                        <button
+                            className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700"
+                            onClick={() => { captureDetection() }}
+                            disabled={!processedImage || isProcessing}
+                        >
+                            Confirm Detection
+                        </button>
+                        <button
+                            className="bg-gray-600 text-white py-2 px-6 rounded-md hover:bg-gray-700"
+                            onClick={() => {
+                                sessionStorage.removeItem("AnalysisImage")
+                                setAnalysisImage(null)
+                                setProcessedImage(null)
+                                setCroppedPCB(null)
+                                setStatus('Waiting for image...')
+                                waiting(2);
+                                navigate("/PCBVerification")
+                            }}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
+                            onClick={() => processImage(analysisImage.url)}
                             disabled={isProcessing}
                         >
                             Reprocess Image
