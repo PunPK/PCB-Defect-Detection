@@ -186,6 +186,51 @@ async def detect_pcb_from_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.websocket("/ws/test-cam")
+async def websocket_endpoint(websocket: WebSocket):
+    # Accept the WebSocket connection explicitly
+    await websocket.accept()
+
+    camera_manager.active_connections += 1
+    logger.info(f"New connection. Total: {camera_manager.active_connections}")
+
+    camera = await camera_manager.get_camera()
+    if not camera:
+        await websocket.close()
+        return
+
+    try:
+        while True:
+            ret, frame = camera.read()
+            if not ret:
+                logger.error("Frame read failed")
+                break
+
+            ret, buffer = cv2.imencode(
+                ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80]
+            )
+
+            if not ret:
+                logger.error("Frame encoding failed")
+                continue
+
+            await websocket.send_bytes(buffer.tobytes())
+            await asyncio.sleep(camera_manager.frame_interval)
+
+    except WebSocketDisconnect:
+        logger.info("Client disconnected")
+    except Exception as e:
+        logger.error(f"WebSocket error: {str(e)}")
+    finally:
+        camera_manager.active_connections -= 1
+        logger.info(
+            f"Connection closed. Remaining: {camera_manager.active_connections}"
+        )
+
+        if camera_manager.active_connections <= 0:
+            camera_manager.release_camera()
+
+
 @app.websocket("/ws/pcb-detection")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
