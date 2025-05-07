@@ -16,18 +16,18 @@ function classNames(...classes) {
 export default function NavBar() {
     return (
         <Disclosure as="nav" className="bg-gray-900/80 backdrop-blur-lg border-b border-cyan-500/20 shadow-lg">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 lg:px-6">
                 <div className="relative flex h-16 items-center justify-between">
-                    <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
+                    <div className="absolute inset-y-0 left-0 flex items-center lg:hidden">
                         <DisclosureButton className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-cyan-900/30 hover:text-cyan-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500 transition-all duration-300">
                             <span className="absolute -inset-0.5" />
                             <span className="sr-only">Open main menu</span>
-                            <Bars3Icon className="block h-6 w-6 group-data-[open]:hidden" />
+                            <Bars3Icon className="block h-6 w-6 group-data-[open]:hidden " />
                             <XMarkIcon className="hidden h-6 w-6 group-data-[open]:block" />
                         </DisclosureButton>
                     </div>
 
-                    <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+                    <div className="flex flex-1 items-center justify-center ">
                         <div className="flex shrink-0 items-center">
                             <div className="flex items-center space-x-2">
                                 <div className="relative">
@@ -39,7 +39,7 @@ export default function NavBar() {
                                 </span>
                             </div>
                         </div>
-                        <div className="hidden sm:ml-8 sm:block">
+                        <div className="hidden lg:ml-8 lg:block">
                             <div className="flex space-x-1 mt-2">
                                 {navigation.map((item) => {
                                     const Icon = item.icon;
@@ -77,7 +77,7 @@ export default function NavBar() {
                 </div>
             </div>
 
-            <DisclosurePanel className="sm:hidden">
+            <DisclosurePanel className="lg:hidden">
                 <div className="space-y-1 px-2 pb-3 pt-2 ">
                     {navigation.map((item) => {
                         const Icon = item.icon;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import "./HomePage.css"
 
 export default function TestCam() {
     const [isStreaming, setIsStreaming] = useState(false);
@@ -98,8 +99,14 @@ export default function TestCam() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full grid-bg"></div>
+                <div className="absolute top-1/4 -left-20 w-60 h-60 bg-purple-700/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute bottom-1/3 -right-20 w-80 h-80 bg-cyan-700/20 rounded-full filter blur-3xl"></div>
+            </div>
+
+            <div className="max-w-4xl mx-auto  relative z-10">
                 <h1 className="text-2xl font-bold mb-4">Camera Test</h1>
 
                 <div className="flex flex-wrap gap-4 mb-4 items-center">
