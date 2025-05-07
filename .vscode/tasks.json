@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Frontend",
+            "type": "shell",
+            "command": "cd pcb-detection-frontend && npm start",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Backend",
+            "type": "shell",
+            "command": "cd pcb-detection-frontend/api && pcb-env\\Scripts\\activate && python 4ram_pcb.py", // สำหรับ Windows
+            "problemMatcher": [],
+            "presentation": {
+                "panel": "new"
+            }
+        },
+        {
+            "label": "start",
+            "dependsOn": [
+                "Start Frontend",
+                "Start Backend"
+            ],
+            "dependsOrder": "parallel"
+        }
+    ]
+}

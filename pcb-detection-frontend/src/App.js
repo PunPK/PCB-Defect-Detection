@@ -8,9 +8,11 @@ import {
 import React, { useState } from "react";
 import Home from "./page/homePage.js";
 import NavBar from "./components/NavBar.js";
-import HomeTest from "./page/homeTest.js";
+import CamDetectPCB from "./page/CamdetectPCB.js";
 import TestOpenCam from "./page/testOpenCam.js";
 import PCBLiveDetection from "./page/testPCBdetector.js";
+import PCBVerificationPage from "./page/uploadPCBChecked.js";
+import FileDetectPCB from "./page/FiledetectPCB.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -20,9 +22,10 @@ function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/test" element={<HomeTest />} />
+        <Route path="/camDetectPCB" element={<CamDetectPCB />} />
+        <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
         <Route path="/testcam" element={<TestOpenCam />} />
-        <Route path="/testDetection" element={<PCBLiveDetection />} />
+        <Route path="/PCBVerification" element={<PCBVerificationPage />} />
       </Routes>
     </Router>
   );
