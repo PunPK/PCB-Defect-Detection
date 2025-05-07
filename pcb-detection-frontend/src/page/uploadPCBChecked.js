@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, Edit2, Download, CheckCircle, AlertCircle, Cpu, Layers, X, ChevronRight, Hexagon, ArchiveX, Webcam, BadgeCheck } from "lucide-react"
+import { Upload, Edit2, Download, CheckCircle, AlertCircle, Cpu, Layers, X, ChevronRight, Hexagon, ArchiveX, Webcam, BadgeCheck, Check } from "lucide-react"
 import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import "./uploadPage.css"
@@ -281,31 +281,33 @@ export default function PCBVerificationPage() {
                                         !preAnalysisPCB ? (
                                             analysisPCB ? (
                                                 <div className="w-full h-full flex flex-col">
-                                                    <div className="flex-1 flex flex-col items-center justify-center p-4 border border-dashed border-cyan-800/50 rounded-lg mb-4 relative overflow-hidden bg-gray-950">
-                                                        <div className="w-full h-full flex flex-col">
-                                                            <div className="relative mb-4 gradient-border-blue rounded-lg overflow-hidden">
+                                                    <div className="flex flex-row gap-6 max-w-4xl mx-auto p-6 bg-gray-900 rounded-lg border border-gray-800 shadow-lg">
+                                                        {/* Left Column - Image */}
+                                                        <div className="w-1/2 flex flex-col">
+                                                            <div className="bg-black rounded-lg flex items-center justify-center h-64 border border-gray-700 mb-4">
                                                                 <img
                                                                     src={analysisPCB.url}
                                                                     alt={analysisPCB.name}
-                                                                    className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
+                                                                    className="max-h-full max-w-full object-contain"
                                                                 />
-                                                                {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
                                                             </div>
 
-                                                            <div className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 mb-4 border border-gray-800">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse-blue"></div>
-                                                                    <span className="text-sm text-gray-300 truncate max-w-[160px]">{analysisPCB.name}</span>
+                                                            <div className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg border border-gray-700">
+                                                                <div className="flex items-center">
+                                                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
+                                                                    <span className="text-sm text-gray-300 truncate max-w-[160px]">
+                                                                        {analysisPCB.name}
+                                                                    </span>
                                                                 </div>
                                                                 <button
                                                                     onClick={removeAnalysisImage}
-                                                                    className="text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                                                    className="text-gray-400 hover:text-red-400 transition-colors"
                                                                 >
                                                                     <X className="h-4 w-4" />
                                                                 </button>
                                                             </div>
 
-                                                            <div className="mt-auto">
+                                                            <div className="mt-2">
                                                                 <div className="flex items-center justify-center gap-2 mb-3">
                                                                     <div className="flex items-center text-green-400 text-sm">
                                                                         <CheckCircle className="h-4 w-4 mr-1" />
@@ -315,8 +317,8 @@ export default function PCBVerificationPage() {
 
                                                                 <Button
                                                                     variant="secondary"
-                                                                    className="w-full text-sm "
-                                                                    onClick={removeAnalysisImage}
+                                                                    className="w-full text-sm"
+                                                                    onClick={removeOriginalImage}
                                                                     icon={<ArchiveX className="h-4 w-4" />}
                                                                 >
                                                                     Delete PCB IMAGE
@@ -324,46 +326,54 @@ export default function PCBVerificationPage() {
                                                             </div>
                                                         </div>
 
-                                                        {/* Icon */}
-                                                        <div className="w-16 h-16 rounded-full bg-gray-800/80 flex items-center justify-center mb-4 z-10">
-                                                            <Cpu className="h-8 w-8 text-cyan-400" />
-                                                        </div>
-
-                                                        {/* Title */}
-                                                        <h3 className="text-cyan-400 text-lg font-medium text-center mb-1 z-10">
-                                                            PCB Quality Control System
-                                                        </h3>
-                                                        <p className="text-gray-400 text-sm text-center mb-4 z-10">
-                                                            Click the button "START ANALYSIS" to start verification
-                                                        </p>
-
-                                                        {/* Divider */}
-                                                        <div className="flex items-center my-4 z-10">
-                                                            <div className="h-px w-8 bg-gray-700"></div>
-                                                            <span className="text-gray-600 text-xs mx-2"></span>
-                                                            <div className="h-px w-8 bg-gray-700"></div>
-                                                        </div>
-
-                                                        {/* Process Details Box */}
-                                                        <div className="w-full max-w-md bg-gray-900/60 rounded-lg p-4 border border-gray-800 z-10">
-                                                            <div className="flex items-center gap-3 mb-3">
-                                                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
-                                                                <span className="text-xs text-cyan-400 font-mono">PROCESS DETAILS</span>
-                                                                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+                                                        {/* Right Column - Content */}
+                                                        <div className="w-1/2 flex flex-col">
+                                                            {/* Header Section */}
+                                                            <div className="text-left mb-6 ">
+                                                                <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                                                                    <Cpu className="h-6 w-6 text-cyan-400" />
+                                                                </div>
+                                                                <h1 className="text-cyan-400 text-xl font-semibold mb-1">
+                                                                    PCB Quality Control System
+                                                                </h1>
+                                                                <p className="text-gray-400 text-sm">
+                                                                    Click the button "START ANALYSIS" to start verification
+                                                                </p>
                                                             </div>
 
-                                                            <div className="grid grid-cols-2 gap-3 text-xs">
-                                                                {["Edge Detection", "Copper Tracing", "Quality Scoring", "Defect Mapping"].map((item) => (
-                                                                    <div key={item} className="flex items-center gap-2 text-gray-400">
-                                                                        <div className="w-2 h-2 rounded-full bg-cyan-500"></div>
-                                                                        <span>{item}</span>
+                                                            {/* Divider */}
+                                                            <div className="h-px bg-gray-700 my-4"></div>
+
+                                                            {/* Process Details Section */}
+                                                            <div className="mb-6">
+                                                                <h2 className="text-cyan-400 text-lg font-medium mb-3">
+                                                                    PROCESS DETAILS
+                                                                </h2>
+
+                                                                <div className="space-y-2 text-sm text-gray-300">
+                                                                    <div className="flex items-center">
+                                                                        <span className="w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
+                                                                        Edge Detection
                                                                     </div>
-                                                                ))}
+                                                                    <div className="flex items-center">
+                                                                        <span className="w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
+                                                                        Copper Tracing
+                                                                    </div>
+                                                                    <div className="flex items-center">
+                                                                        <span className="w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
+                                                                        Quality Scoring
+                                                                    </div>
+                                                                    <div className="flex items-center">
+                                                                        <span className="w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
+                                                                        Defect Mapping
+                                                                    </div>
+                                                                </div>
                                                             </div>
+
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-2 gap-3 mt-5">
                                                         <Button
                                                             variant="primary"
                                                             className="w-full"
@@ -454,8 +464,8 @@ export default function PCBVerificationPage() {
 
                                                 </div>
                                             )
-                                        ) : <div className="space-y-6">
-                                            <div className="mt-4">
+                                        ) : <div className="space-y-6 ">
+                                            <div className="mt-1">
                                                 <div className="flex flex-col items-center">
                                                     <div
                                                         className="relative group cursor-pointer"
@@ -535,6 +545,28 @@ export default function PCBVerificationPage() {
                             <span className="font-mono">ANALYSIS</span>
                         </div>
                     </div>
+                    {previewImage && (
+                        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={closePreview}>
+                            <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                                <button
+                                    className="absolute -top-10 right-0 text-white hover:text-gray-300"
+                                    onClick={closePreview}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                                <img
+                                    src={previewImage.url}
+                                    alt={previewImage.name}
+                                    className="max-w-full max-h-[80vh] object-contain mx-auto"
+                                />
+                                <div className="mt-2 text-center text-white">
+                                    {previewImage.name}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>
