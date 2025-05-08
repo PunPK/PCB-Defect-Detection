@@ -94,7 +94,7 @@ class CameraManager:
         self.camera: Optional[cv2.VideoCapture] = None
         self.active_connections = 0
         self.lock = asyncio.Lock()
-        self.frame_interval = 0.1  # ~10 FPS
+        self.frame_interval = 0.08
 
     async def get_camera(self):
         async with self.lock:
