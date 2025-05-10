@@ -250,8 +250,7 @@ def hsv_process_pcb_image(image_pcb):
     # แปลงภาพเป็น HSV (เหมาะสำหรับการเลือกสี)
     hsv = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2HSV)
 
-    # กำหนดช่วงสีทองแดงใน HSV
-    # ค่าเหล่านี้可能需要ปรับตามภาพจริงของคุณ
+
     lower_copper = np.array([5, 50, 50])  # Hue=0-10 (สีส้ม-แดง)
     upper_copper = np.array([20, 255, 255])  # ปรับค่า Hue สูงสุดตามต้องการ
 
