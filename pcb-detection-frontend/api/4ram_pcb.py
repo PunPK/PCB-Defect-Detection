@@ -250,7 +250,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 break
 
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower_copper = np.array([5, 30, 30])
+            lower_copper = np.array([5, 30, 5])
             upper_copper = np.array([45, 255, 255])
             mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
