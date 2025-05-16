@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import random
 
 
 def expand_contour(contour, percentage):
@@ -139,7 +140,8 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # กำหนดช่วงสีทองแดงใน HSV
-        lower_copper = np.array([5, 50, 50])  # 5 0 0
+        lower_copper = np.array([3, 0, 0])
+        # lower_copper = np.array([5, 30, 5])
         upper_copper = np.array([45, 255, 255])
 
         # สร้าง mask สำหรับสีทองแดง
@@ -216,10 +218,12 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         # กด 'q' เพื่อออก
         if key == ord("q"):
             break
-        # กด 's' เพื่อบันทึกภาพปัจจุบัน
         elif key == ord("s"):
             if image_pcb is not None:
-                print("PCB image saved successfully")
+                num = random.randint(1000, 9999)
+                save_path = f"../pcb-dataset/pcb/5_pcb_output{num}.jpg"
+                cv2.imwrite(save_path, image_pcb)
+                print(f"PCB image saved successfully to {save_path}")
                 break
             else:
                 print("No PCB detected to save")
@@ -250,10 +254,8 @@ def hsv_process_pcb_image(image_pcb):
     # แปลงภาพเป็น HSV (เหมาะสำหรับการเลือกสี)
     hsv = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2HSV)
 
-    # กำหนดช่วงสีทองแดงใน HSV
-    # ค่าเหล่านี้可能需要ปรับตามภาพจริงของคุณ
-    lower_copper = np.array([5, 50, 50])  # Hue=0-10 (สีส้ม-แดง)
-    upper_copper = np.array([20, 255, 255])  # ปรับค่า Hue สูงสุดตามต้องการ
+    lower_copper = np.array([5, 30, 5])
+    upper_copper = np.array([45, 255, 255])
 
     # สร้าง Mask สำหรับสีทองแดง
     copper_mask = cv2.inRange(hsv, lower_copper, upper_copper)

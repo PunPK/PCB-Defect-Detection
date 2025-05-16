@@ -2,31 +2,27 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# 📌 โหลดภาพต้นฉบับ
-image_path = "test_functions/test.png"
-image = cv2.imread(image_path)
-hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+# โหลดภาพ
+image_path = "test_functions/testpcb.jpg"
+image_pcb = cv2.imread(image_path)
+image_rgb = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2RGB)
 
-# 📌 กำหนดช่วงสีเทาใน HSV
-lower_gray = np.array([0, 0, 50])     # ค่า HSV ต่ำสุด (H=0, S=0, V=50)
-upper_gray = np.array([180, 50, 200]) # ค่า HSV สูงสุด (H=180, S=50, V=200)
+# แปลงภาพเป็น HSV เพื่อคัดกรองสี
+hsv = cv2.cvtColor(image_pcb, cv2.COLOR_BGR2HSV)
 
-# 📌 ใช้ inRange() เพื่อสร้าง Mask ของสีเทา
-mask = cv2.inRange(hsv, lower_gray, upper_gray)
+# กำหนดช่วงค่าสำหรับ "สีน้ำตาลเข้ม" (Hue โดยประมาณระหว่าง 10-30)
+lower_brown = np.array([15, 50, 20])
+upper_brown = np.array([30, 255, 100])
 
-# 📌 ใช้ Mask ดึงเฉพาะส่วนที่เป็นสีเทา
-gray_part = cv2.bitwise_and(image, image, mask=mask)
+# สร้าง mask สำหรับสีน้ำตาลเข้ม
+brown_mask = cv2.inRange(hsv, lower_brown, upper_brown)
 
-# 📌 แสดงผล
-plt.figure(figsize=(10,5))
-plt.subplot(1, 2, 1)
-plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-plt.title("Original Image")
-plt.axis("off")
+# แสดงเฉพาะบริเวณสีน้ำตาลเข้มในภาพ RGB
+brown_only = cv2.bitwise_and(image_rgb, image_rgb, mask=brown_mask)
 
-plt.subplot(1, 2, 2)
-plt.imshow(cv2.cvtColor(gray_part, cv2.COLOR_BGR2RGB))
-plt.title("Extracted Gray Areas")
-plt.axis("off")
-
+# แสดงผลลัพธ์
+plt.figure(figsize=(15, 5))
+plt.subplot(1, 3, 1), plt.imshow(image_rgb), plt.title("Original Image")
+plt.subplot(1, 3, 2), plt.imshow(brown_mask, cmap="gray"), plt.title("Brown Mask")
+plt.subplot(1, 3, 3), plt.imshow(brown_only), plt.title("Brown Only")
 plt.show()
