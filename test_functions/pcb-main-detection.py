@@ -4,9 +4,16 @@ import matplotlib.pyplot as plt
 
 # โหลดภาพและ preprocessing (เหมือนเดิม)C:\Users\ASUS\Desktop\pcb_detection\pcb-dataset\pcb\pcb_test2.png
 # template = cv2.imread("pcb-dataset\pcb\pcb_test2.png", cv2.IMREAD_GRAYSCALE)
-template = cv2.imread("pcb-dataset/pcb/2_pcb_output8954.jpg", cv2.IMREAD_GRAYSCALE)
-# defective = cv2.imread("pcb-dataset/pcb/3_pcb_output3069.jpg", cv2.IMREAD_GRAYSCALE)
-defective = cv2.imread("pcb-dataset/pcb/4_pcb_output2371.jpg", cv2.IMREAD_GRAYSCALE)
+template = cv2.imread("pcb-dataset/pcb/2_pcb_output9493.jpg", cv2.IMREAD_GRAYSCALE)
+defective = cv2.imread("pcb-dataset/pcb/3_pcb_output3069.jpg", cv2.IMREAD_GRAYSCALE)
+# defective = cv2.imread("pcb-dataset/pcb/1_pcb_output4505.jpg", cv2.IMREAD_GRAYSCALE)
+
+min_height = min(template.shape[0], defective.shape[0])
+min_width = min(template.shape[1], defective.shape[1])
+
+# Resize ทั้งสองภาพให้มีขนาดเท่ากันตามขนาดที่เล็กที่สุด
+template = cv2.resize(template, (min_width, min_height))
+defective = cv2.resize(defective, (min_width, min_height))
 
 
 # Preprocessing
