@@ -154,7 +154,7 @@ export default function PCBVerificationPage() {
 
     return (
         <>
-            <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
+            <div className="min-h-screen bg-[#050816] text-white p-2 relative overflow-hidden">
                 {/* Background elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full grid-bg opacity-30"></div>
@@ -318,7 +318,7 @@ export default function PCBVerificationPage() {
                                                                 <Button
                                                                     variant="secondary"
                                                                     className="w-full text-sm"
-                                                                    onClick={removeOriginalImage}
+                                                                    onClick={removeAnalysisImage}
                                                                     icon={<ArchiveX className="h-4 w-4" />}
                                                                 >
                                                                     Delete PCB IMAGE
@@ -327,7 +327,7 @@ export default function PCBVerificationPage() {
                                                         </div>
 
                                                         {/* Right Column - Content */}
-                                                        <div className="w-1/2 flex flex-col">
+                                                        <div className="w-1/2 flex flex-col visibility: hidden;">
                                                             {/* Header Section */}
                                                             <div className="text-left mb-6 ">
                                                                 <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
@@ -373,21 +373,13 @@ export default function PCBVerificationPage() {
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-3 mt-5">
+                                                    <div className="mt-5 flex justify-center pr-6 pl-6">
                                                         <Button
                                                             variant="primary"
                                                             className="w-full"
                                                             icon={<Cpu className="h-4 w-4" />}
                                                         >
                                                             START ANALYSIS
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            className="w-full"
-                                                            icon={<Download className="h-4 w-4" />}
-                                                            disabled={true}
-                                                        >
-                                                            EXPORT REPORT
                                                         </Button>
                                                     </div>
 
