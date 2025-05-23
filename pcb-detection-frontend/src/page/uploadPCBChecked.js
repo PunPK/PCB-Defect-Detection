@@ -3,6 +3,7 @@ import { Upload, Edit2, Download, CheckCircle, AlertCircle, Cpu, Layers, X, Chev
 import { useNavigate } from "react-router"
 import { motion } from "framer-motion"
 import "./uploadPage.css"
+import Delete from "../components/Delete"
 
 export default function PCBVerificationPage() {
     const [originalPCB, setOriginalPCB] = useState(null)
@@ -318,11 +319,13 @@ export default function PCBVerificationPage() {
                                                                 <Button
                                                                     variant="secondary"
                                                                     className="w-full text-sm"
+                                                                    // onClick={removeAnalysisImage}
                                                                     onClick={removeAnalysisImage}
                                                                     icon={<ArchiveX className="h-4 w-4" />}
                                                                 >
                                                                     Delete PCB IMAGE
                                                                 </Button>
+
                                                             </div>
                                                         </div>
 

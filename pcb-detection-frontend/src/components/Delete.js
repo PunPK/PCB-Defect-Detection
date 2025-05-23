@@ -1,5 +1,5 @@
-import React from "react";
 import PropTypes from "prop-types";
+import { useState } from 'react'
 
 const Delete = ({
     onDelete,
@@ -9,7 +9,7 @@ const Delete = ({
     deleteText = "Delete",
     size = "md",
 }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     const openModal = () => setIsOpen(true);
     const closeModal = () => setIsOpen(false);
