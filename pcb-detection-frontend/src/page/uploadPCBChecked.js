@@ -381,6 +381,7 @@ export default function PCBVerificationPage() {
                                                             variant="primary"
                                                             className="w-full"
                                                             icon={<Cpu className="h-4 w-4" />}
+                                                            onClick={() => { navigate("/Steps1") }}
                                                         >
                                                             START ANALYSIS
                                                         </Button>

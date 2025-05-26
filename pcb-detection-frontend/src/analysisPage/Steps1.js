@@ -19,7 +19,10 @@ export default function Step1() {
           การแปลงรูปภาพจากรูปแบบสีปกติให้กลายเป็นขาวดำเพื่อใช้ในการดำเนินการตรวจสอบข้อผิดพลาด
         </p>
         <button
-          onClick={() => { setActiveStep(prev => Math.max(prev - 1, 0)); navigate(-1); }}
+          onClick={() => {
+            setActiveStep(prev => Math.max(prev - 1, 0));
+            navigate(-1);
+          }}
           className="mr-2 px-4 py-2 bg-gray-200 rounded"
         >
           Previous
