@@ -121,6 +121,12 @@ class CameraManager:
 camera_manager = CameraManager()
 
 
+def image_preprocess(img):
+    img = cv2.GaussianBlur(img, (5, 5), 0)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    return clahe.apply(img)
+
+
 def image_to_base64(image):
     _, buffer = cv2.imencode(".jpg", image)
     return base64.b64encode(buffer).decode("utf-8")
@@ -143,7 +149,7 @@ async def detect_pcb_from_image(file: UploadFile = File(...)):
 
         # Process the image
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        lower_copper = np.array([5, 30, 30])
+        lower_copper = np.array([3, 0, 0])
         upper_copper = np.array([45, 255, 255])
         mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
@@ -183,6 +189,149 @@ async def detect_pcb_from_image(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error(f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/analysis/prepare")
+async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
+    try:
+        if len(files) != 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Exactly 2 files (template and analysis) are required",
+            )
+
+        images = []
+        for file in files:
+            contents = await file.read()
+            nparr = np.frombuffer(contents, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is None:
+                raise HTTPException(
+                    status_code=400, detail=f"Could not decode image {file.filename}"
+                )
+            images.append(img)
+
+        template = cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY)
+        defective = cv2.cvtColor(images[1], cv2.COLOR_BGR2GRAY)
+
+        min_height = min(template.shape[0], defective.shape[0])
+        min_width = min(template.shape[1], defective.shape[1])
+        template = cv2.resize(template, (min_width, min_height))
+        defective = cv2.resize(defective, (min_width, min_height))
+
+        original_template = template.copy()
+        original_defective = defective.copy()
+
+        template_proc = image_preprocess(template)
+        defective_proc = image_preprocess(defective)
+
+        orb = cv2.ORB_create(
+            nfeatures=20000, scaleFactor=1.2, nlevels=8, edgeThreshold=15, patchSize=31
+        )
+        kp1, des1 = orb.detectAndCompute(template_proc, None)
+        kp2, des2 = orb.detectAndCompute(defective_proc, None)
+
+        if des1 is None or des2 is None or len(des1) < 2 or len(des2) < 2:
+            return {
+                "detected": False,
+                "message": "Not enough features for matching",
+                "images": {
+                    "template": image_to_base64(
+                        cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
+                    ),
+                    "defective": image_to_base64(
+                        cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
+                    ),
+                },
+            }
+
+        # Feature Matching and Homography calculation
+        FLANN_INDEX_LSH = 6
+        index_params = dict(
+            algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1
+        )
+        search_params = dict(checks=50)
+        flann = cv2.FlannBasedMatcher(index_params, search_params)
+        matches = flann.knnMatch(des1, des2, k=2)
+        good_matches = [m for m, n in matches if m.distance < 0.7 * n.distance][:200]
+
+        if len(good_matches) < 10:
+            return {
+                "detected": False,
+                "message": "Not enough good matches for alignment",
+                "images": {
+                    "template": image_to_base64(
+                        cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
+                    ),
+                    "defective": image_to_base64(
+                        cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
+                    ),
+                },
+            }
+
+        src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(
+            -1, 1, 2
+        )
+        dst_pts = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(
+            -1, 1, 2
+        )
+
+        H, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
+        aligned = cv2.warpPerspective(
+            defective, H, (template.shape[1], template.shape[0])
+        )
+
+        # Calculate difference
+        diff = cv2.absdiff(template, aligned)
+
+        # Thresholding
+        _, thresh_otsu = cv2.threshold(
+            diff, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        thresh_range = cv2.inRange(diff, 100, 255)
+        combined_thresh = cv2.bitwise_or(thresh_otsu, thresh_range)
+
+        # Morphology operations
+        kernel = np.ones((3, 3), np.uint8)
+        cleaned = cv2.morphologyEx(
+            combined_thresh, cv2.MORPH_OPEN, kernel, iterations=1
+        )
+        cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+        # Find contours
+        contours, _ = cv2.findContours(
+            cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+
+        # Create result image
+        mask_diff = np.zeros_like(cleaned)
+        cv2.drawContours(mask_diff, contours, -1, (255), thickness=cv2.FILLED)
+        result = cv2.bitwise_and(aligned, aligned, mask=mask_diff)
+
+        # Convert all images to BGR for consistent display in React
+        template_bgr = cv2.cvtColor(template, cv2.COLOR_GRAY2BGR)
+        defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
+        aligned_bgr = cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR)
+        diff_bgr = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR)
+        cleaned_bgr = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2BGR)
+        result_bgr = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+
+        return {
+            "detected": True,
+            "message": "PCB analysis completed successfully",
+            "images": {
+                "template": image_to_base64(template_bgr),
+                "defective": image_to_base64(defective_bgr),
+                "aligned": image_to_base64(aligned_bgr),
+                "diff": image_to_base64(diff_bgr),
+                "cleaned": image_to_base64(cleaned_bgr),
+                "result": image_to_base64(result_bgr),
+            },
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing images: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 const steps = [
     {
         title: "Steps 1",
-        description: "แปลงรูปภาพสีไปเป็นเป็นสีขาวดำ",
+        description: "เตรียมความพร้อมของรูปภาพ PCB ที่จะใช้ในการตรวจสอบ",
         icon: <User className="w-5 h-5" />,
         path: "/Steps1"
     },
