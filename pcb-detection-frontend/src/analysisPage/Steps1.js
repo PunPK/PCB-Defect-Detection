@@ -137,27 +137,27 @@ export default function Step1() {
 
       <div className="lg:ml-64 p-8 flex-1 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-start mb-12">
+          <div className="flex flex-col lg:flex-row justify-between items-start mb-8 lg:mb-12 gap-6">
             <div className="max-w-2xl">
-              <span className="text-blue-400 font-mono text-xl tracking-widest">STEP 01</span>
-              <h2 className="mb-3 text-4xl font-bold text-white">
+              <span className="text-blue-400 font-mono text-lg lg:text-xl tracking-widest">STEP 01</span>
+              <h2 className="mb-3 text-2xl lg:text-4xl font-bold text-white">
                 Prepare PCB Images for Inspection
               </h2>
-              <p className="text-gray-400 font-light text-lg max-w-3xl leading-relaxed">
+              <p className="text-gray-400 font-light text-base lg:text-lg max-w-3xl leading-relaxed">
                 แบ่งไปด้วยหลายๆขั้นตอน ตั้งแต่การแปลงรูปภาพจากรูปแบบสีปกติให้กลายเป็นขาวดำ และทำให้รูปภาพอยู่ในพิกัดเดียวกัน และความจับความต่างกันของ PCB ทั้ง 2 แผ่น เพื่อใช้ในการตรวจสอบข้อผิดพลาด
               </p>
             </div>
-            <div className="flex space-x-4 mt-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
                 onClick={() => {
                   getImg()
                 }}
-                className="flex items-center justify-center px-8 py-4 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
+                className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
               >
-                <p className="font-light text-xl leading-relaxed">
+                <p className="font-light text-lg sm:text-xl leading-relaxed">
                   Reset Process
                 </p>
-                <svg className="w-5 h-5 ml-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <IterationCcw />
                 </svg>
               </button>
@@ -166,12 +166,12 @@ export default function Step1() {
                   setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
                   navigate("/Steps2");
                 }}
-                className="flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-all duration-300"
+                className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-all duration-300"
               >
-                <p className="font-light text-xl leading-relaxed">
+                <p className="font-light text-lg sm:text-xl leading-relaxed">
                   Next Step
                 </p>
-                <svg className="w-5 h-5 ml-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>

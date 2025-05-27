@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { User, Image, Download, Check, ChevronRight, Lock, Menu, X } from 'lucide-react';
+import { Check, ChevronRight, Lock, Menu, X, BrainCog, Combine, FileBadge } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 
 const steps = [
     {
         title: "Step 01",
         description: "Prepare PCB images for inspection",
-        icon: <User className="w-4 h-4" />,
+        icon: <Combine className="w-4 h-4" />,
         path: "/Steps1"
     },
     {
         title: "Step 02",
         description: "Analyze and compare PCB images with AI",
-        icon: <Image className="w-4 h-4" />,
+        icon: <BrainCog className="w-4 h-4" />,
         path: "/Steps2"
     },
     {
         title: "Step 03",
         description: "View and export results PCB",
-        icon: <Download className="w-4 h-4" />,
+        icon: <FileBadge className="w-4 h-4" />,
         path: "/Steps3"
     },
 ];
@@ -203,7 +203,30 @@ const AnalysisBar = ({ activeStep }) => {
                         <div className="text-right mt-2 text-xs text-gray-400">
                             Step {activeStep + 1} of {steps.length}
                         </div>
+
                     </div>
+                    <button
+                        onClick={() => {
+                            navigate("/PCBVerification");
+                        }}
+                        className="flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg text-white font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/30 border border-blue-400/20 hover:border-blue-300/30"
+                    >
+                        <svg
+                            className="w-5 h-5 mr-2 transform -scale-x-100"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 19l-7-7 7-7"
+                            />
+                        </svg>
+                        <span className="text-white/90 tracking-wide">ย้อนกลับ</span>
+                        <div className="absolute inset-0 rounded-lg bg-blue-400/10 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+                    </button>
                 </div>
             </div>
 
