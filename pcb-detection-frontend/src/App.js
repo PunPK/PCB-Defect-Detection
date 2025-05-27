@@ -13,6 +13,7 @@ import FileDetectPCB from "./page/FiledetectPCB.js";
 import AboutUs from "./page/aboutUsPage.js";
 import TestCam from "./page/TestCam.js";
 import Steps1 from "./analysisPage/Steps1.js"
+import Steps2 from "./analysisPage/Steps2.js"
 import LayoutWithNav from "./LayoutWithNav.js";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
 
           {/* without NavBar */}
           <Route path="/Steps1" element={<Steps1 />} />
+          <Route path="/Steps2" element={<Steps2 />} />
         </Routes>
       </Router>
     </>
