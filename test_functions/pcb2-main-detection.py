@@ -146,7 +146,7 @@ def visualize_results(template, defective, aligned, diff, cleaned, contours):
 
 def main():
     # ระบุ path ของภาพ
-    template_path = "pcb-dataset/pcb/pcb_test2.png"
+    template_path = "pcb-dataset/pcb/3_pcb_output2034.jpg"
     defective_path = "pcb-dataset/pcb/4_pcb_output2371.jpg"
 
     try:

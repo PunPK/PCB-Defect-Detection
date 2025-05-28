@@ -215,6 +215,13 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         template = cv2.cvtColor(images[0], cv2.COLOR_BGR2GRAY)
         defective = cv2.cvtColor(images[1], cv2.COLOR_BGR2GRAY)
 
+        _, template = cv2.threshold(
+            template, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+        _, defective = cv2.threshold(
+            defective, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
+
         min_height = min(template.shape[0], defective.shape[0])
         min_width = min(template.shape[1], defective.shape[1])
         template = cv2.resize(template, (min_width, min_height))
