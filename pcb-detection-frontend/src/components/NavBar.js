@@ -1,12 +1,13 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
-import { Cctv, Brain, CircuitBoard, Home, Upload, Hexagon, Award } from 'lucide-react'
+import { Cctv, Brain, CircuitBoard, Home, Upload, Hexagon, Award, Factory } from 'lucide-react'
 
 const navigation = [
     { name: 'HomePage', href: '/', current: false, icon: Home },
     { name: 'PCB Verification', href: '/PCBVerification', current: false, icon: CircuitBoard },
     { name: 'Test Camera', href: '/testcam', current: false, icon: Cctv },
     { name: 'About Us', href: '/AboutUs', current: false, icon: Award },
+    { name: 'Factory Workflow', href: '/factoryWorkflow', current: false, icon: Factory },
 ]
 
 function classNames(...classes) {

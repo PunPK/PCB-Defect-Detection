@@ -292,6 +292,9 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         # Calculate difference
         diff = cv2.absdiff(template, aligned)
 
+        mask = cv2.inRange(diff, 50, 225)
+        specific_gray = cv2.bitwise_and(diff, diff, mask=mask)
+
         # Thresholding
         _, thresh_otsu = cv2.threshold(
             diff, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
@@ -321,7 +324,7 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
         aligned_bgr = cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR)
         diff_bgr = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR)
-        cleaned_bgr = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2BGR)
+        cleaned_bgr = cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR)
         result_bgr = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
 
         return {
@@ -344,7 +347,7 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
 
 @app.websocket("/ws/test-cam")
 async def websocket_endpoint(websocket: WebSocket):
-    # Accept the WebSocket connection explicitly
+
     await websocket.accept()
 
     camera_manager.active_connections += 1
