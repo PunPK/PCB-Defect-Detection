@@ -77,6 +77,8 @@ export default function HomePage() {
             URL.revokeObjectURL(originalImage.url)
         }
         setOriginalImage(null)
+        sessionStorage.removeItem("PreOriginalImage")
+        sessionStorage.removeItem("OriginalImage")
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
@@ -184,7 +186,7 @@ export default function HomePage() {
                                         <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
                                             ดำเนินการตรวจจับ
                                         </span>
-                                    </div>           
+                                    </div>
                                 </button>
                             </div>
                         </div>

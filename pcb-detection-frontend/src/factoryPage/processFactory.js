@@ -180,6 +180,7 @@ export default function ProcessFactoryWorkflow() {
             URL.revokeObjectURL(originalImageFactory.url)
         }
         setOriginalImageFactory(null)
+
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
@@ -231,7 +232,7 @@ export default function ProcessFactoryWorkflow() {
                 <div className="absolute top-0 left-0 w-2/5 h-full bg-gradient-to-r from-red-900/40 via-pink-600/20 to-transparent"></div>
             </div>
 
-            <div className="max-w-md mx-auto relative z-10">
+            <div className="max-w-md mx-auto relative z-10 ">
                 <header className="mb-10 text-center">
                     <div className="inline-flex items-center justify-center mb-4">
                         <div className="relative">
@@ -247,7 +248,7 @@ export default function ProcessFactoryWorkflow() {
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
-                <div className="w-full lg:w-[30%] h-full">
+                <div className="w-full lg:w-[30%] h-full ">
                     <div className="backdrop-blur-sm bg-black/40 rounded-xl p-6 border border-red-500/30 glow-red tech-border h-full">
                         <h2 className="text-xl font-bold mb-6 text-center relative">
                             <span className="bg-gradient-to-r from-orange-400 to-red-500 text-transparent bg-clip-text">
@@ -337,9 +338,14 @@ export default function ProcessFactoryWorkflow() {
                     </div>
                 </div>
 
-                <div className="w-full lg:w-[70%] h-full">
-
-                    <div className="max-w-4xl mx-auto  relative z-10">
+                <div className="w-full lg:w-[70%] h-auto">
+                    <div className="backdrop-blur-sm bg-black/40 rounded-xl p-6 border border-cyan-500/30 glow-blue tech-border h-full">
+                        <h2 className="text-xl font-bold mb-6 text-center relative">
+                            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text">
+                                PCB Factory Workflow Detection
+                            </span>
+                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-24 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
+                        </h2>
                         <div className="flex flex-wrap gap-4 mb-4 items-center">
                             <button
                                 onClick={isStreaming ? stopDetection : startDetection}
@@ -399,10 +405,16 @@ export default function ProcessFactoryWorkflow() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="backdrop-blur-sm bg-gray-900/40 rounded-2xl p-6 border border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
+                className="backdrop-blur-sm bg-gray-900/40 rounded-2xl mt-7 p-6 border border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
             >
                 {originalImageFactory ? (
                     <div className="space-y-6">
+                        <h2 className="text-xl font-bold mb-6 text-center relative">
+                            <span className="bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
+                                Result of PCB Factory Workflow Detection
+                            </span>
+                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-32 bg-gradient-to-r from-pink-400 to-purple-500"></div>
+                        </h2>
                         <div className="mt-4">
                             <div className="flex flex-col items-center">
                                 <div

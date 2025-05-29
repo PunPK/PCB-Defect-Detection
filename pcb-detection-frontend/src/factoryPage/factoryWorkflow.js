@@ -71,6 +71,8 @@ export default function HomeFactoryWorkflow() {
             URL.revokeObjectURL(originalImageFactory.url)
         }
         setOriginalImageFactory(null)
+        sessionStorage.removeItem("PreOriginalImageFactory")
+        sessionStorage.removeItem("OriginalImageFactory")
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
