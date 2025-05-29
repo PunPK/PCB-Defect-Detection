@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react"
-import { Upload, X, Hexagon, Cpu, Webcam, BadgeCheck, Factory } from "lucide-react"
+import { Upload, X, Hexagon, Cpu, Webcam, BadgeCheck, Factory, Edit2, Download, CheckCircle, AlertCircle, Layers, ChevronRight, ArchiveX, Check } from "lucide-react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router";
-import "../page/HomePage.css"
+import "../page/uploadPage.css"
+
+import { Button } from "../page/uploadPCBChecked.js";
 export default function ProcessFactoryWorkflow() {
     const [originalImageFactory, setOriginalImageFactory] = useState(null)
     const [analysisImage, setAnalysisImage] = useState(null)
@@ -11,6 +13,7 @@ export default function ProcessFactoryWorkflow() {
     const [pcbImage, setPcbImage] = useState(null);
     const [isStreaming, setIsStreaming] = useState(false);
     const [status, setStatus] = useState("Disconnected");
+    const [fileName, setFileName] = useState("")
     const [fps, setFps] = useState(0);
     // const [showCamera, setShowCamera] = useState(false)
     // const videoRef = useRef(null)
@@ -206,14 +209,26 @@ export default function ProcessFactoryWorkflow() {
         setPreviewImage(null)
     }
 
+    const removeOriginalImage = () => {
+        // console.log(originalPCB)
+        if (originalImageFactory && originalImageFactory.url) {
+            URL.revokeObjectURL(originalImageFactory.url)
+            sessionStorage.removeItem("OriginalImage")
+        }
+        setOriginalImageFactory(null)
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ""
+        }
+    }
+
     return (
 
 
         <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
             <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full grid-bg"></div>
-                <div className="absolute top-1/4 -left-20 w-60 h-60 bg-purple-700/20 rounded-full filter blur-3xl"></div>
-                <div className="absolute bottom-1/3 -right-20 w-80 h-80 bg-cyan-700/20 rounded-full filter blur-3xl"></div>
+                <div className="absolute top-0 left-0 w-full h-full grid-bg opacity-30"></div>
+                <div className="absolute top-0 left-0 w-full h-full circuit-pattern"></div>
+                <div className="absolute top-0 left-0 w-2/5 h-full bg-gradient-to-r from-red-900/40 via-pink-600/20 to-transparent"></div>
             </div>
 
             <div className="max-w-md mx-auto relative z-10">
@@ -231,58 +246,153 @@ export default function ProcessFactoryWorkflow() {
                 </header>
             </div>
 
-            <div className="max-w-4xl mx-auto  relative z-10">
-                <div className="flex flex-wrap gap-4 mb-4 items-center">
-                    <button
-                        onClick={isStreaming ? stopDetection : startDetection}
-                        className={`px-4 py-2 rounded-md font-medium ${isStreaming
-                            ? "bg-red-600 hover:bg-red-700"
-                            : "bg-green-600 hover:bg-green-700"
-                            }`}
-                    >
-                        {isStreaming ? "Stop" : "Start"}
-                    </button>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">Status:</span>
-                            <span
-                                className={`font-medium ${status.includes("Error")
-                                    ? "text-red-400"
-                                    : isStreaming
-                                        ? "text-green-400"
-                                        : "text-blue-400"
-                                    }`}
-                            >
-                                {status}
+            <div className="flex flex-col lg:flex-row gap-8">
+                <div className="w-full lg:w-[30%] h-full">
+                    <div className="backdrop-blur-sm bg-black/40 rounded-xl p-6 border border-red-500/30 glow-red tech-border h-full">
+                        <h2 className="text-xl font-bold mb-6 text-center relative">
+                            <span className="bg-gradient-to-r from-orange-400 to-red-500 text-transparent bg-clip-text">
+                                ORIGINAL PCB
                             </span>
-                        </div>
+                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-16 bg-gradient-to-r from-orange-400 to-red-500"></div>
+                        </h2>
 
-                        {isStreaming && (
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">FPS:</span>
-                                <span className="font-mono">{fps}</span>
-                            </div>
-                        )}
+                        <div className="bg-black rounded-lg p-4 min-h-[300px] flex flex-col items-center justify-center relative h-full">
+                            {originalImageFactory ? (
+                                <div className="w-full h-full flex flex-col">
+                                    <div className="relative mb-4 gradient-border-red rounded-lg overflow-hidden">
+                                        <img
+                                            src={originalImageFactory.url}
+                                            alt={originalImageFactory.name}
+                                            className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
+                                        />
+                                        {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
+                                    </div>
+
+                                    <div className="flex items-center justify-between bg-gray-900 rounded-md px-3 py-2 mb-4 border border-gray-800">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse-red"></div>
+                                            <span className="text-sm text-gray-300 truncate max-w-[160px]">{originalImageFactory.name}</span>
+                                        </div>
+                                        <button
+                                            onClick={removeOriginalImage}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-auto">
+                                        <div className="flex items-center justify-center gap-2 mb-3">
+                                            <div className="flex items-center text-green-400 text-sm">
+                                                <CheckCircle className="h-4 w-4 mr-1" />
+                                                <span>PCB LOADED</span>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            variant="danger"
+                                            className="w-full text-sm"
+                                            onClick={removeOriginalImage}
+                                            icon={<ArchiveX className="h-4 w-4" />}
+                                        >
+                                            Delete PCB IMAGE
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div
+                                    className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover-scale"
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center border border-red-500/30 mb-4 relative overflow-hidden">
+                                        <div className="absolute inset-0 bg-red-500/10 rounded-full animate-pulse-red"></div>
+                                        <Layers className="h-8 w-8 text-red-400" />
+                                    </div>
+                                    <p className="text-gray-400 mb-4 text-center text-sm">UPLOAD ORIGINAL PCB IMAGE</p>
+                                    {/* 
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleFileChange}
+                                            /> */}
+
+                                    <Button onClick={() => navigate("/")} variant="danger" className="text-sm" icon={<Upload className="h-4 w-4" />}>
+                                        UPLOAD IMAGE
+                                    </Button>
+                                </div>
+                            )}
+
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-lg">
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-10 h-10 rounded-full border-2 border-red-500 border-t-transparent animate-spin mb-3"></div>
+                                        <p className="text-red-400 text-sm font-mono">UPLOADING...</p>
+                                        <p className="text-gray-500 text-xs mt-1">{fileName}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-black rounded-lg overflow-hidden mb-4">
-                    {cameraFeed ? (
-                        <img
-                            src={cameraFeed}
-                            alt="Camera Feed with PCB Outline"
-                            className="w-full h-auto max-h-[70vh] object-contain"
-                        />
-                    ) : (
-                        <div className="bg-gray-900 h-72 flex items-center justify-center">
-                            <p className="text-gray-500">
-                                {isStreaming ? "Waiting for frames..." : "Camera feed inactive"}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                <div className="w-full lg:w-[70%] h-full">
 
+                    <div className="max-w-4xl mx-auto  relative z-10">
+                        <div className="flex flex-wrap gap-4 mb-4 items-center">
+                            <button
+                                onClick={isStreaming ? stopDetection : startDetection}
+                                className={`px-4 py-2 rounded-md font-medium ${isStreaming
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-green-600 hover:bg-green-700"
+                                    }`}
+                            >
+                                {isStreaming ? "Stop" : "Start"}
+                            </button>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">Status:</span>
+                                    <span
+                                        className={`font-medium ${status.includes("Error")
+                                            ? "text-red-400"
+                                            : isStreaming
+                                                ? "text-green-400"
+                                                : "text-blue-400"
+                                            }`}
+                                    >
+                                        {status}
+                                    </span>
+                                </div>
+
+                                {isStreaming && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-medium">FPS:</span>
+                                        <span className="font-mono">{fps}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="bg-black rounded-lg overflow-hidden mb-4">
+                            {cameraFeed ? (
+                                <img
+                                    src={cameraFeed}
+                                    alt="Camera Feed with PCB Outline"
+                                    className="w-full h-auto max-h-[70vh] object-contain"
+                                />
+                            ) : (
+                                <div className="bg-gray-900 h-72 flex items-center justify-center">
+                                    <p className="text-gray-500">
+                                        {isStreaming ? "Waiting for frames..." : "Camera feed inactive"}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                    </div>
+                </div>
             </div>
 
             <motion.div

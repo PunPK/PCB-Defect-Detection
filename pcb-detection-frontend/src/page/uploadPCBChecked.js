@@ -5,6 +5,36 @@ import { motion } from "framer-motion"
 import "./uploadPage.css"
 import Delete from "../components/Delete"
 
+const Button = ({ children, onClick, className, variant = "primary", icon, disabled }) => {
+    const baseStyles = "px-4 py-2 rounded-md font-medium transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+
+    const variants = {
+        primary:
+            "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-700/50 relative overflow-hidden group",
+        secondary:
+            "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-700/50 relative overflow-hidden group",
+        outline: "border border-gray-700 hover:border-cyan-500/70 bg-transparent hover:bg-gray-800/50 text-gray-300",
+        danger:
+            "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white border border-red-700/50 relative overflow-hidden group",
+    }
+
+    return (
+        <button
+            onClick={onClick}
+            className={`${baseStyles} ${variants[variant]} ${className || ""}`}
+            disabled={disabled}
+        >
+            {(variant === "primary" || variant === "secondary" || variant === "danger") && (
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+            )}
+            <span className="relative z-10 flex items-center gap-2">
+                {icon}
+                {children}
+            </span>
+        </button>
+    )
+}
+
 export default function PCBVerificationPage() {
     const [originalPCB, setOriginalPCB] = useState(null)
     const [analysisPCB, setAnalysisPCB] = useState(null)
@@ -123,35 +153,7 @@ export default function PCBVerificationPage() {
         setPreviewImage(null)
     }
 
-    const Button = ({ children, onClick, className, variant = "primary", icon, disabled }) => {
-        const baseStyles = "px-4 py-2 rounded-md font-medium transition-all duration-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
 
-        const variants = {
-            primary:
-                "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-700/50 relative overflow-hidden group",
-            secondary:
-                "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white border border-purple-700/50 relative overflow-hidden group",
-            outline: "border border-gray-700 hover:border-cyan-500/70 bg-transparent hover:bg-gray-800/50 text-gray-300",
-            danger:
-                "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white border border-red-700/50 relative overflow-hidden group",
-        }
-
-        return (
-            <button
-                onClick={onClick}
-                className={`${baseStyles} ${variants[variant]} ${className || ""}`}
-                disabled={disabled}
-            >
-                {(variant === "primary" || variant === "secondary" || variant === "danger") && (
-                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                    {icon}
-                    {children}
-                </span>
-            </button>
-        )
-    }
 
     return (
         <>
@@ -568,3 +570,5 @@ export default function PCBVerificationPage() {
         </>
     )
 }
+
+export { Button };

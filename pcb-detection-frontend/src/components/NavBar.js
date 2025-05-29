@@ -6,7 +6,7 @@ const navigation = [
     { name: 'HomePage', href: '/', current: false, icon: Home },
     { name: 'PCB Verification', href: '/PCBVerification', current: false, icon: CircuitBoard },
     { name: 'Test Camera', href: '/testcam', current: false, icon: Cctv },
-    { name: 'Factory Workflow', href: '/factoryWorkflow', current: false, icon: Factory },
+    { name: 'Factory Workflow', href: '/home-factory', current: false, icon: Factory },
     { name: 'About Us', href: '/AboutUs', current: false, icon: Award },
 ]
 
