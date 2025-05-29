@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from "react"
 import { Upload, X, Hexagon, Cpu, Webcam, BadgeCheck, Factory } from "lucide-react"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router";
-import "./HomePage.css"
-export default function FactoryWorkflow() {
-    const [originalImage, setOriginalImage] = useState(null)
+import "../page/HomePage.css"
+export default function ProcessFactoryWorkflow() {
+    const [originalImageFactory, setOriginalImageFactory] = useState(null)
     const [analysisImage, setAnalysisImage] = useState(null)
     const [isUploading, setIsUploading] = useState(false)
     const [cameraFeed, setCameraFeed] = useState(null);
@@ -51,7 +51,7 @@ export default function FactoryWorkflow() {
         imageQueueRef.current = [];
 
         const ws = new WebSocket(
-            `ws://${window.location.hostname}:8000/ws/pcb-detection`
+            `ws://${window.location.hostname}:8000/ws/factory-workflow`
         );
         wsRef.current = ws;
 
@@ -121,24 +121,19 @@ export default function FactoryWorkflow() {
 
 
     useEffect(() => {
-        const savedImage = sessionStorage.getItem("OriginalImage")
+        const savedImage = sessionStorage.getItem("OriginalImageFactory")
         if (savedImage) {
-            setOriginalImage(JSON.parse(savedImage))
+            setOriginalImageFactory(JSON.parse(savedImage))
         }
     }, [])
 
     useEffect(() => {
-        if (originalImage) {
-            sessionStorage.setItem("PreOriginalImage", JSON.stringify(originalImage))
+        if (originalImageFactory) {
+            sessionStorage.setItem("PreOriginalImageFactory", JSON.stringify(originalImageFactory))
         } else {
-            sessionStorage.removeItem("PreOriginalImage")
+            sessionStorage.removeItem("PreOriginalImageFactory")
         }
-        if (analysisImage) {
-            sessionStorage.setItem("PreAnalysisImage", JSON.stringify(analysisImage))
-        } else {
-            sessionStorage.removeItem("PreAnalysisImage")
-        }
-    }, [originalImage, analysisImage])
+    }, [originalImageFactory])
 
     // useEffect(() => {
     //     return () => {
@@ -169,7 +164,7 @@ export default function FactoryWorkflow() {
                         url: event.target.result,
                         file
                     }
-                    setOriginalImage(newImage)
+                    setOriginalImageFactory(newImage)
                     setIsUploading(false)
                 }
             }
@@ -178,10 +173,10 @@ export default function FactoryWorkflow() {
     }
 
     const removeImage = () => {
-        if (originalImage && originalImage.url) {
-            URL.revokeObjectURL(originalImage.url)
+        if (originalImageFactory && originalImageFactory.url) {
+            URL.revokeObjectURL(originalImageFactory.url)
         }
-        setOriginalImage(null)
+        setOriginalImageFactory(null)
         if (fileInputRef.current) {
             fileInputRef.current.value = ""
         }
@@ -194,7 +189,7 @@ export default function FactoryWorkflow() {
             // })
 
             navigate("/camDetectPCB", {
-                state: { PCB: "OriginalImage" },
+                state: { PCB: "OriginalImageFactory" },
             })
             // setShowCamera(true)
         } catch (err) {
@@ -296,17 +291,17 @@ export default function FactoryWorkflow() {
                 transition={{ duration: 0.5 }}
                 className="backdrop-blur-sm bg-gray-900/40 rounded-2xl p-6 border border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
             >
-                {originalImage ? (
+                {originalImageFactory ? (
                     <div className="space-y-6">
                         <div className="mt-4">
                             <div className="flex flex-col items-center">
                                 <div
                                     className="relative group cursor-pointer"
-                                    onClick={() => openPreview(originalImage)}
+                                    onClick={() => openPreview(originalImageFactory)}
                                 >
                                     <img
-                                        src={originalImage.url}
-                                        alt={originalImage.name}
+                                        src={originalImageFactory.url}
+                                        alt={originalImageFactory.name}
                                         className="h-40 w-full object-contain rounded-md border border-gray-200"
                                     />
                                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
@@ -315,7 +310,7 @@ export default function FactoryWorkflow() {
                                 </div>
                                 <div className="flex items-center justify-between w-full mt-2 bg-gray-50 p-2 rounded-md">
                                     <span className="text-sm text-gray-700 truncate flex-1">
-                                        {originalImage.name || "Webcam Capture"}
+                                        {originalImageFactory.name || "Webcam Capture"}
                                     </span>
                                     <button
                                         onClick={removeImage}
@@ -332,7 +327,7 @@ export default function FactoryWorkflow() {
                             <button
                                 onClick={() => {
                                     navigate("/fileDetectPCB", {
-                                        state: { PCB: "OriginalImage" },
+                                        state: { PCB: "OriginalImageFactory" },
                                     })
                                 }}
                                 type="button"

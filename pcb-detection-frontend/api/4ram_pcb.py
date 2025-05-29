@@ -345,49 +345,127 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.websocket("/ws/test-cam")
-async def websocket_endpoint(websocket: WebSocket):
-
+@app.websocket("/ws/factory-workflow")
+async def websocket_endpoint_factory(websocket: WebSocket):
     await websocket.accept()
-
     camera_manager.active_connections += 1
     logger.info(f"New connection. Total: {camera_manager.active_connections}")
 
-    camera = await camera_manager.get_camera()
-    if not camera:
-        await websocket.close()
-        return
-
     try:
+        camera = await camera_manager.get_camera()
+        if not camera:
+            await websocket.close()
+            return
+
         while True:
             ret, frame = camera.read()
             if not ret:
                 logger.error("Frame read failed")
                 break
 
-            ret, buffer = cv2.imencode(
-                ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80]
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+            lower_copper = np.array([5, 30, 5])
+            upper_copper = np.array([45, 255, 255])
+            mask = cv2.inRange(hsv, lower_copper, upper_copper)
+
+            kernel = np.ones((5, 5), np.uint8)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+            contours, _ = cv2.findContours(
+                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
             )
 
-            if not ret:
-                logger.error("Frame encoding failed")
-                continue
+            display_frame = frame.copy()
+            pcb_frame = None
 
-            await websocket.send_bytes(buffer.tobytes())
+            if contours:
+                largest_contour = max(contours, key=cv2.contourArea)
+                expanded_contour = expand_contour(largest_contour, 0.05)
+                hull = cv2.convexHull(expanded_contour)
+
+                cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
+
+                epsilon = 0.02 * cv2.arcLength(hull, True)
+                approx = cv2.approxPolyDP(hull, epsilon, True)
+
+                if len(approx) == 4:
+                    approx = order_points(approx.reshape(4, 2))
+                    pcb_frame = four_point_transform(frame, approx)
+
+            _, display_buffer = cv2.imencode(".jpg", display_frame)
+            await websocket.send_bytes(display_buffer.tobytes())
+
+            if pcb_frame is not None:
+                _, pcb_buffer = cv2.imencode(".jpg", pcb_frame)
+                await websocket.send_bytes(pcb_buffer.tobytes())
+            else:
+
+                empty_frame = np.zeros(
+                    (100, 100, 3), dtype=np.uint8
+                )  # Send empty frame if no PCB detected
+                _, empty_buffer = cv2.imencode(".jpg", empty_frame)
+                await websocket.send_bytes(empty_buffer.tobytes())
+
             await asyncio.sleep(camera_manager.frame_interval)
 
     except WebSocketDisconnect:
-        logger.info("Client disconnected")
+        logger.info("Client disconnected normally")
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
     finally:
         camera_manager.active_connections -= 1
-        logger.info(
-            f"Connection closed. Remaining: {camera_manager.active_connections}"
-        )
+        logger.info(f"Connection closed. Total: {camera_manager.active_connections}")
 
-        if camera_manager.active_connections <= 0:
-            camera_manager.release_camera()
+        if camera_manager.active_connections == 0:
+            await camera_manager.release_camera()
+
+        await websocket.close()
+
+
+# @app.websocket("/ws/test-cam")
+# async def websocket_endpoint(websocket: WebSocket):
+
+#     await websocket.accept()
+
+#     camera_manager.active_connections += 1
+#     logger.info(f"New connection. Total: {camera_manager.active_connections}")
+
+#     camera = await camera_manager.get_camera()
+#     if not camera:
+#         await websocket.close()
+#         return
+
+#     try:
+#         while True:
+#             ret, frame = camera.read()
+#             if not ret:
+#                 logger.error("Frame read failed")
+#                 break
+
+#             ret, buffer = cv2.imencode(
+#                 ".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80]
+#             )
+
+#             if not ret:
+#                 logger.error("Frame encoding failed")
+#                 continue
+
+#             await websocket.send_bytes(buffer.tobytes())
+#             await asyncio.sleep(camera_manager.frame_interval)
+
+#     except WebSocketDisconnect:
+#         logger.info("Client disconnected")
+#     except Exception as e:
+#         logger.error(f"WebSocket error: {str(e)}")
+#     finally:
+#         camera_manager.active_connections -= 1
+#         logger.info(
+#             f"Connection closed. Remaining: {camera_manager.active_connections}"
+#         )
+
+#         if camera_manager.active_connections <= 0:
+#             camera_manager.release_camera()
 
 
 @app.websocket("/ws/pcb-detection")

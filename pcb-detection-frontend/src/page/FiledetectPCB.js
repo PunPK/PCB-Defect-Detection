@@ -6,6 +6,7 @@ export default function FileDetectPCB() {
     const location = useLocation();
     const { PCB } = location.state || {};
     const [originalImage, setOriginalImage] = useState(null)
+    const [originalImageFactory, setOriginalImageFactory] = useState(null)
     const [analysisImage, setAnalysisImage] = useState(null)
     const [processedImage, setProcessedImage] = useState(null)
     const [croppedPCB, setCroppedPCB] = useState(null)
@@ -28,6 +29,14 @@ export default function FileDetectPCB() {
             if (savedOriginalImage) {
                 const imgData = JSON.parse(savedOriginalImage)
                 setOriginalImage(imgData)
+                processImage(imgData.url)
+            }
+        }
+        else if (PCB === "OriginalImageFactory") {
+            const savedOriginalImageFactory = sessionStorage.getItem("PreOriginalImageFactory")
+            if (savedOriginalImageFactory) {
+                const imgData = JSON.parse(savedOriginalImageFactory)
+                setOriginalImageFactory(imgData)
                 processImage(imgData.url)
             }
         }
@@ -94,6 +103,10 @@ export default function FileDetectPCB() {
             else if (PCB === "AnalysisImage") {
                 sessionStorage.setItem("AnalysisImage", JSON.stringify(newImage));
                 navigate(`/PCBVerification`)
+            }
+            else if (PCB === "OriginalImageFactory") {
+                sessionStorage.setItem("OriginalImageFactory", JSON.stringify(newImage));
+                navigate(`/factoryWorkflow`)
             }
         } catch (err) {
             console.error("Error saving to sessionStorage:", err);
@@ -168,6 +181,25 @@ export default function FileDetectPCB() {
                                 )}
                             </div>
                         )}
+
+                        {PCB === "OriginalImageFactory" && (
+                            <div>
+                                <h2 className="text-lg font-semibold mb-2">Original Factory Image</h2>
+                                {originalImageFactory ? (
+                                    <img
+                                        src={originalImageFactory.url}
+                                        alt="Original PCB"
+                                        className="w-full h-auto max-h-[70vh] object-contain"
+                                    />
+                                ) : (
+                                    <div className="bg-gray-900 h-48 flex items-center justify-center">
+                                        <p className="text-gray-500">No Original Factory Image found in session</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+
                     </div>
 
                     <div className="border border-gray-300 rounded-md p-2">
@@ -237,6 +269,39 @@ export default function FileDetectPCB() {
                         <button
                             className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
                             onClick={() => processImage(originalImage.url)}
+                            disabled={isProcessing}
+                        >
+                            Reprocess Image
+                        </button>
+                    </div>
+                )}
+
+                {originalImageFactory && (
+                    <div className="mt-6 flex gap-4">
+                        <button
+                            className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700"
+                            onClick={() => { captureDetection() }}
+                            disabled={!processedImage || isProcessing}
+                        >
+                            Confirm Detection
+                        </button>
+                        <button
+                            className="bg-gray-600 text-white py-2 px-6 rounded-md hover:bg-gray-700"
+                            onClick={() => {
+                                sessionStorage.removeItem("OriginalImageFactory")
+                                setOriginalImageFactory(null)
+                                setProcessedImage(null)
+                                setCroppedPCB(null)
+                                setStatus('Waiting for image...')
+                                waiting(2);
+                                navigate("/home-factory")
+                            }}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700"
+                            onClick={() => processImage(originalImageFactory.url)}
                             disabled={isProcessing}
                         >
                             Reprocess Image

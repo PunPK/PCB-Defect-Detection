@@ -16,7 +16,9 @@ import Steps1 from "./analysisPage/Steps1.js"
 import Steps2 from "./analysisPage/Steps2.js"
 import Steps3 from "./analysisPage/Steps3.js"
 import LayoutWithNav from "./LayoutWithNav.js";
-import FactoryWorkflow from "./page/factoryWorkflow.js";
+import HomeFactoryWorkflow from "./factoryPage/factoryWorkflow.js";
+import LayoutWithNavFactory from "./LayoutWithNav copy.js";
+import ProcessFactoryWorkflow from "./factoryPage/processFactory.js";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -33,7 +35,11 @@ function App() {
             <Route path="/testcam" element={<TestCam />} />
             <Route path="/PCBVerification" element={<PCBVerificationPage />} />
             <Route path="/AboutUs" element={<AboutUs />} />
-            <Route path="/factoryWorkflow" element={<FactoryWorkflow />} />
+          </Route>
+
+          <Route element={<LayoutWithNavFactory />}>
+            <Route path="/home-factory" element={<HomeFactoryWorkflow />} />
+            <Route path="/factoryWorkflow" element={<ProcessFactoryWorkflow />} />
           </Route>
 
           {/* without NavBar */}
