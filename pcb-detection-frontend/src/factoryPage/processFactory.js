@@ -407,14 +407,14 @@ export default function ProcessFactoryWorkflow() {
                 transition={{ duration: 0.5 }}
                 className="backdrop-blur-sm bg-gray-900/40 rounded-2xl mt-7 p-6 border border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
             >
-                {originalImageFactory ? (
-                    <div className="space-y-6">
-                        <h2 className="text-xl font-bold mb-6 text-center relative">
-                            <span className="bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
-                                Result of PCB Factory Workflow Detection
-                            </span>
-                            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-32 bg-gradient-to-r from-pink-400 to-purple-500"></div>
-                        </h2>
+                <div className="space-y-6 min-h-72">
+                    <h2 className="text-xl font-bold mb-6 text-center relative">
+                        <span className="bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
+                            Result of PCB Factory Workflow Detection
+                        </span>
+                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-32 bg-gradient-to-r from-pink-400 to-purple-500"></div>
+                    </h2>
+                    {originalImageFactory && (
                         <div className="mt-4">
                             <div className="flex flex-col items-center">
                                 <div
@@ -464,82 +464,8 @@ export default function ProcessFactoryWorkflow() {
                                 </div>
                             </button>
                         </div>
-                    </div>
-                ) : (
-                    <div className="space-y-8">
-                        <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                            className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
-                            onClick={() => startCamera()}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
-
-                            <div className="flex flex-col items-center justify-center gap-4 relative z-10">
-                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
-                                    <Webcam className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
-                                        ระบบตรวจจับต้นแบบของแผ่น PCB
-                                    </h3>
-                                    <p className="text-gray-400 mb-5 group-hover:text-gray-300 transition-colors">
-                                        คลิกเพื่อเปิดกล้อง
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        <div className="text-center relative">
-                            <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
-                            <span className="relative bg-[#050816] px-4 text-gray-400">หรือ</span>
-                        </div>
-
-                        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                            <div
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    const files = e.dataTransfer.files;
-                                    if (files.length) {
-                                        handleFileChange({ target: { files } });
-                                    }
-                                }}
-                                onDragOver={(e) => e.preventDefault()}
-                                onClick={() => fileInputRef.current?.click()}
-                                className="relative w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden cursor-pointer"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                                <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                                    <Upload className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
-                                    <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
-                                        อัปโหลด/วาง รูปภาพต้นแบบของแผ่น PCB
-                                    </span>
-                                </div>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleFileChange}
-                                />
-                            </div>
-                        </motion.div>
-                        <p className="text-gray-700 font-bold flex items-center justify-center text-center">
-                            กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น<br />
-                            รองรับไฟล์ JPG, PNG
-                        </p>
-
-                    </div>
-                )}
-
-                {isUploading && (
-                    <div className="mt-6 flex justify-center">
-                        <div className="flex items-center gap-3 bg-cyan-900/20 px-4 py-2 rounded-full border border-cyan-800/30">
-                            <div className="w-4 h-4 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
-                            <p className="text-cyan-400 text-sm">กำลังอัปโหลด...</p>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </motion.div>
 
             <div className="mt-8 text-center">
