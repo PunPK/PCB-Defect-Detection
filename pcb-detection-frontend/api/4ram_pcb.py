@@ -133,7 +133,7 @@ def image_to_base64(image):
 
 
 @app.get("/")
-async def health_check():
+async def check_api():
     return {"status": "OK", "service": "PCB Detection Service"}
 
 
@@ -319,6 +319,19 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         cv2.drawContours(mask_diff, contours, -1, (255), thickness=cv2.FILLED)
         result = cv2.bitwise_and(aligned, aligned, mask=mask_diff)
 
+        white_pixels = np.sum(result == 0)
+        total_pixels = result.shape[0] * result.shape[1]
+
+        accuracy_percentage = (white_pixels / total_pixels) * 100
+
+        accuracy_result = ""
+        if accuracy_percentage <= 80:
+            accuracy_result = "The PCB picture does not match or is incorrect."
+        elif accuracy_percentage <= 97:
+            accuracy_result = "The PCB picture has many errors."
+        elif accuracy_percentage > 97:
+            accuracy_result = "The PCB picture has some errors."
+
         # Convert all images to BGR for consistent display in React
         template_bgr = cv2.cvtColor(template, cv2.COLOR_GRAY2BGR)
         defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
@@ -330,6 +343,8 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
         return {
             "detected": True,
             "message": "PCB analysis completed successfully",
+            "accuracy": accuracy_percentage,
+            "result": accuracy_result,
             "images": {
                 "template": image_to_base64(template_bgr),
                 "defective": image_to_base64(defective_bgr),
