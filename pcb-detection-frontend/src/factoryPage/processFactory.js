@@ -416,7 +416,7 @@ export default function ProcessFactoryWorkflow() {
                 <img
                   src={cameraFeed}
                   alt="Camera Feed with PCB Outline"
-                  className="w-full h-auto max-h-[70vh] object-contain"
+                  className="w-full h-auto max-h-[35vh] object-contain"
                 />
               ) : (
                 <div className="bg-gray-900 h-72 flex items-center justify-center">

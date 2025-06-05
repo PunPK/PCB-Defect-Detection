@@ -15,7 +15,6 @@ const navigation = [
     icon: Factory,
   },
   { name: "Return to HomePage", href: "/", current: false, icon: Redo2 },
-  { name: "About Us", href: "/AboutUs", current: false, icon: Award },
 ];
 
 function classNames(...classes) {
