@@ -1,79 +1,3 @@
-# from fastapi import FastAPI, HTTPException, Depends
-# from typing import Annotated, List
-# from sqlalchemy.orm import Session
-# from pydantic import BaseModel
-# from database import SessionLocal, engine
-# import models
-# from database import engine
-
-# from fastapi.middleware.cors import CORSMiddleware
-
-# app = FastAPI()
-
-# origins = ["http://localhost:3000"]
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
-
-# app = FastAPI()
-
-# # install fastapi-cors, import and add CORS middleware
-
-
-# @app.get("/")
-# async def check():
-#     return "hello"
-
-
-# class ItemBase(BaseModel):
-#     name: str
-#     description: str
-#     price: float
-
-
-# class ItemModel(ItemBase):
-#     id: int
-
-
-# def get_db():
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-
-
-# db_dependency = Annotated[Session, Depends(get_db)]
-
-# models.Base.metadata.create_all(bind=engine)
-
-
-# @app.post("/items/", response_model=ItemModel)
-# async def create_items(item: ItemBase, db: db_dependency):
-#     # print('he')
-#     db_item = models.Item(**item.model_dump())
-#     db.add(db_item)
-#     db.commit()
-#     db.refresh(db_item)
-#     return db_item
-
-
-# @app.get("/items/", response_model=List[ItemModel])
-# async def read_items(db: db_dependency, skip: int = 0, limit: int = 100):
-#     items = db.query(models.Item).offset(skip).limit(limit).all()
-#     return items
-
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse
-import os
-from random import randint
-import uuid
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import (
     FastAPI,
     UploadFile,
@@ -81,7 +5,9 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
     HTTPException,
+    APIRouter,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 import cv2
@@ -89,6 +15,7 @@ import numpy as np
 import asyncio
 import uvicorn
 import time
+import os
 from typing import Optional
 import logging
 import base64
@@ -97,50 +24,7 @@ import base64
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-IMAGEDIR = "images/"
-
-app = FastAPI()
-
-origins = ["http://localhost:3000"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/")
-async def check_api():
-    return {"status": "OK", "service": "PCB Detection Service"}
-
-
-@app.post("/upload/")
-async def create_upload_file(file: UploadFile = File(...)):
-
-    file.filename = f"{uuid.uuid4()}.jpg"
-    contents = await file.read()
-
-    # save the file
-    with open(f"{IMAGEDIR}{file.filename}", "wb") as f:
-        f.write(contents)
-
-    return {"filename": file.filename}
-
-
-@app.get("/show/")
-async def read_random_file():
-
-    # get random file from the image directory
-    files = os.listdir(IMAGEDIR)
-    random_index = randint(0, len(files) - 1)
-
-    path = f"{IMAGEDIR}{files[random_index]}"
-
-    return FileResponse(path)
+router = APIRouter()
 
 
 def expand_contour(contour, percentage):
@@ -240,7 +124,12 @@ def image_to_base64(image):
     return base64.b64encode(buffer).decode("utf-8")
 
 
-@app.post("/api/pcb-detection/image")
+@router.get("/")
+async def check_api():
+    return {"status": "OK", "service": "PCB Detection Service"}
+
+
+@router.post("/pcb-detection/image")
 async def detect_pcb_from_image(file: UploadFile = File(...)):
     try:
         contents = await file.read()
@@ -295,7 +184,7 @@ async def detect_pcb_from_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/analysis/prepare")
+@router.post("/analysis/prepare")
 async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
     try:
         if len(files) != 2:
@@ -461,170 +350,3 @@ async def analysis_pcb_prepare(files: list[UploadFile] = File(...)):
     except Exception as e:
         logger.error(f"Error processing images: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.websocket("/ws/factory-workflow")
-async def websocket_endpoint_factory(websocket: WebSocket):
-    await websocket.accept()
-    camera_manager.active_connections += 1
-    logger.info(f"New connection. Total: {camera_manager.active_connections}")
-
-    try:
-        camera = await camera_manager.get_camera()
-        if not camera:
-            await websocket.close()
-            return
-
-        while True:
-            ret, frame = camera.read()
-            if not ret:
-                logger.error("Frame read failed")
-                break
-
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower_copper = np.array([5, 30, 5])
-            upper_copper = np.array([45, 255, 255])
-            mask = cv2.inRange(hsv, lower_copper, upper_copper)
-
-            kernel = np.ones((5, 5), np.uint8)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-            contours, _ = cv2.findContours(
-                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-
-            display_frame = frame.copy()
-            pcb_frame = None
-
-            if contours:
-                largest_contour = max(contours, key=cv2.contourArea)
-                expanded_contour = expand_contour(largest_contour, 0.05)
-                hull = cv2.convexHull(expanded_contour)
-
-                cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
-
-                epsilon = 0.02 * cv2.arcLength(hull, True)
-                approx = cv2.approxPolyDP(hull, epsilon, True)
-
-                if len(approx) == 4:
-                    approx = order_points(approx.reshape(4, 2))
-                    pcb_frame = four_point_transform(frame, approx)
-
-            _, display_buffer = cv2.imencode(".jpg", display_frame)
-            await websocket.send_bytes(display_buffer.tobytes())
-
-            if pcb_frame is not None:
-                _, pcb_buffer = cv2.imencode(".jpg", pcb_frame)
-                await websocket.send_bytes(pcb_buffer.tobytes())
-            else:
-
-                empty_frame = np.zeros(
-                    (100, 100, 3), dtype=np.uint8
-                )  # Send empty frame if no PCB detected
-                _, empty_buffer = cv2.imencode(".jpg", empty_frame)
-                await websocket.send_bytes(empty_buffer.tobytes())
-
-            await asyncio.sleep(camera_manager.frame_interval)
-
-    except WebSocketDisconnect:
-        logger.info("Client disconnected normally")
-    except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
-    finally:
-        camera_manager.active_connections -= 1
-        logger.info(f"Connection closed. Total: {camera_manager.active_connections}")
-
-        if camera_manager.active_connections == 0:
-            await camera_manager.release_camera()
-
-        await websocket.close()
-
-
-@app.websocket("/ws/pcb-detection")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    camera_manager.active_connections += 1
-    logger.info(f"New connection. Total: {camera_manager.active_connections}")
-
-    try:
-        camera = await camera_manager.get_camera()
-        if not camera:
-            await websocket.close()
-            return
-
-        while True:
-            ret, frame = camera.read()
-            if not ret:
-                logger.error("Frame read failed")
-                break
-
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower_copper = np.array([5, 30, 5])
-            upper_copper = np.array([45, 255, 255])
-            mask = cv2.inRange(hsv, lower_copper, upper_copper)
-
-            kernel = np.ones((5, 5), np.uint8)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-            mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-            contours, _ = cv2.findContours(
-                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
-
-            display_frame = frame.copy()
-            pcb_frame = None
-
-            if contours:
-                largest_contour = max(contours, key=cv2.contourArea)
-                expanded_contour = expand_contour(largest_contour, 0.05)
-                hull = cv2.convexHull(expanded_contour)
-
-                cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
-
-                epsilon = 0.02 * cv2.arcLength(hull, True)
-                approx = cv2.approxPolyDP(hull, epsilon, True)
-
-                if len(approx) == 4:
-                    approx = order_points(approx.reshape(4, 2))
-                    pcb_frame = four_point_transform(frame, approx)
-
-            _, display_buffer = cv2.imencode(".jpg", display_frame)
-            await websocket.send_bytes(display_buffer.tobytes())
-
-            if pcb_frame is not None:
-                _, pcb_buffer = cv2.imencode(".jpg", pcb_frame)
-                await websocket.send_bytes(pcb_buffer.tobytes())
-            else:
-
-                empty_frame = np.zeros(
-                    (100, 100, 3), dtype=np.uint8
-                )  # Send empty frame if no PCB detected
-                _, empty_buffer = cv2.imencode(".jpg", empty_frame)
-                await websocket.send_bytes(empty_buffer.tobytes())
-
-            await asyncio.sleep(camera_manager.frame_interval)
-
-    except WebSocketDisconnect:
-        logger.info("Client disconnected normally")
-    except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}")
-    finally:
-        camera_manager.active_connections -= 1
-        logger.info(f"Connection closed. Total: {camera_manager.active_connections}")
-
-        if camera_manager.active_connections == 0:
-            await camera_manager.release_camera()
-
-        await websocket.close()
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        workers=1,
-        ws_ping_interval=30,
-        ws_ping_timeout=30,
-    )
