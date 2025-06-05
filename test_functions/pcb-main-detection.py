@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# โหลดภาพและ preprocessing (เหมือนเดิม)C:\Users\ASUS\Desktop\pcb_detection\pcb-dataset\pcb\pcb_test2.png
+# C:\Users\ASUS\Desktop\pcb_detection\pcb-dataset\pcb\pcb_test2.png
 # template = cv2.imread("pcb-dataset\pcb\pcb_test2.png", cv2.IMREAD_GRAYSCALE)
 template = cv2.imread("pcb-dataset/pcb/3_pcb_output3069.jpg", cv2.IMREAD_GRAYSCALE)
-defective = cv2.imread("pcb-dataset/pcb/4_pcb_output2371.jpg", cv2.IMREAD_GRAYSCALE)
+defective = cv2.imread("pcb-dataset/pcb/2_pcb_output9493.jpg", cv2.IMREAD_GRAYSCALE)
 # defective = cv2.imread("pcb-dataset/pcb/1_pcb_output4505.jpg", cv2.IMREAD_GRAYSCALE)
 
 min_height = min(template.shape[0], defective.shape[0])
@@ -51,10 +51,14 @@ aligned = cv2.warpPerspective(defective, H, (template.shape[1], template.shape[0
 # หาความแตกต่างแบบเน้นเฉพาะสีขาว/เทาอ่อนใน Difference
 diff = cv2.absdiff(template, aligned)
 
+mask = cv2.inRange(diff, 50, 225)
+specific_gray = cv2.bitwise_and(diff, diff, mask=mask)
+
+
 _, thresh_otsu = cv2.threshold(diff, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
 # Threshold ด้วยค่าช่วง
-thresh_range = cv2.inRange(diff, 100, 255)
+thresh_range = cv2.inRange(diff, 50, 150)
 
 # รวมผลลัพธ์ทั้งสองแบบ
 combined_thresh = cv2.bitwise_or(thresh_otsu, thresh_range)
@@ -81,7 +85,9 @@ plt.subplot(2, 3, 1), plt.imshow(template, cmap="gray"), plt.title("Template")
 plt.subplot(2, 3, 2), plt.imshow(defective, cmap="gray"), plt.title("Defective")
 plt.subplot(2, 3, 3), plt.imshow(aligned, cmap="gray"), plt.title("Aligned")
 plt.subplot(2, 3, 4), plt.imshow(diff, cmap="gray"), plt.title("Difference")
-plt.subplot(2, 3, 5), plt.imshow(cleaned, cmap="gray"), plt.title("White/Gray Areas")
-plt.subplot(2, 3, 6), plt.imshow(result), plt.title("Detected Defects")
+plt.subplot(2, 3, 5), plt.imshow(specific_gray, cmap="gray"), plt.title(
+    "Detected Defects"
+)
+plt.subplot(2, 3, 6), plt.imshow(cleaned, cmap="gray"), plt.title("White/Gray Areas")
 plt.tight_layout()
 plt.show()

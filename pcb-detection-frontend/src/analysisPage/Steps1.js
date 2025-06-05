@@ -1,21 +1,22 @@
-import AnalysisBar, { steps } from "../components/analysisBar.js"
-import { ArrowDown, ArrowRight, IterationCcw } from "lucide-react"
-import { useState, useEffect } from 'react'
+import AnalysisBar, { steps } from "../components/analysisBar.js";
+import { ArrowDown, ArrowRight, IterationCcw } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import "../page/HomePage.css"
+import "../page/HomePage.css";
 
 export default function Step1() {
   const [activeStep, setActiveStep] = useState(0);
-  const navigate = useNavigate()
-  const [originalImage, setOriginalImage] = useState(null)
-  const [analysisImage, setAnalysisImage] = useState(null)
-  const [processedImages, setProcessedImages] = useState(null)
-  const [status, setStatus] = useState('Waiting for image...')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState(null)
-  const [previewImage, setPreviewImage] = useState(null)
-  const [namePreviewImage, setNamePreviewImage] = useState(null)
-  const [openPreviewImage, setOpenPreviewImage] = useState(false)
+  const navigate = useNavigate();
+  const [originalImage, setOriginalImage] = useState(null);
+  const [analysisImage, setAnalysisImage] = useState(null);
+  const [processedImages, setProcessedImages] = useState(null);
+  const [status, setStatus] = useState("Waiting for image...");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [namePreviewImage, setNamePreviewImage] = useState(null);
+  const [openPreviewImage, setOpenPreviewImage] = useState(false);
+  const [result, setResult] = useState(null);
 
   function ImageCard({ title, src, alt, className = "" }) {
     return (
@@ -43,34 +44,43 @@ export default function Step1() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   useEffect(() => {
-    getImg()
-  }, [])
+    getImg();
+  }, []);
 
   const getImg = async () => {
     try {
-      const savedAnalysisImage = sessionStorage.getItem("AnalysisImage")
-      const analysisImgData = JSON.parse(savedAnalysisImage)
-      setAnalysisImage(analysisImgData)
+      const savedAnalysisImage = sessionStorage.getItem("AnalysisImage");
+      const analysisImgData = JSON.parse(savedAnalysisImage);
+      setAnalysisImage(analysisImgData);
 
-      const savedOriginalImage = sessionStorage.getItem("OriginalImage")
-      const originalImgData = JSON.parse(savedOriginalImage)
-      setOriginalImage(originalImgData)
-      processImage(originalImgData.url, originalImgData.name, analysisImgData.url, analysisImgData.name)
-
+      const savedOriginalImage = sessionStorage.getItem("OriginalImage");
+      const originalImgData = JSON.parse(savedOriginalImage);
+      setOriginalImage(originalImgData);
+      processImage(
+        originalImgData.url,
+        originalImgData.name,
+        analysisImgData.url,
+        analysisImgData.name
+      );
     } catch (err) {
-      console.log(err)
+      console.log(err);
     }
-  }
+  };
 
-  const processImage = async (originalImageUrl, originalName = "original_pcb.jpg", analysisImageUrl, analysisName = "analysis_pcb.jpg") => {
+  const processImage = async (
+    originalImageUrl,
+    originalName = "original_pcb.jpg",
+    analysisImageUrl,
+    analysisName = "analysis_pcb.jpg"
+  ) => {
     if (!originalImageUrl || !analysisImageUrl) return;
 
     setIsProcessing(true);
-    setStatus('Processing image...');
+    setStatus("Processing image...");
     setError(null);
 
     try {
@@ -78,16 +88,19 @@ export default function Step1() {
 
       const originalResponse = await fetch(originalImageUrl);
       const originalblob = await originalResponse.blob();
-      formData.append('files', originalblob, originalName);
+      formData.append("files", originalblob, originalName);
 
       const analysisResponse = await fetch(analysisImageUrl);
       const analysisblob = await analysisResponse.blob();
-      formData.append('files', analysisblob, analysisName);
+      formData.append("files", analysisblob, analysisName);
 
-      const apiResponse = await fetch('http://localhost:8000/api/analysis/prepare', {
-        method: 'POST',
-        body: formData
-      });
+      const apiResponse = await fetch(
+        "http://localhost:8000/api/analysis/prepare",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!apiResponse.ok) {
         throw new Error(`Server error: ${apiResponse.status}`);
@@ -95,35 +108,39 @@ export default function Step1() {
 
       const result = await apiResponse.json();
 
+      console.log(result);
+
       setProcessedImages({
         template: `data:image/jpeg;base64,${result.images.template}`,
         defective: `data:image/jpeg;base64,${result.images.defective}`,
         aligned: `data:image/jpeg;base64,${result.images.aligned}`,
         diff: `data:image/jpeg;base64,${result.images.diff}`,
         cleaned: `data:image/jpeg;base64,${result.images.cleaned}`,
-        result: `data:image/jpeg;base64,${result.images.result}`
+        result: `data:image/jpeg;base64,${result.images.result}`,
       });
 
-      setStatus(result.detected ? 'PCB detected!' : 'No PCB detected');
+      setResult({ percent: result.accuracy, summarize: result.result });
+
+      setStatus(result.detected ? "PCB detected!" : "No PCB detected");
     } catch (err) {
       setError(err.message);
-      setStatus('Processing failed');
+      setStatus("Processing failed");
     } finally {
       setIsProcessing(false);
     }
-  }
+  };
 
   const openPreview = (image, name = "pcb_image.jpg") => {
-    setPreviewImage(image)
-    setNamePreviewImage(name)
-    setOpenPreviewImage(true)
-  }
+    setPreviewImage(image);
+    setNamePreviewImage(name);
+    setOpenPreviewImage(true);
+  };
 
   const closePreview = () => {
-    setPreviewImage(null)
-    setNamePreviewImage(null)
-    setOpenPreviewImage(false)
-  }
+    setPreviewImage(null);
+    setNamePreviewImage(null);
+    setOpenPreviewImage(false);
+  };
 
   return (
     // <div className="flex bg-gray-900 min-h-screen">
@@ -138,26 +155,59 @@ export default function Step1() {
       <div className="lg:ml-64 p-8 flex-1 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row justify-between items-start mb-8 lg:mb-12 gap-6">
-            <div className="max-w-2xl">
-              <span className="text-blue-400 font-mono text-lg lg:text-xl tracking-widest">STEP 01</span>
-              <h2 className="mb-3 text-2xl lg:text-4xl font-bold text-white">
+            <div className="max-w-2xl ml-2">
+              <div className="flex items-center mb-6">
+                <span className="text-blue-400 font-mono text-lg lg:text-xl tracking-widest flex items-center">
+                  <span className="inline-block w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+                  STEP 01
+                </span>
+                <div className="ml-4 h-px flex-1 bg-gradient-to-r from-blue-400/20 to-transparent"></div>
+              </div>
+
+              <h2 className="mb-4 text-2xl lg:text-4xl font-bold text-white bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                 Prepare PCB Images for Inspection
               </h2>
-              <p className="text-gray-400 font-light text-base lg:text-lg max-w-3xl leading-relaxed">
-                แบ่งไปด้วยหลายๆขั้นตอน ตั้งแต่การแปลงรูปภาพจากรูปแบบสีปกติให้กลายเป็นขาวดำ และทำให้รูปภาพอยู่ในพิกัดเดียวกัน และความจับความต่างกันของ PCB ทั้ง 2 แผ่น เพื่อใช้ในการตรวจสอบข้อผิดพลาด
+
+              {result && (
+                <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900/50 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 opacity-30"></div>
+                  <h3 className="relative text-lg lg:text-2xl font-bold text-gray-100">
+                    <span className="text-blue-400">Result:</span> [
+                    <span className="text-cyan-300">
+                      {result.percent.toFixed(2)}%
+                    </span>
+                    ] <span className="text-gray-300">{result.summarize}</span>
+                  </h3>
+                </div>
+              )}
+
+              {/* Description with improved readability */}
+              <p className="text-gray-300 font-light text-base lg:text-lg leading-relaxed space-y-4">
+                <span className="block">
+                  แบ่งไปด้วยหลายๆขั้นตอน
+                  ตั้งแต่การแปลงรูปภาพจากรูปแบบสีปกติให้กลายเป็นขาวดำ
+                  และทำให้รูปภาพอยู่ในพิกัดเดียวกัน และตรวจหาความแตกต่างระหว่าง
+                  PCB ทั้ง 2 แผ่น
+                  เพื่อใช้ในการตรวจสอบข้อผิดพลาดด้วยความแม่นยำสูง
+                </span>
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
                 onClick={() => {
-                  getImg()
+                  getImg();
                 }}
                 className="flex items-center justify-center px-6 py-3 sm:px-8 sm:py-4 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
               >
                 <p className="font-light text-lg sm:text-xl leading-relaxed">
                   Reset Process
                 </p>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <IterationCcw />
                 </svg>
               </button>
@@ -171,17 +221,28 @@ export default function Step1() {
                 <p className="font-light text-lg sm:text-xl leading-relaxed">
                   Next Step
                 </p>
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 relative">
-
             <div>
-              <h2 className="text-2xl font-bold mb-2 text-center">Original PCB</h2>
+              <h2 className="text-2xl font-bold mb-2 text-center">
+                Original PCB
+              </h2>
               <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-4 mb-6"></div>
 
               <div className="mb-8">
@@ -197,7 +258,6 @@ export default function Step1() {
                 <ArrowDown className="w-8 h-8 text-white" />
               </div>
 
-
               <div className="mb-8">
                 <ImageCard
                   title="รูปภาพต้นฉบับ PCB (สีเทา)"
@@ -209,7 +269,9 @@ export default function Step1() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-bold mb-2 text-center">Analysis PCB</h2>
+              <h2 className="text-2xl font-bold mb-2 text-center">
+                Analysis PCB
+              </h2>
               <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-4 mb-6"></div>
 
               <div className="mb-8">
@@ -313,21 +375,48 @@ export default function Step1() {
               className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-all duration-300"
             >
               Next Step
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
         </div>
         {openPreviewImage && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={closePreview}>
-            <div className="relative max-w-4xl w-full max-h-[90vh]" onClick={e => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={closePreview}
+          >
+            <div
+              className="relative max-w-4xl w-full max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 className="absolute -top-10 right-0 text-white hover:text-gray-300"
                 onClick={closePreview}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
               <img

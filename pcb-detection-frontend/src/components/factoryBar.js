@@ -4,31 +4,17 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import {
-  Cctv,
-  Brain,
-  CircuitBoard,
-  Home,
-  Hexagon,
-  Award,
-  Factory,
-} from "lucide-react";
+import { Brain, Home, Hexagon, Award, Factory, Redo2 } from "lucide-react";
 
 const navigation = [
-  { name: "HomePage", href: "/", current: false, icon: Home },
-  {
-    name: "PCB Verification",
-    href: "/PCBVerification",
-    current: false,
-    icon: CircuitBoard,
-  },
-  { name: "Test Camera", href: "/testcam", current: false, icon: Cctv },
+  { name: "HomeFactory", href: "/home-factory", current: false, icon: Home },
   {
     name: "Factory Workflow",
-    href: "/home-factory",
+    href: "/factoryWorkflow",
     current: false,
     icon: Factory,
   },
+  { name: "Return to HomePage", href: "/", current: false, icon: Redo2 },
   { name: "About Us", href: "/AboutUs", current: false, icon: Award },
 ];
 
@@ -36,7 +22,7 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function NavBar() {
+export default function FactoryBar() {
   return (
     <Disclosure
       as="nav"

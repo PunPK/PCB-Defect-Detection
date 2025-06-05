@@ -145,6 +145,10 @@ export default function CamDetectPCB() {
                 sessionStorage.setItem("AnalysisImage", JSON.stringify(newImage));
                 navigate(`/PCBVerification`)
             }
+            else if (PCB === "OriginalImageFactory") {
+                sessionStorage.setItem("OriginalImageFactory", JSON.stringify(newImage));
+                navigate(`/factoryWorkflow`)
+            }
         } catch (err) {
             console.error("Error saving to sessionStorage:", err);
         }

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Pico - React.js</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.12.9/babel.min.js"></script>
+
+    <style>
+        body {
+            background-color: #343a40;
+            color: white;
+        }
+
+        .navbar {
+            background-color: #212529;
+        }
+
+        .container {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div className="container p-5 " id="root"></div>
+
+    <script type="text/babel">
+        function HomeComponent() {
+
+            const [ledGreenState, setLedGreenState] = React.useState(0);
+            const [ledRedState, setLedRedState] = React.useState(0);
+
+            React.useEffect(() => {
+                controlLED();
+            }, [ledGreenState, ledRedState]);
+
+            const controlLED = () => {
+                fetch('http://192.168.1.12/api/led', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ "ledGreen": ledGreenState, "ledRed": ledRedState })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to turn LED ' + action);
+                        }
+
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            }
+            return (
+                <div class="container">
+                    <button onClick={e => setLedGreenState(ledGreenState == 0 ? 1 : 0)} className={`btn ${ledGreenState === 1 ? 'btn-danger' : 'btn-success'} m-2`}>
+                        LED Green {ledGreenState === 0 ? 'ON' : 'OFF'}
+                    </button>
+                    <button onClick={e => setLedRedState(ledRedState == 0 ? 1 : 0)} className={`btn ${ledRedState === 1 ? 'btn-danger' : 'btn-success'} m-2`}>
+                        LED Red {ledRedState === 0 ? 'ON' : 'OFF'}
+                    </button>
+                </div>
+
+            );
+        }
+
+        ReactDOM.render(<HomeComponent />, document.getElementById('root'));
+    </script>
+</body>
+
+</html>
