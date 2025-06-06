@@ -142,7 +142,7 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         # กำหนดช่วงสีทองแดงใน HSV
         lower_copper = np.array([3, 0, 0])
         # lower_copper = np.array([5, 30, 5])
-        upper_copper = np.array([45, 255, 255])
+        upper_copper = np.array([100, 255, 255])
 
         # สร้าง mask สำหรับสีทองแดง
         mask = cv2.inRange(hsv, lower_copper, upper_copper)
@@ -221,10 +221,14 @@ def detect_and_extract_pcb(expand_percentage=0.05):
         elif key == ord("s"):
             if image_pcb is not None:
                 num = random.randint(1000, 9999)
-                save_path = f"../pcb-dataset/pcb/5_pcb_output{num}.jpg"
-                cv2.imwrite(save_path, image_pcb)
-                print(f"PCB image saved successfully to {save_path}")
-                break
+                save_path = f"pcb-dataset/img/19_pcb_output7.jpg"
+                success = cv2.imwrite(save_path, image_pcb)
+                if success:
+                    print(f"PCB image saved successfully to {save_path}")
+                    break
+                else:
+                    print("Failed to save PCB image.")
+                    break
             else:
                 print("No PCB detected to save")
 

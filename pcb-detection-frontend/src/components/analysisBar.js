@@ -151,7 +151,6 @@ const AnalysisBar = ({ activeStep }) => {
                                         )}
                                     </div>
 
-                                    {/* Step content */}
                                     <div className={`ml-12 p-3 rounded-lg transition-all duration-200 ${index < activeStep
                                         ? "bg-gray-800/50 border border-gray-700 group-hover:border-green-500/30 group-hover:translate-x-1"
                                         : index === activeStep
@@ -182,7 +181,6 @@ const AnalysisBar = ({ activeStep }) => {
                                         </p>
                                     </div>
 
-                                    {/* Completion checkmark */}
                                     {index < activeStep && (
                                         <span className="absolute -left-4 top-0 flex h-10 w-10 ml-3 items-center justify-center">
                                             <div className="animate-ping absolute h-6 w-6 rounded-full bg-green-500/20"></div>
@@ -193,7 +191,6 @@ const AnalysisBar = ({ activeStep }) => {
                             ))}
                         </div>
 
-                        {/* Progress indicator */}
                         <div className="mt-8 bg-gray-800 rounded-full h-2 overflow-hidden">
                             <div
                                 className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-500"
@@ -209,7 +206,7 @@ const AnalysisBar = ({ activeStep }) => {
                         onClick={() => {
                             navigate("/PCBVerification");
                         }}
-                        className="flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg text-white font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/30 border border-blue-400/20 hover:border-blue-300/30"
+                        className="flex items-center justify-center px-8 py-3.5 mt-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-lg text-white font-medium transition-all duration-300 shadow-lg hover:shadow-blue-500/30 border border-blue-400/20 hover:border-blue-300/30"
                     >
                         <svg
                             className="w-5 h-5 mr-2 transform -scale-x-100"
@@ -224,7 +221,7 @@ const AnalysisBar = ({ activeStep }) => {
                                 d="M15 19l-7-7 7-7"
                             />
                         </svg>
-                        <span className="text-white/90 tracking-wide">ย้อนกลับ</span>
+                        <span className="text-white/90 tracking-wide">ย้อนกลับ Upload</span>
                         <div className="absolute inset-0 rounded-lg bg-blue-400/10 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                     </button>
                 </div>
