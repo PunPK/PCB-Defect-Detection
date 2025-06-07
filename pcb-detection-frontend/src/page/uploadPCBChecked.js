@@ -47,8 +47,8 @@ const Button = ({
       {(variant === "primary" ||
         variant === "secondary" ||
         variant === "danger") && (
-        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-      )}
+          <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+        )}
       <span className="relative z-10 flex items-center gap-2">
         {icon}
         {children}
@@ -316,15 +316,15 @@ export default function PCBVerificationPage() {
                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-24 bg-gradient-to-r from-cyan-400 to-blue-500"></div>
                 </h2>
 
-                <div className="bg-black rounded-lg p-4 min-h-[300px] flex flex-col items-center justify-center relative h-full">
+                <div className="bg-black rounded-lg p-4 min-h-[300px] flex flex-col items-center justify-center relative h-full w-full">
                   {originalPCB ? (
                     !preAnalysisPCB ? (
                       analysisPCB ? (
                         <div className="w-full h-full flex flex-col">
-                          <div className="flex flex-row gap-6 max-w-4xl mx-auto p-6 bg-gray-900 rounded-lg border border-gray-800 shadow-lg">
+                          <div className="flex flex-col lg:flex-row gap-6 max-w-4xl mx-auto p-4 md:p-6 bg-gray-900 rounded-lg border border-gray-800 shadow-lg">
                             {/* Left Column - Image */}
-                            <div className="w-1/2 flex flex-col">
-                              <div className="bg-black rounded-lg flex items-center justify-center h-64 border border-gray-700 mb-4">
+                            <div className="w-full lg:w-1/2 flex flex-col">
+                              <div className="bg-black rounded-lg flex items-center justify-center h-48 sm:h-64 border border-gray-700 mb-4">
                                 <img
                                   src={analysisPCB.url}
                                   alt={analysisPCB.name}
@@ -358,7 +358,6 @@ export default function PCBVerificationPage() {
                                 <Button
                                   variant="secondary"
                                   className="w-full text-sm"
-                                  // onClick={removeAnalysisImage}
                                   onClick={removeAnalysisImage}
                                   icon={<ArchiveX className="h-4 w-4" />}
                                 >
@@ -368,9 +367,9 @@ export default function PCBVerificationPage() {
                             </div>
 
                             {/* Right Column - Content */}
-                            <div className="w-1/2 flex flex-col visibility: hidden;">
+                            <div className="w-full lg:w-1/2 flex flex-col mt-6 lg:mt-0">
                               {/* Header Section */}
-                              <div className="text-left mb-6 ">
+                              <div className="text-left mb-6">
                                 <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
                                   <Cpu className="h-6 w-6 text-cyan-400" />
                                 </div>
@@ -378,8 +377,7 @@ export default function PCBVerificationPage() {
                                   PCB Quality Control System
                                 </h1>
                                 <p className="text-gray-400 text-sm">
-                                  Click the button "START ANALYSIS" to start
-                                  verification
+                                  Click the button "START ANALYSIS" to start verification
                                 </p>
                               </div>
 
@@ -414,7 +412,7 @@ export default function PCBVerificationPage() {
                             </div>
                           </div>
 
-                          <div className="mt-5 flex justify-center pr-6 pl-6">
+                          <div className="mt-5 flex justify-center px-4 sm:px-6">
                             <Button
                               variant="primary"
                               className="w-full"
@@ -433,7 +431,7 @@ export default function PCBVerificationPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-8 mt-3">
+                        <div className="space-y-6 md:space-y-8 mt-3 w-full max-w-md mx-auto px-4">
                           <motion.div
                             whileHover={{ scale: 1.02 }}
                             transition={{
@@ -441,7 +439,7 @@ export default function PCBVerificationPage() {
                               stiffness: 400,
                               damping: 10,
                             }}
-                            className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
+                            className="group border-2 border-dashed border-gray-700 hover:border-cyan-500/70 rounded-xl p-6 md:p-8 text-center hover:bg-gray-800/30 transition-all cursor-pointer relative overflow-hidden"
                             onClick={() =>
                               navigate("/camDetectPCB", {
                                 state: { PCB: "AnalysisImage" },
@@ -450,15 +448,15 @@ export default function PCBVerificationPage() {
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/10 group-hover:to-purple-500/10 transition-all duration-700"></div>
 
-                            <div className="flex flex-col items-center justify-center gap-4 relative z-10">
-                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
-                                <Webcam className="h-8 w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+                            <div className="flex flex-col items-center justify-center gap-3 md:gap-4 relative z-10">
+                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center group-hover:shadow-[0_0_15px_rgba(0,200,255,0.3)] transition-all duration-500 border border-gray-700 group-hover:border-cyan-500/50">
+                                <Webcam className="h-6 w-6 md:h-8 md:w-8 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
                               </div>
                               <div>
-                                <h3 className="text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
+                                <h3 className="text-lg md:text-xl font-medium mb-2 text-white group-hover:text-cyan-300 transition-colors">
                                   ระบบตรวจจับแผ่น PCB ที่ต้องการตรวจสอบ
                                 </h3>
-                                <p className="text-gray-400 mb-5 group-hover:text-gray-300 transition-colors">
+                                <p className="text-gray-400 mb-4 md:mb-5 group-hover:text-gray-300 transition-colors">
                                   คลิกเพื่อเปิดกล้อง
                                 </p>
                               </div>
@@ -492,8 +490,7 @@ export default function PCBVerificationPage() {
                               <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
                                 <Upload className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
                                 <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
-                                  อัปโหลด/วาง รูปภาพของแผ่น PCB
-                                  ที่ต้องการตรวจสอบ
+                                  อัปโหลด/วาง รูปภาพของแผ่น PCB ที่ต้องการตรวจสอบ
                                 </span>
                               </div>
                               <input
@@ -505,7 +502,7 @@ export default function PCBVerificationPage() {
                               />
                             </div>
                           </motion.div>
-                          <p className="text-gray-700 font-bold flex items-center justify-center text-center">
+                          <p className="text-gray-700 font-bold flex items-center justify-center text-center text-xs sm:text-sm">
                             กรุณาวางแผ่น PCB บนพื้นที่สีขาวเท่านั้น
                             <br />
                             รองรับไฟล์ JPG, PNG
@@ -513,11 +510,11 @@ export default function PCBVerificationPage() {
                         </div>
                       )
                     ) : (
-                      <div className="space-y-6 ">
+                      <div className="space-y-6 w-full max-w-md mx-auto px-4">
                         <div className="mt-1">
                           <div className="flex flex-col items-center">
                             <div
-                              className="relative group cursor-pointer"
+                              className="relative group cursor-pointer w-full"
                               onClick={() => openPreview(preAnalysisPCB)}
                             >
                               <img
@@ -526,7 +523,7 @@ export default function PCBVerificationPage() {
                                 className="h-40 w-full object-contain rounded-md border border-gray-200"
                               />
                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
-                                <span className="text-white opacity-0 group-hover:opacity-100">
+                                <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
                                   คลิกเพื่อดูรูปภาพเต็ม
                                 </span>
                               </div>
@@ -535,11 +532,11 @@ export default function PCBVerificationPage() {
                               <span className="text-sm text-gray-700 truncate flex-1">
                                 {preAnalysisPCB.name || "Webcam Capture"}
                               </span>
-                              <button onClick={removePreAnalysisPCBImage}>
-                                {/* <X className="h-5 w-5 text-red-500 group-hover:text-red-700" /> */}
-                                <span className="text-sm text-red-700 group-hover:text-red-300 transition-colors">
-                                  Remove
-                                </span>
+                              <button
+                                onClick={removePreAnalysisPCBImage}
+                                className="text-sm text-red-700 hover:text-red-500 transition-colors"
+                              >
+                                Remove
                               </button>
                             </div>
                           </div>
@@ -564,22 +561,18 @@ export default function PCBVerificationPage() {
                       </div>
                     )
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-center p-8">
-                      <div className="w-20 h-20 rounded-full bg-gray-900 flex items-center justify-center mb-6 relative">
+                    <div className="flex flex-col items-center justify-center text-center p-6 md:p-8 w-full">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gray-900 flex items-center justify-center mb-4 md:mb-6 relative">
                         <div className="absolute inset-0 rounded-full border-2 border-dashed border-red-900 animate-spin-slow"></div>
-                        <AlertCircle className="h-10 w-10 text-red-600" />
+                        <AlertCircle className="h-8 w-8 md:h-10 md:w-10 text-red-600" />
                       </div>
-                      <h3 className="text-xl text-gray-400 mb-2">
+                      <h3 className="text-lg md:text-xl text-gray-400 mb-2">
                         NO ORIGINAL PCB IMAGE UPLOADED
                       </h3>
-                      <p className="text-gray-500 max-w-md">
-                        Please upload an Original PCB image on the left panel to
-                        begin quality analysis and verification process.
+                      <p className="text-gray-500 text-sm md:text-base max-w-md">
+                        Please upload an Original PCB image on the left panel to begin quality
+                        analysis and verification process.
                       </p>
-                      {/* <div className="flex items-center mt-6 text-red-400 text-sm">
-                                                <span>UPLOAD IMAGE FIRST</span>
-
-                                            </div> */}
                     </div>
                   )}
                 </div>

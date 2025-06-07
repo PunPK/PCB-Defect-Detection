@@ -134,13 +134,12 @@ export default function FileDetectPCB() {
           <div className="flex items-center gap-4">
             <span className="font-medium">Status:</span>
             <span
-              className={`font-medium ${
-                status.includes("detected")
-                  ? "text-green-500"
-                  : status.includes("failed")
+              className={`font-medium ${status.includes("detected")
+                ? "text-green-500"
+                : status.includes("failed")
                   ? "text-red-500"
                   : "text-blue-400"
-              }`}
+                }`}
             >
               {status}
             </span>
@@ -258,7 +257,7 @@ export default function FileDetectPCB() {
         </div>
 
         {originalImage && (
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex mb:gap-4 gap-1">
             <button
               className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700"
               onClick={() => {
@@ -293,7 +292,7 @@ export default function FileDetectPCB() {
         )}
 
         {originalImageFactory && (
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex mb:gap-4 gap-1">
             <button
               className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700"
               onClick={() => {
@@ -328,7 +327,7 @@ export default function FileDetectPCB() {
         )}
 
         {analysisImage && (
-          <div className="mt-6 flex gap-4">
+          <div className="mt-6 flex mb:gap-4 gap-1">
             <button
               className="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700"
               onClick={() => {

@@ -142,6 +142,14 @@ export default function Step1() {
     setOpenPreviewImage(false);
   };
 
+  if (isProcessing) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[#050816]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     // <div className="flex bg-gray-900 min-h-screen">
     <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
