@@ -13,6 +13,7 @@ import {
   Award,
   Factory,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const navigation = [
   { name: "HomePage", href: "/", current: false, icon: Home },
@@ -37,6 +38,16 @@ function classNames(...classes) {
 }
 
 export default function NavBar() {
+  // const hasOriginalImage = sessionStorage.getItem("OriginalImage");
+  const [hasOriginalImage, setHasOriginalImage] = useState(false)
+
+  useEffect(() => {
+    const savedImage = sessionStorage.getItem("OriginalImage");
+    if (savedImage) {
+      setHasOriginalImage(true);
+    }
+  }, []);
+
   return (
     <Disclosure
       as="nav"
@@ -72,20 +83,39 @@ export default function NavBar() {
               <div className="flex space-x-1 mt-2">
                 {navigation.map((item) => {
                   const Icon = item.icon;
+                  const isHomeDisabled = item.name === "HomePage" && hasOriginalImage;
                   return (
                     <a
                       key={item.name}
-                      href={item.href}
+                      as={isHomeDisabled ? "button" : "a"}
+                      href={isHomeDisabled ? undefined : item.href}
                       className={classNames(
                         item.current
                           ? "bg-cyan-900/40 text-cyan-400"
-                          : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
-                        "group flex items-center rounded-lg px-3 py-2 text-sm font-medium gap-2 transition-all duration-200"
+                          : isHomeDisabled
+                            ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
+                            : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
+                        "group flex items-center rounded-lg px-3 py-2 text-base font-medium gap-3 transition-all duration-200"
                       )}
                       aria-current={item.current ? "page" : undefined}
+                      disabled={isHomeDisabled}
+                      aria-disabled={isHomeDisabled}
                     >
-                      <Icon className="h-5 w-5 group-hover:text-cyan-400 transition-colors" />
+                      <Icon className={classNames(
+                        "h-6 w-6 transition-colors",
+                        isHomeDisabled
+                          ? "text-gray-500"
+                          : "group-hover:text-cyan-400"
+                      )} />
                       {item.name}
+                      {isHomeDisabled && (
+                        <span
+                          className="text-xs text-gray-400"
+                          title="Please complete current process first"
+                        >
+                          (has Original PCB)
+                        </span>
+                      )}
                     </a>
                   );
                 })}
@@ -110,21 +140,40 @@ export default function NavBar() {
         <div className="space-y-1 px-2 pb-3 pt-2 ">
           {navigation.map((item) => {
             const Icon = item.icon;
+            const isHomeDisabled = item.name === "HomePage" && hasOriginalImage;
+
             return (
               <DisclosureButton
                 key={item.name}
-                as="a"
-                href={item.href}
+                as={isHomeDisabled ? "button" : "a"}
+                href={isHomeDisabled ? undefined : item.href}
                 className={classNames(
                   item.current
                     ? "bg-cyan-900/40 text-cyan-400"
-                    : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
+                    : isHomeDisabled
+                      ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
+                      : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
                   "group flex items-center rounded-lg px-3 py-2 text-base font-medium gap-3 transition-all duration-200"
                 )}
                 aria-current={item.current ? "page" : undefined}
+                disabled={isHomeDisabled}
+                aria-disabled={isHomeDisabled}
               >
-                <Icon className="h-6 w-6 group-hover:text-cyan-400 transition-colors" />
+                <Icon className={classNames(
+                  "h-6 w-6 transition-colors",
+                  isHomeDisabled
+                    ? "text-gray-500"
+                    : "group-hover:text-cyan-400"
+                )} />
                 {item.name}
+                {isHomeDisabled && (
+                  <span
+                    className="ml-2 text-xs text-gray-400"
+                    title="Please complete current process first"
+                  >
+                    (has Original PCB)
+                  </span>
+                )}
               </DisclosureButton>
             );
           })}
