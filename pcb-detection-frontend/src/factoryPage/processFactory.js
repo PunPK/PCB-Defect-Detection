@@ -66,7 +66,7 @@ export default function ProcessFactoryWorkflow() {
     {
       id: 4,
       name: "ผิดพลาดเล็กน้อย",
-      accuracy: 85,
+      accuracy: 80,
       type: "UD",
       imageUrl: "https://example.com/pcb4.jpg",
       description: "Detailed description about this PCB defect..."
@@ -74,7 +74,22 @@ export default function ProcessFactoryWorkflow() {
     // Add more items as needed
   ];
 
-  const totalAccuracy = 96;
+  const [totalAccuracy, setTotalAccuracy] = useState(0);
+
+  useEffect(() => {
+    if (detectionResults.length === 0) {
+      setTotalAccuracy(0);
+      return;
+    }
+
+    let sum = 0;
+    for (const result of detectionResults) {
+      sum += result.accuracy;
+    }
+
+    const average = sum / detectionResults.length;
+    setTotalAccuracy(average);
+  }, [detectionResults]);
 
   const processImageQueue = () => {
     if (imageQueueRef.current.length >= 2) {
