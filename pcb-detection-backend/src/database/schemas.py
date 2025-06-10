@@ -48,7 +48,7 @@ class ImagePCBCreate(ImagePCBBase):
 
 class ImagePCB(ImagePCBBase):
     id: int
-    filepath: str
+    image_base64: str
     uploaded_at: datetime
 
     class Config:

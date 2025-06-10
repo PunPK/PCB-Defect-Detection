@@ -12,6 +12,7 @@ import LayoutWithNav from "./LayoutWithNav.js";
 import HomeFactoryWorkflow from "./factoryPage/factoryWorkflow.js";
 import LayoutWithNavFactory from "./LayoutWithNav copy.js";
 import ProcessFactoryWorkflow from "./factoryPage/processFactory.js";
+import ImageUploader from "./factoryPage/test_upload.js";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           <Route path="/Steps1" element={<Steps1 />} />
           {/* <Route path="/Steps2" element={<Steps2 />} />
           <Route path="/Steps3" element={<Steps3 />} /> */}
+          <Route path="/test_upload" element={<ImageUploader />} />
         </Routes>
       </Router>
     </>

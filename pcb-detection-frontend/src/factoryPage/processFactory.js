@@ -52,7 +52,7 @@ export default function ProcessFactoryWorkflow() {
       name: "ผิดพลากมาก",
       accuracy: 85,
       type: "UD",
-      imageUrl: "https://example.com/pcb2.jpg",
+      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
       description: "Detailed description about this PCB defect..."
     },
     {
@@ -60,7 +60,7 @@ export default function ProcessFactoryWorkflow() {
       name: "คนละแบบกันเลย",
       accuracy: 85,
       type: "UD",
-      imageUrl: "https://example.com/pcb3.jpg",
+      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
       description: "Detailed description about this PCB defect..."
     },
     {
@@ -68,7 +68,7 @@ export default function ProcessFactoryWorkflow() {
       name: "ผิดพลาดเล็กน้อย",
       accuracy: 80,
       type: "UD",
-      imageUrl: "https://example.com/pcb4.jpg",
+      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
       description: "Detailed description about this PCB defect..."
     },
     // Add more items as needed
