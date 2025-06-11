@@ -38,38 +38,51 @@ export default function ProcessFactoryWorkflow() {
   const timerRef = useRef(null);
   const imageQueueRef = useRef([]);
 
+  const [pcbFrame, setPcbFrame] = useState(null);
+  // const [isConnected, setIsConnected] = useState(false);
+  // const [status, setStatus] = useState("Not connected");
+  const [savedImages, setSavedImages] = useState([]);
+
   const detectionResults = [
     {
       id: 1,
       name: "ผิดพลาดเล็กน้อย",
       accuracy: 85,
       type: "UD",
-      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect..."
+      imageUrl: originalImageFactory
+        ? originalImageFactory.url
+        : "https://example.com/pcb1.jpg",
+      description: "Detailed description about this PCB defect...",
     },
     {
       id: 2,
       name: "ผิดพลากมาก",
       accuracy: 85,
       type: "UD",
-      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect..."
+      imageUrl: originalImageFactory
+        ? originalImageFactory.url
+        : "https://example.com/pcb1.jpg",
+      description: "Detailed description about this PCB defect...",
     },
     {
       id: 3,
       name: "คนละแบบกันเลย",
       accuracy: 85,
       type: "UD",
-      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect..."
+      imageUrl: originalImageFactory
+        ? originalImageFactory.url
+        : "https://example.com/pcb1.jpg",
+      description: "Detailed description about this PCB defect...",
     },
     {
       id: 4,
       name: "ผิดพลาดเล็กน้อย",
       accuracy: 80,
       type: "UD",
-      imageUrl: originalImageFactory ? originalImageFactory.url : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect..."
+      imageUrl: originalImageFactory
+        ? originalImageFactory.url
+        : "https://example.com/pcb1.jpg",
+      description: "Detailed description about this PCB defect...",
     },
     // Add more items as needed
   ];
@@ -202,6 +215,49 @@ export default function ProcessFactoryWorkflow() {
       sessionStorage.removeItem("PreOriginalImageFactory");
     }
   }, [originalImageFactory]);
+
+  const saveCurrentImage = async () => {
+    try {
+      const response = await fetch(
+        "http://your-raspberry-pi-ip:8000/save_image",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image_base64: pcbFrame?.src.split(",")[1] || "",
+            detection_type: "pcb",
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("Image saved successfully!");
+        fetchSavedImages(); // Refresh the saved images list
+      } else {
+        alert(`Failed to save image: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Error saving image:", error);
+      alert("Failed to save image");
+    }
+  };
+
+  const fetchSavedImages = async () => {
+    try {
+      const response = await fetch(
+        "http://your-raspberry-pi-ip:8000/get_images"
+      );
+      const data = await response.json();
+      if (response.ok) {
+        setSavedImages(data.images);
+      }
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    }
+  };
 
   // useEffect(() => {
   //     return () => {
@@ -430,10 +486,11 @@ export default function ProcessFactoryWorkflow() {
             <div className="flex flex-wrap gap-4 mb-4 items-center">
               <button
                 onClick={isStreaming ? stopDetection : startDetection}
-                className={`px-4 py-2 rounded-md font-medium ${isStreaming
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-green-600 hover:bg-green-700"
-                  }`}
+                className={`px-4 py-2 rounded-md font-medium ${
+                  isStreaming
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
                 {isStreaming ? "Stop" : "Start"}
               </button>
@@ -442,12 +499,13 @@ export default function ProcessFactoryWorkflow() {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Status:</span>
                   <span
-                    className={`font-medium ${status.includes("Error")
-                      ? "text-red-400"
-                      : isStreaming
+                    className={`font-medium ${
+                      status.includes("Error")
+                        ? "text-red-400"
+                        : isStreaming
                         ? "text-green-400"
                         : "text-blue-400"
-                      }`}
+                    }`}
                   >
                     {status}
                   </span>
@@ -500,18 +558,25 @@ export default function ProcessFactoryWorkflow() {
               </h2>
 
               <div className="bg-gray-800/50 border border-cyan-500/20 rounded-xl p-4 h-full text-center  shadow-[0_0_10px_rgba(0,200,255,0.1)] hover:shadow-[0_0_15px_rgba(0,200,255,0.2)] transition-all duration-300 group">
-                <div className="text-lg uppercase tracking-widest text-cyan-400/80 mb-1">จำนวนที่ตรวจสอบได้โดยรวม</div>
+                <div className="text-lg uppercase tracking-widest text-cyan-400/80 mb-1">
+                  จำนวนที่ตรวจสอบได้โดยรวม
+                </div>
                 <h1 className="text-4xl  font-bold text-gray-100">
-                  <span className="text-cyan-400">{detectionResults.length}</span>
+                  <span className="text-cyan-400">
+                    {detectionResults.length}
+                  </span>
                   <span className="text-gray-400 text-sm ml-2">ชิ้น</span>
                 </h1>
               </div>
 
               <div className="bg-gray-800/50 border border-purple-500/20 rounded-xl p-4 text-center shadow-[0_0_10px_rgba(180,70,255,0.1)] hover:shadow-[0_0_15px_rgba(180,70,255,0.2)] transition-all duration-300 group">
-                <div className="text-lg uppercase tracking-widest text-purple-400/80 mb-1">เปอร์เซ็นของถูกต้องของการตรวจสอบโดยรวม</div>
+                <div className="text-lg uppercase tracking-widest text-purple-400/80 mb-1">
+                  เปอร์เซ็นของถูกต้องของการตรวจสอบโดยรวม
+                </div>
                 <div className="relative inline-block">
                   <h3 className="text-2xl font-bold text-gray-100">
-                    {totalAccuracy}<span className="text-lg text-purple-400">%</span>
+                    {totalAccuracy}
+                    <span className="text-lg text-purple-400">%</span>
                   </h3>
                 </div>
                 <div className="mt-3 h-1.5 bg-gradient-to-r from-purple-500/10 to-purple-500/30 rounded-full overflow-hidden">
@@ -536,7 +601,10 @@ export default function ProcessFactoryWorkflow() {
                     <div className="absolute -top-6 -left-6 z-10 bg-cyan-500 text-gray-900 text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
                       {index + 1}
                     </div>
-                    <div className="relative group cursor-pointer mb-3" onClick={() => openPreview(result)}>
+                    <div
+                      className="relative group cursor-pointer mb-3"
+                      onClick={() => openPreview(result)}
+                    >
                       <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
                         <img
                           src={result.imageUrl}
@@ -552,7 +620,9 @@ export default function ProcessFactoryWorkflow() {
                     </div>
 
                     <div className="space-y-2 ">
-                      <h3 className="font-medium text-gray-300">{result.name}</h3>
+                      <h3 className="font-medium text-gray-300">
+                        {result.name}
+                      </h3>
                       <div className="flex justify-between items-center">
                         <span className="text-cyan-400 font-semibold">
                           ความถูกต้อง : {result.accuracy} %
@@ -631,6 +701,24 @@ export default function ProcessFactoryWorkflow() {
           </div>
         </div>
       )}
+      <div className="saved-images">
+        <h2>Saved Images</h2>
+        <button onClick={fetchSavedImages}>Refresh Saved Images</button>
+        <div className="image-grid">
+          {savedImages.map((image, index) => (
+            <div key={index} className="saved-image-item">
+              <img
+                src={`data:image/jpeg;base64,${image.image_data}`}
+                alt={`Saved PCB ${index}`}
+              />
+              <div className="image-meta">
+                <div>Type: {image.detection_type}</div>
+                <div>Date: {new Date(image.timestamp).toLocaleString()}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

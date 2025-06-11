@@ -12,6 +12,7 @@ from typing import Optional
 import logging
 import time
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Configure logging
@@ -19,6 +20,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development only, restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
@@ -180,7 +190,7 @@ async def websocket_endpoint(websocket: WebSocket):
             # PCB detection
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             lower_copper = np.array([3, 0, 0])
-            upper_copper = np.array([100, 255, 255])
+            upper_copper = np.array([70, 255, 255])
             mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
             kernel = np.ones((5, 5), np.uint8)
@@ -260,6 +270,34 @@ async def websocket_endpoint(websocket: WebSocket):
             await camera_manager.release_camera()
 
         await websocket.close()
+
+
+@app.get("/get_images")
+def get_images(limit: int = 10):
+    try:
+        conn = sqlite3.connect("database.db/images.db")
+        c = conn.cursor()
+        c.execute(
+            "SELECT timestamp, image, detection_type FROM images ORDER BY timestamp DESC LIMIT ?",
+            (limit,),
+        )
+        rows = c.fetchall()
+        conn.close()
+
+        images = []
+        for row in rows:
+            images.append(
+                {
+                    "timestamp": row[0],
+                    "image_data": base64.b64encode(row[1]).decode("utf-8"),
+                    "detection_type": row[2],
+                }
+            )
+
+        return {"images": images}
+    except Exception as e:
+        logger.error(f"Error fetching images: {str(e)}")
+        return {"message": "Failed to fetch images", "error": str(e)}
 
 
 @app.post("/save_image")
