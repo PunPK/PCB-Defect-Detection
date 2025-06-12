@@ -42,6 +42,7 @@ export default function ProcessFactoryWorkflow() {
   // const [isConnected, setIsConnected] = useState(false);
   // const [status, setStatus] = useState("Not connected");
   const [savedImages, setSavedImages] = useState([]);
+  const [resultId, setResultId] = useState(null);
 
   const detectionResults = [
     {
@@ -120,7 +121,7 @@ export default function ProcessFactoryWorkflow() {
     }
   };
 
-  const createWebSocket = () => {
+  const createWebSocket = async (result_Id) => {
     if (wsRef.current) {
       wsRef.current.close();
     }
@@ -129,8 +130,20 @@ export default function ProcessFactoryWorkflow() {
     setIsStreaming(false);
     imageQueueRef.current = [];
 
+    // const response = await fetch(originalImageFactory.url);
+    // const blob = await response.blob();
+
+    // const formData = new FormData();
+    // formData.append(
+    //   "file",
+    //   blob,
+    //   originalImageFactory.name || "factory_original_image.jpg"
+    // );
+    // formData.append("result_Id", result_Id);
+
+    console.log(result_Id);
     const ws = new WebSocket(
-      `ws://${window.location.hostname}:8000/ws/factory-workflow`
+      `ws://${window.location.hostname}:8000/factory/ws/factory-workflow?pcb_id=${result_Id}`
     );
     wsRef.current = ws;
 
@@ -162,8 +175,13 @@ export default function ProcessFactoryWorkflow() {
     };
   };
 
-  const startDetection = async () => {
-    createWebSocket();
+  const startDetection = async (result_Id) => {
+    console.log(result_Id);
+    if (!result_Id) {
+      alert("Please create a PCB before starting detection.");
+      return;
+    }
+    createWebSocket(result_Id);
   };
 
   const stopDetection = () => {
@@ -244,59 +262,17 @@ export default function ProcessFactoryWorkflow() {
       );
 
       const data = await apiResponse.json();
-      console.log(data);
 
       if (apiResponse.ok) {
         alert("Image saved successfully!");
       } else {
         alert(`Failed to save image: ${data.message}`);
       }
+      startDetection(data.result.pcb_id);
+      setResultId(data.result.pcb_id);
     } catch (error) {
       console.error("Error saving image:", error);
       alert("Failed to save image");
-    }
-  };
-
-  const createPcssb = async () => {
-    try {
-      const response = await fetch(
-        "http://your-raspberry-pi-ip:8000/save_image",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image_base64: pcbFrame?.src.split(",")[1] || "",
-            detection_type: "pcb",
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (response.ok) {
-        alert("Image saved successfully!");
-        fetchSavedImages(); // Refresh the saved images list
-      } else {
-        alert(`Failed to save image: ${data.message}`);
-      }
-    } catch (error) {
-      console.error("Error saving image:", error);
-      alert("Failed to save image");
-    }
-  };
-
-  const fetchSavedImages = async () => {
-    try {
-      const response = await fetch(
-        "http://your-raspberry-pi-ip:8000/get_images"
-      );
-      const data = await response.json();
-      if (response.ok) {
-        setSavedImages(data.images);
-      }
-    } catch (error) {
-      console.error("Error fetching saved images:", error);
     }
   };
 
@@ -526,10 +502,12 @@ export default function ProcessFactoryWorkflow() {
             </h2>
             <div className="flex flex-wrap gap-4 mb-4 items-center">
               <button
-                onClick={() => {
-                  const handler = isStreaming ? stopDetection : startDetection;
-                  createPcb();
-                  handler();
+                onClick={async () => {
+                  if (isStreaming) {
+                    stopDetection();
+                  } else {
+                    await createPcb();
+                  }
                 }}
                 // onClick={isStreaming ? stopDetection : startDetection}
                 className={`px-4 py-2 rounded-md font-medium ${
@@ -747,24 +725,6 @@ export default function ProcessFactoryWorkflow() {
           </div>
         </div>
       )}
-      <div className="saved-images">
-        <h2>Saved Images</h2>
-        <button onClick={fetchSavedImages}>Refresh Saved Images</button>
-        <div className="image-grid">
-          {savedImages.map((image, index) => (
-            <div key={index} className="saved-image-item">
-              <img
-                src={`data:image/jpeg;base64,${image.image_data}`}
-                alt={`Saved PCB ${index}`}
-              />
-              <div className="image-meta">
-                <div>Type: {image.detection_type}</div>
-                <div>Date: {new Date(image.timestamp).toLocaleString()}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

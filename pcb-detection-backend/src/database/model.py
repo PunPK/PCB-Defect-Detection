@@ -16,18 +16,33 @@ engine = create_engine("sqlite:///database.db/images.db", echo=True)
 Base = declarative_base()
 
 
+class ImagePCB(Base):
+    __tablename__ = "imagepcb"
+
+    image_id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String)
+    image_data = Column(LargeBinary)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    pcb_id = Column(Integer, ForeignKey("pcb.id"))
+
+    pcb = relationship("PCB", back_populates="images", foreign_keys=[pcb_id])
+
+
 class PCB(Base):
     __tablename__ = "pcb"
 
     id = Column(Integer, primary_key=True, index=True)
     create_at = Column(DateTime, default=datetime.utcnow)
     # originalPcb = relationship("ImagePCB", back_populates="pcb")
-    original_filename = Column(String)
-    originalPcb_data = Column(LargeBinary)
+    originalPcb = Column(Integer, ForeignKey("imagepcb.image_id"))
+    # original_filename = Column(String)
+    # originalPcb_data = Column(LargeBinary)
     result_id = Column(Integer, ForeignKey("result.results_id"))
 
     result = relationship("Result", back_populates="pcb")
-    images = relationship("ImagePCB", back_populates="pcb")
+    images = relationship(
+        "ImagePCB", back_populates="pcb", foreign_keys=[ImagePCB.pcb_id]
+    )
 
 
 class Result(Base):
@@ -39,18 +54,6 @@ class Result(Base):
     pcb_analysis = Column(Integer)
 
     pcb = relationship("PCB", back_populates="result")
-
-
-class ImagePCB(Base):
-    __tablename__ = "imagePcb"
-
-    id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String)
-    image_data = Column(LargeBinary)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
-    pcb_id = Column(Integer, ForeignKey("pcb.id"))
-
-    pcb = relationship("PCB", back_populates="images")
 
 
 Base.metadata.create_all(engine)

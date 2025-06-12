@@ -22,14 +22,54 @@ def save_uploaded_file(file: UploadFile, upload_dir: str = "uploads"):
 
 async def create_pcb(
     db: Session,
-    file: UploadFile,
 ):
-    contents = await file.read()
-    db_pcb = model.PCB(original_filename=file.filename, originalPcb_data=contents)
+    # contents = await file.read()
+    db_pcb = model.PCB()
     db.add(db_pcb)
     db.commit()
     db.refresh(db_pcb)
     return db_pcb
+
+
+async def update_pcb(
+    db: Session,
+    image_id: int,
+):
+    db_pcb = model.PCB(image_id=image_id)
+    db.add(db_pcb)
+    db.commit()
+    db.refresh(db_pcb)
+    return db_pcb
+
+
+async def upload_and_create_pcb(
+    file: UploadFile,
+    db: Session,
+):
+
+    contents = await file.read()
+
+    # Create image record
+    db_image = model.ImagePCB(
+        filename=file.filename, image_data=contents, uploaded_at=datetime.utcnow()
+    )
+    db.add(db_image)
+    db.commit()
+    db.refresh(db_image)
+
+    db_pcb = model.PCB(originalPcb=db_image.image_id)
+    db.add(db_pcb)
+    db.commit()
+    db.refresh(db_pcb)
+
+    db_image.pcb_id = db_pcb.id
+    db.commit()
+
+    return {
+        "pcb_id": db_pcb.id,
+        "image_id": db_image.image_id,
+        "filename": db_image.filename,
+    }
 
 
 def create_result(db: Session, result: schemas.ResultCreate):
@@ -52,7 +92,15 @@ async def create_pcb_image(db: Session, file: UploadFile, pcb_id: int):
 
 
 def get_pcb(db: Session, pcb_id: int):
-    return db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
+    image_data = (
+        db.query(model.ImagePCB.image_data)
+        .join(model.PCB, model.ImagePCB.image_id == model.PCB.originalPcb)
+        .filter(model.PCB.id == pcb_id)
+        .scalar()
+    )
+
+    return image_data
+    # return db.query(model.PCB.originalPcb).filter(model.PCB.id == pcb_id).scalar()
 
 
 def get_pcb_images(db: Session, pcb_id: int):
