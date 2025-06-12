@@ -3,7 +3,16 @@ import base64
 import numpy as np
 import sqlite3
 import asyncio
-from fastapi import FastAPI, WebSocket
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    APIRouter,
+    UploadFile,
+    File,
+    HTTPException,
+    Depends,
+    Form,
+)
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -13,89 +22,21 @@ import logging
 import time
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+from ..database.database import (
+    save_uploaded_file,
+    get_pcb,
+    get_pcb_images,
+    create_pcb,
+    create_pcb_image,
+)
+from ..database.model import ImagePCB, PCB, Result
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from ..database import database, model
 
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # For development only, restrict in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-def init_db():
-    conn = sqlite3.connect("database.db/images.db")
-    c = conn.cursor()
-    c.execute(
-        """
-        CREATE TABLE IF NOT EXISTS images (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            image BLOB,
-            detection_type TEXT
-        )
-    """
-    )
-    conn.commit()
-    conn.close()
-
-
-init_db()
-
-
-class ImageSaveRequest(BaseModel):
-    image_base64: str
-    detection_type: str = "pcb"
-
-
-class CameraManager:
-    def __init__(self):
-        self.camera: Optional[cv2.VideoCapture] = None
-        self.active_connections = 0
-        self.lock = asyncio.Lock()
-        self.frame_interval = 0.08  # ~12 FPS
-        self.last_save_time = 0
-        self.save_cooldown = 3
-
-    async def get_camera(self):
-        async with self.lock:
-            if self.camera is None or not self.camera.isOpened():
-                self.camera = cv2.VideoCapture(0)
-                if not self.camera.isOpened():
-                    logger.error("Failed to open camera")
-                    return None
-                # Optimize camera settings
-                self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-                self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-                self.camera.set(cv2.CAP_PROP_FPS, 10)
-                logger.info("Camera opened (640x480 @ 10FPS)")
-            return self.camera
-
-    async def release_camera(self):
-        async with self.lock:
-            if self.camera and self.camera.isOpened():
-                self.camera.release()
-                self.camera = None
-                logger.info("Camera released")
-
-    def can_save_image(self):
-        current_time = time.time()
-        if current_time - self.last_save_time > self.save_cooldown:
-            self.last_save_time = current_time
-            return True
-        return False
-
-
-camera_manager = CameraManager()
+router = APIRouter()
 
 
 def expand_contour(contour, percentage):
@@ -152,24 +93,50 @@ def four_point_transform(image, pts):
     return warped
 
 
-def save_image_to_db(image_data, detection_type="pcb"):
-    try:
-        conn = sqlite3.connect("database.db/images.db")
-        c = conn.cursor()
-        c.execute(
-            "INSERT INTO images (timestamp, image, detection_type) VALUES (?, ?, ?)",
-            (datetime.now().isoformat(), image_data, detection_type),
-        )
-        conn.commit()
-        conn.close()
-        logger.info(f"Image saved to DB (type: {detection_type})")
-        return True
-    except Exception as e:
-        logger.error(f"Error saving image to DB: {str(e)}")
-        return False
+class CameraManager:
+    def __init__(self):
+        self.camera: Optional[cv2.VideoCapture] = None
+        self.active_connections = 0
+        self.lock = asyncio.Lock()
+        self.frame_interval = 0.08
+
+    async def get_camera(self):
+        async with self.lock:
+            if self.camera is None or not self.camera.isOpened():
+                self.camera = cv2.VideoCapture(0)
+                if not self.camera.isOpened():
+                    logger.error("Failed to open camera")
+                    return None
+                # Optimize for Raspberry Pi
+                self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                self.camera.set(cv2.CAP_PROP_FPS, 10)
+                logger.info("Camera opened (640x480 @ 10FPS)")
+            return self.camera
+
+    async def release_camera(self):
+        async with self.lock:
+            if self.camera and self.camera.isOpened():
+                self.camera.release()
+                self.camera = None
+                logger.info("Camera released")
 
 
-@app.websocket("/ws/factory-workflow")
+camera_manager = CameraManager()
+
+
+def image_preprocess(img):
+    img = cv2.GaussianBlur(img, (5, 5), 0)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    return clahe.apply(img)
+
+
+def image_to_base64(image):
+    _, buffer = cv2.imencode(".jpg", image)
+    return base64.b64encode(buffer).decode("utf-8")
+
+
+@router.websocket("/ws/factory-workflow")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     camera_manager.active_connections += 1
@@ -242,7 +209,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         if pcb_frame is not None and camera_manager.can_save_image():
                             _, buffer = cv2.imencode(".jpg", pcb_frame)
                             image_data = buffer.tobytes()
-                            save_image_to_db(image_data, "centered_pcb")
+                            save_uploaded_file(image_data, "centered_pcb")
 
             # Send display frame with annotations
             _, display_buffer = cv2.imencode(".jpg", display_frame)
@@ -272,51 +239,50 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.close()
 
 
-@app.get("/get_images")
-def get_images(limit: int = 10):
-    try:
-        conn = sqlite3.connect("database.db/images.db")
-        c = conn.cursor()
-        c.execute(
-            "SELECT timestamp, image, detection_type FROM images ORDER BY timestamp DESC LIMIT ?",
-            (limit,),
-        )
-        rows = c.fetchall()
-        conn.close()
+@router.get("/get_images")
+async def get_images(
+    pcb_id: int = 1,
+    db: Session = Depends(model.get_db),
+):
+    result = await database.create_pcb_image(db=db, pcb_id=pcb_id)
+    return {"status": "success", "image_id": result.id}
 
+
+async def get_images(db: Session = Depends(model.get_db), pcb_id: int = 1):
+    try:
+        rows = await database.get_pcb(db=db, pcb_id=pcb_id)
         images = []
+
+        print("=================>" + rows)
         for row in rows:
             images.append(
                 {
                     "timestamp": row[0],
-                    "image_data": base64.b64encode(row[1]).decode("utf-8"),
-                    "detection_type": row[2],
+                    "original_filename": row[1],
+                    "image_data": base64.b64encode(row[2]).decode("utf-8"),
+                    # "detection_type": row[2],
                 }
             )
-
+        print("=================>" + images)
         return {"images": images}
     except Exception as e:
         logger.error(f"Error fetching images: {str(e)}")
         return {"message": "Failed to fetch images", "error": str(e)}
 
 
-@app.post("/save_image")
-def save_image(data: ImageSaveRequest):
-    try:
-        image_data = base64.b64decode(data.image_base64)
-        save_image_to_db(image_data, data.detection_type)
-        return {"message": "Image saved successfully"}
-    except Exception as e:
-        logger.error(f"Error saving image: {str(e)}")
-        return {"message": "Failed to save image", "error": str(e)}
+@router.post("/create_pcb")
+async def create_pcb(
+    file: UploadFile = File(...),
+    db: Session = Depends(model.get_db),
+):
+    result = await database.create_pcb(db=db, file=file)
 
 
-if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        workers=1,  # ใช้ 1 worker เพราะเหมาะสำหรับ Raspberry Pi
-        ws_ping_interval=30,
-        ws_ping_timeout=30,
-    )
+@router.post("/create_pcb_image")
+async def create_pcb_image(
+    pcb_id: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(model.get_db),
+):
+    result = await database.create_pcb_image(db=db, file=file, pcb_id=pcb_id)
+    return {"status": "success", "image_id": result.id}

@@ -23,7 +23,7 @@ const PCBCameraView = () => {
 
   const connectWebSocket = () => {
     const ws = new WebSocket(
-      "ws://your-raspberry-pi-ip:8000/ws/factory-workflow"
+      `ws://${window.location.hostname}:8000/ws/factory-workflow`
     );
     wsRef.current = ws;
 
@@ -86,7 +86,7 @@ const PCBCameraView = () => {
   const saveCurrentImage = async () => {
     try {
       const response = await fetch(
-        `http:/${window.location.hostname}:8000/save_image`,
+        `http:/${window.location.hostname}:8000/factory/save_image`,
         {
           method: "POST",
           headers: {
@@ -114,7 +114,7 @@ const PCBCameraView = () => {
 
   const fetchSavedImages = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/get_images`);
+      const response = await fetch(`http://localhost:8000/factory/get_images`);
       const data = await response.json();
       if (response.ok) {
         console.log(data.images);

@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
-engine = create_engine("sqlite:///database.db", echo=True)
+engine = create_engine("sqlite:///database.db/images.db", echo=True)
 Base = declarative_base()
 
 
@@ -20,8 +20,10 @@ class PCB(Base):
     __tablename__ = "pcb"
 
     id = Column(Integer, primary_key=True, index=True)
-    datetime = Column(DateTime, default=datetime.utcnow)
-    OriginalPcb = Column(Integer)
+    create_at = Column(DateTime, default=datetime.utcnow)
+    # originalPcb = relationship("ImagePCB", back_populates="pcb")
+    original_filename = Column(String)
+    originalPcb_data = Column(LargeBinary)
     result_id = Column(Integer, ForeignKey("result.results_id"))
 
     result = relationship("Result", back_populates="pcb")

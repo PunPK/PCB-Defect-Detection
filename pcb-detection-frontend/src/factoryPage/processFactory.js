@@ -216,7 +216,48 @@ export default function ProcessFactoryWorkflow() {
     }
   }, [originalImageFactory]);
 
-  const saveCurrentImage = async () => {
+  const createPcb = async () => {
+    if (!originalImageFactory) {
+      alert("No PCB frame available to save.");
+      return;
+    }
+
+    try {
+      const response = await fetch(originalImageFactory.url);
+      const blob = await response.blob();
+
+      const formData = new FormData();
+      // formData.append("file", blob, "factory_original_image.jpg");
+      formData.append(
+        "file",
+        blob,
+        originalImageFactory.name || "factory_original_image.jpg"
+      );
+      formData.append("pcb_id", 1);
+
+      const apiResponse = await fetch(
+        `http://${window.location.hostname}:8000/factory/create_pcb`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await apiResponse.json();
+      console.log(data);
+
+      if (apiResponse.ok) {
+        alert("Image saved successfully!");
+      } else {
+        alert(`Failed to save image: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Error saving image:", error);
+      alert("Failed to save image");
+    }
+  };
+
+  const createPcssb = async () => {
     try {
       const response = await fetch(
         "http://your-raspberry-pi-ip:8000/save_image",
@@ -485,7 +526,12 @@ export default function ProcessFactoryWorkflow() {
             </h2>
             <div className="flex flex-wrap gap-4 mb-4 items-center">
               <button
-                onClick={isStreaming ? stopDetection : startDetection}
+                onClick={() => {
+                  const handler = isStreaming ? stopDetection : startDetection;
+                  createPcb();
+                  handler();
+                }}
+                // onClick={isStreaming ? stopDetection : startDetection}
                 className={`px-4 py-2 rounded-md font-medium ${
                   isStreaming
                     ? "bg-red-600 hover:bg-red-700"
