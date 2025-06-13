@@ -221,7 +221,7 @@ async def websocket_endpoint(
                             _, buffer = cv2.imencode(".jpg", pcb_frame)
                             image_data = buffer.tobytes()
                             #######################################################
-                            prepare_result = analysis_pcb_prepare(
+                            prepare_result = await analysis_pcb_prepare(
                                 original_base64, image_data
                             )
                             print(prepare_result)
@@ -255,13 +255,21 @@ async def websocket_endpoint(
         await websocket.close()
 
 
-@router.get("/get_images")
+@router.get("/get_images/{pcb_id}")
 async def get_images(
-    pcb_id: int = 1,
+    pcb_id: int,
     db: Session = Depends(model.get_db),
 ):
-    result = await database.create_pcb_image(db=db, pcb_id=pcb_id)
-    return {"status": "success", "image_id": result.id}
+    print(pcb_id)
+    image = database.get_pcb_images(db=db, pcb_id=pcb_id)
+
+    return {
+        "status": "success",
+        "image_id": image[0].image_id,
+        "filename": image[0].filename,
+        "uploaded_at": image[0].uploaded_at.isoformat(),
+        "image_data": (base64.b64encode(image[0].image_data).decode("utf-8")),
+    }
 
 
 async def get_images(db: Session = Depends(model.get_db), pcb_id: int = 1):
@@ -306,14 +314,19 @@ async def create_pcb_image(
     return result
 
 
-async def analysis_pcb_prepare(original_base64: str, image_bytes: bytes):
+async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
     try:
-        decoded_bytes = base64.b64decode(original_base64)
-        template_np = np.frombuffer(decoded_bytes, np.uint8)
+        # original_bytes คือ bytes จากฐานข้อมูล ไม่ต้อง base64 decode
+        template_np = np.frombuffer(original_bytes, np.uint8)
         template_img = cv2.imdecode(template_np, cv2.IMREAD_COLOR)
 
         defective_np = np.frombuffer(image_bytes, np.uint8)
         defective_img = cv2.imdecode(defective_np, cv2.IMREAD_COLOR)
+
+        if template_img is None:
+            raise ValueError("Template image decoding failed (base64 may be invalid)")
+        if defective_img is None:
+            raise ValueError("Defective image decoding failed (bytes may be invalid)")
 
         template = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
         defective = cv2.cvtColor(defective_img, cv2.COLOR_BGR2GRAY)

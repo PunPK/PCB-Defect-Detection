@@ -3,6 +3,7 @@ import "./test.css";
 
 const PCBCameraView = () => {
   const [originalFrame, setOriginalFrame] = useState(null);
+  const [originalImage, setOriginalImage] = useState(null);
   const [pcbFrame, setPcbFrame] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [status, setStatus] = useState("Not connected");
@@ -11,15 +12,15 @@ const PCBCameraView = () => {
   const originalCanvasRef = useRef(null);
   const pcbCanvasRef = useRef(null);
 
-  useEffect(() => {
-    connectWebSocket();
+  // useEffect(() => {
+  //   connectWebSocket();
 
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
+  //   return () => {
+  //     if (wsRef.current) {
+  //       wsRef.current.close();
+  //     }
+  //   };
+  // }, []);
 
   const connectWebSocket = () => {
     const ws = new WebSocket(
@@ -30,7 +31,7 @@ const PCBCameraView = () => {
     ws.onopen = () => {
       setIsConnected(true);
       setStatus("Connected to camera feed");
-      console.log("WebSocket Connected");
+      // console.log("WebSocket Connected");
     };
 
     ws.onmessage = (event) => {
@@ -61,14 +62,14 @@ const PCBCameraView = () => {
     };
 
     ws.onerror = (error) => {
-      console.error("WebSocket Error:", error);
+      // console.error("WebSocket Error:", error);
       setStatus("Connection error");
     };
 
     ws.onclose = () => {
       setIsConnected(false);
       setStatus("Disconnected");
-      console.log("WebSocket Disconnected");
+      // console.log("WebSocket Disconnected");
       // Attempt to reconnect after a delay
       setTimeout(connectWebSocket, 3000);
     };
@@ -116,9 +117,26 @@ const PCBCameraView = () => {
     try {
       const response = await fetch(`http://localhost:8000/factory/get_images`);
       const data = await response.json();
+      console.log("Fetched saved images:", data);
       if (response.ok) {
+        // console.log("Fetched saved images:", data);
         console.log(data.images);
         setSavedImages(data.images);
+      }
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    }
+  };
+
+  const fetchOriginalImages = async (pcb_Id) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/factory/get_images/${pcb_Id}`
+      );
+      const data = await response.json();
+      console.log("Fetched saved images:", data);
+      if (response.ok) {
+        setOriginalImage(data);
       }
     } catch (error) {
       console.error("Error fetching saved images:", error);
@@ -129,7 +147,7 @@ const PCBCameraView = () => {
     <div className="pcb-detection-app">
       <h1>PCB Detection System</h1>
       <div className="status">Status: {status}</div>
-
+      {/* 
       <div className="camera-container">
         <div className="frame-view">
           <h2>Live Camera Feed</h2>
@@ -147,9 +165,31 @@ const PCBCameraView = () => {
             Save PCB Image
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="saved-images">
+        <h2>Images</h2>
+        <button onClick={() => fetchOriginalImages(18)}>
+          {" "}
+          #test Refresh fetchOriginal Image
+        </button>
+        {originalImage && (
+          <div className="image-grid">
+            <img
+              src={`data:image/jpeg;base64,${originalImage.image_data}`}
+              alt={originalImage.filename}
+            />
+            <div className="image-meta">
+              <div>Type: {originalImage.filename}</div>
+              <div>
+                Date: {new Date(originalImage.uploaded_at).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* <div className="saved-images">
         <h2>Saved Images</h2>
         <button onClick={fetchSavedImages}>Refresh Saved Images</button>
         <div className="image-grid">
@@ -160,13 +200,13 @@ const PCBCameraView = () => {
                 alt={`Saved PCB ${index}`}
               />
               <div className="image-meta">
-                <div>Type: {image.detection_type}</div>
-                <div>Date: {new Date(image.timestamp).toLocaleString()}</div>
+                <div>Type: {image.filename}</div>
+                <div>Date: {new Date(image.uploaded_at).toLocaleString()}</div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
