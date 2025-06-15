@@ -251,7 +251,7 @@ export default function ProcessFactoryWorkflow() {
         blob,
         originalImageFactory.name || "factory_original_image.jpg"
       );
-      formData.append("pcb_id", 1);
+      // formData.append("pcb_id", 1);
 
       const apiResponse = await fetch(
         `http://${window.location.hostname}:8000/factory/create_pcb`,

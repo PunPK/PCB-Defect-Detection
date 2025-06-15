@@ -53,6 +53,13 @@ class Result(Base):
     description = Column(String)
     pcb_analysis = Column(Integer)
 
+    template_image = Column(LargeBinary)
+    defective_image = Column(LargeBinary)
+    aligned_image = Column(LargeBinary)
+    diff_image = Column(LargeBinary)
+    cleaned_image = Column(LargeBinary)
+    result_image = Column(LargeBinary)
+
     pcb = relationship("PCB", back_populates="result")
 
 

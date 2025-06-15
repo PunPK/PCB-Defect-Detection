@@ -72,11 +72,45 @@ async def upload_and_create_pcb(
     }
 
 
-def create_result(db: Session, result: schemas.ResultCreate):
-    db_result = model.Result(**result.dict())
+async def create_pcb_result(
+    db: Session,
+    prepare_result: dict,
+    pcb_id: int,
+):
+    def print_dict_structure(d, indent=0):
+        for key, value in d.items():
+            print("  " * indent + str(key), end="")
+            if isinstance(value, dict):
+                print(" (dict):")
+                print_dict_structure(value, indent + 1)
+            else:
+                print(":", type(value))
+
+    print("Dictionary structure:")
+    print_dict_structure(prepare_result)
+
+    print("Creating PCB result in database...")
+    print(prepare_result.result)
+    db_result = model.Result(
+        accuracy=prepare_result.accuracy,
+        description=prepare_result.result,
+        template_image=prepare_result.images.template,
+        defective_image=prepare_result.images.defective,
+        aligned_image=prepare_result.images.aligned,
+        diff_image=prepare_result.images.diff,
+        cleaned_image=prepare_result.images.cleaned,
+        result_image=prepare_result.images.result,
+    )
     db.add(db_result)
     db.commit()
     db.refresh(db_result)
+
+    pcb = db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
+    if pcb:
+        pcb.result_id = db_result.results_id
+        db.commit()
+        db.refresh(pcb)
+
     return db_result
 
 

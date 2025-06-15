@@ -153,7 +153,6 @@ async def websocket_endpoint(
             return
 
         original_base64 = database.get_pcb(db=db, pcb_id=pcb_id)
-        print("Original PCB:", original_base64)
 
         if not original_base64:
             await websocket.close()
@@ -224,8 +223,13 @@ async def websocket_endpoint(
                             prepare_result = await analysis_pcb_prepare(
                                 original_base64, image_data
                             )
-                            print(prepare_result)
-                            # save_uploaded_file(image_data, "centered_pcb")
+                            if prepare_result["detected"]:
+
+                                print(prepare_result["detected"])
+                                push_to_database = await database.create_pcb_result(
+                                    db=db, prepare_result=prepare_result, pcb_id=pcb_id
+                                )
+                                print("Database updated with PCB result")
 
             # Send display frame with annotations
             _, display_buffer = cv2.imencode(".jpg", display_frame)
@@ -359,14 +363,14 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             return {
                 "detected": False,
                 "message": "Not enough features for matching",
-                "images": {
-                    "template": image_to_base64(
-                        cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
-                    ),
-                    "defective": image_to_base64(
-                        cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
-                    ),
-                },
+                # "images": {
+                #     "template": image_to_base64(
+                #         cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
+                #     ),
+                #     "defective": image_to_base64(
+                #         cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
+                #     ),
+                # },
             }
 
         # Feature Matching and Homography calculation
@@ -383,14 +387,14 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             return {
                 "detected": False,
                 "message": "Not enough good matches for alignment",
-                "images": {
-                    "template": image_to_base64(
-                        cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
-                    ),
-                    "defective": image_to_base64(
-                        cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
-                    ),
-                },
+                # "images": {
+                #     "template": image_to_base64(
+                #         cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
+                #     ),
+                #     "defective": image_to_base64(
+                #         cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
+                #     ),
+                # },
             }
 
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(
