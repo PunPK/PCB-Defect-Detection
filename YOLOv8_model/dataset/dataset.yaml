@@ -1,0 +1,9 @@
+
+train: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\train\images
+val: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\test\images
+
+
+names:
+    0: Open Circuit
+    1: Missing Hole
+    2: Mouse Bite
