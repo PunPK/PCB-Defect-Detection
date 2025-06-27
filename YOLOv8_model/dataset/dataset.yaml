@@ -1,6 +1,6 @@
 
-train: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\train\images
-val: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\test\images
+train: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\train
+val: C:\Users\ASUS\Desktop\pcb_detection\YOLOv8_model\dataset\test
 
 
 names:
