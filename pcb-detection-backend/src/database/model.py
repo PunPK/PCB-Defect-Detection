@@ -30,6 +30,23 @@ class ImagePCB(Base):
     pcb = relationship("PCB", back_populates="images", foreign_keys=[pcb_id])
 
 
+class Result(Base):
+    __tablename__ = "result"
+
+    results_id = Column(Integer, primary_key=True, index=True)
+    pcb_result_id = Column(Integer, ForeignKey("pcb.id"))
+    accuracy = Column(DECIMAL(5, 2))
+    description = Column(String)
+    template_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    defective_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    aligned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    diff_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    cleaned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    result_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+
+    pcb = relationship("PCB", back_populates="result", foreign_keys=[pcb_result_id])
+
+
 class PCB(Base):
     __tablename__ = "pcb"
 
@@ -42,27 +59,12 @@ class PCB(Base):
     # originalPcb_data = Column(LargeBinary)
     result_id = Column(Integer, ForeignKey("result.results_id"))
 
-    result = relationship("Result", back_populates="pcb")
+    result = relationship(
+        "Result", back_populates="pcb", foreign_keys=[Result.pcb_result_id]
+    )
     images = relationship(
         "ImagePCB", back_populates="pcb", foreign_keys=[ImagePCB.pcb_id]
     )
-
-
-class Result(Base):
-    __tablename__ = "result"
-
-    results_id = Column(Integer, primary_key=True, index=True)
-    accuracy = Column(DECIMAL(5, 2))
-    description = Column(String)
-
-    template_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-    defective_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-    aligned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-    diff_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-    cleaned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-    result_image = Column(Integer, ForeignKey("imagepcb.image_id"))
-
-    pcb = relationship("PCB", back_populates="result")
 
 
 Base.metadata.create_all(engine)

@@ -118,6 +118,7 @@ async def create_pcb_result(
 
     db_result = model.Result(
         accuracy=float(prepare_result["accuracy"]),
+        pcb_result_id=pcb_id,
         description=prepare_result["result"],
         template_image=image_ids["template"],
         defective_image=image_ids["defective"],
