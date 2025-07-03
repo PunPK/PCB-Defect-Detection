@@ -171,6 +171,10 @@ async def websocket_endpoint(
         # template_np = np.frombuffer(decoded_bytes, np.uint8)
         # template_image = cv2.imdecode(template_np, cv2.IMREAD_COLOR)
 
+        center_line_start_time = None
+        center_line_detected = False
+        cooldown_seconds = 4
+
         while True:
             ret, frame = camera.read()
             if not ret:
@@ -216,35 +220,48 @@ async def websocket_endpoint(
 
                     x, y, w, h = cv2.boundingRect(hull)
                     if x < center_x < x + w:
-                        center_line_detected = True
-                        cv2.putText(
-                            display_frame,
-                            "CENTERED",
-                            (center_x - 50, 30),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.7,
-                            (0, 0, 255),
-                            2,
-                        )
-
-                        # Save image if cooldown has passed
-                        print("=====> Center line detected")
-                        if pcb_frame is not None:
-                            _, buffer = cv2.imencode(".jpg", pcb_frame)
-                            image_data = buffer.tobytes()
-                            #######################################################
-                            prepare_result = await analysis_pcb_prepare(
-                                original_base64, image_data
+                        if center_line_start_time is None:
+                            center_line_start_time = time.time()  # เริ่มจับเวลา
+                        elapsed = time.time() - center_line_start_time
+                        if not center_line_detected:
+                            center_line_detected = True
+                            cv2.putText(
+                                display_frame,
+                                "CENTERED",
+                                (center_x - 50, 30),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.7,
+                                (0, 0, 255),
+                                2,
                             )
-                            print("=====> PCB analysis prepared")
-                            print(prepare_result)
-                            if prepare_result["detected"]:
+                        if elapsed >= cooldown_seconds:
 
-                                print(prepare_result["detected"])
-                                push_to_database = await database.create_pcb_result(
-                                    db=db, prepare_result=prepare_result, pcb_id=pcb_id
+                            # Save image if cooldown has passed
+                            print("=====> Center line detected")
+                            if pcb_frame is not None:
+                                _, buffer = cv2.imencode(".jpg", pcb_frame)
+                                image_data = buffer.tobytes()
+                                #######################################################
+                                prepare_result = await analysis_pcb_prepare(
+                                    original_base64, image_data
                                 )
-                                print("=====> Database updated with PCB result")
+                                print("=====> PCB analysis prepared")
+                                print(prepare_result)
+                                if prepare_result["detected"]:
+
+                                    print(prepare_result["detected"])
+                                    push_to_database = await database.create_pcb_result(
+                                        db=db,
+                                        prepare_result=prepare_result,
+                                        pcb_id=pcb_id,
+                                    )
+                                    print("=====> Database updated with PCB result")
+                                    center_line_start_time = None
+                                    center_line_detected = False
+
+                    else:
+                        center_line_start_time = None
+                        center_line_detected = False
 
             # Send display frame with annotations
             _, display_buffer = cv2.imencode(".jpg", display_frame)

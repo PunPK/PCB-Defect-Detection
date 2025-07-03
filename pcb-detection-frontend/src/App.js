@@ -23,8 +23,6 @@ function App() {
           {/* with NavBar */}
           <Route element={<LayoutWithNav />}>
             <Route path="/" element={<Home />} />
-            <Route path="/camDetectPCB" element={<CamDetectPCB />} />
-            <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
             <Route path="/testcam" element={<TestCam />} />
             <Route path="/PCBVerification" element={<PCBVerificationPage />} />
             <Route path="/AboutUs" element={<AboutUs />} />
@@ -32,8 +30,10 @@ function App() {
 
           <Route element={<LayoutWithNavFactory />}>
             <Route path="/home-factory" element={<HomeFactoryWorkflow />} />
+            <Route path="/camDetectPCB" element={<CamDetectPCB />} />
+            <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
             <Route
-              path="/factoryWorkflow"
+              path="/factoryWorkflow/:pcb_id"
               element={<ProcessFactoryWorkflow />}
             />
           </Route>

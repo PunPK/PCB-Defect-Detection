@@ -82,7 +82,7 @@ export default function FileDetectPCB() {
     }
   };
 
-  const captureDetection = () => {
+  const captureDetection = async () => {
     if (!croppedPCB) {
       alert("No PCB image available to capture!");
       return;
@@ -107,7 +107,8 @@ export default function FileDetectPCB() {
           "OriginalImageFactory",
           JSON.stringify(newImage)
         );
-        navigate(`/factoryWorkflow`);
+        const pcb_id = await createPcb();
+        navigate(`/factoryWorkflow/${pcb_id}`);
       }
     } catch (err) {
       console.error("Error saving to sessionStorage:", err);
@@ -116,6 +117,42 @@ export default function FileDetectPCB() {
 
   const waiting = (seconds) =>
     new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+
+  const createPcb = async () => {
+    if (!originalImageFactory) {
+      alert("No PCB frame available to save.");
+      return;
+    }
+
+    try {
+      const response = await fetch(originalImageFactory.url);
+      const blob = await response.blob();
+
+      const formData = new FormData();
+      formData.append("file", blob, originalImageFactory.name);
+
+      const apiResponse = await fetch(
+        `http://${window.location.hostname}:8000/factory/create_pcb`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await apiResponse.json();
+
+      if (apiResponse.ok) {
+        alert("Image saved successfully!");
+      } else {
+        alert(`Failed to save image: ${data.message}`);
+      }
+
+      return data.result.pcb_id;
+    } catch (error) {
+      console.error("Error saving image:", error);
+      alert("Failed to save image");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
@@ -134,12 +171,13 @@ export default function FileDetectPCB() {
           <div className="flex items-center gap-4">
             <span className="font-medium">Status:</span>
             <span
-              className={`font-medium ${status.includes("detected")
-                ? "text-green-500"
-                : status.includes("failed")
+              className={`font-medium ${
+                status.includes("detected")
+                  ? "text-green-500"
+                  : status.includes("failed")
                   ? "text-red-500"
                   : "text-blue-400"
-                }`}
+              }`}
             >
               {status}
             </span>

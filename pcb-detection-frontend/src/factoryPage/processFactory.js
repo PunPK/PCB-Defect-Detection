@@ -11,7 +11,7 @@ import {
   ArchiveX,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import "../page/uploadPage.css";
 
 import { Button } from "../page/uploadPCBChecked.js";
@@ -25,6 +25,7 @@ export default function ProcessFactoryWorkflow() {
   const [status, setStatus] = useState("Disconnected");
   const [fileName, setFileName] = useState("");
   const [fps, setFps] = useState(0);
+  const { pcb_id } = useParams();
   // const [showCamera, setShowCamera] = useState(false)
   // const videoRef = useRef(null)
   // const canvasRef = useRef(null)
@@ -43,7 +44,6 @@ export default function ProcessFactoryWorkflow() {
   // const [status, setStatus] = useState("Not connected");
   const [savedImages, setSavedImages] = useState([]);
   const [resultId, setResultId] = useState(null);
-
   const detectionResults = [
     {
       id: 1,
@@ -216,65 +216,80 @@ export default function ProcessFactoryWorkflow() {
     }
   };
 
-  useEffect(() => {
-    const savedImage = sessionStorage.getItem("OriginalImageFactory");
-    if (savedImage) {
-      setOriginalImageFactory(JSON.parse(savedImage));
-    }
-  }, []);
+  // useEffect(() => {
+  //   const savedImage = sessionStorage.getItem("OriginalImageFactory");
+  //   if (savedImage) {
+  //     setOriginalImageFactory(JSON.parse(savedImage));
+  //   }
+  // }, []);
 
-  useEffect(() => {
-    if (originalImageFactory) {
-      sessionStorage.setItem(
-        "PreOriginalImageFactory",
-        JSON.stringify(originalImageFactory)
-      );
-    } else {
-      sessionStorage.removeItem("PreOriginalImageFactory");
-    }
-  }, [originalImageFactory]);
+  // useEffect(() => {
+  //   if (originalImageFactory) {
+  //     sessionStorage.setItem(
+  //       "PreOriginalImageFactory",
+  //       JSON.stringify(originalImageFactory)
+  //     );
+  //   } else {
+  //     sessionStorage.removeItem("PreOriginalImageFactory");
+  //   }
+  // }, [originalImageFactory]);
 
-  const createPcb = async () => {
-    if (!originalImageFactory) {
-      alert("No PCB frame available to save.");
-      return;
-    }
+  // const createPcb = async () => {
+  //   if (!originalImageFactory) {
+  //     alert("No PCB frame available to save.");
+  //     return;
+  //   }
 
+  //   try {
+  //     const response = await fetch(originalImageFactory.url);
+  //     const blob = await response.blob();
+
+  //     const formData = new FormData();
+  //     // formData.append("file", blob, "factory_original_image.jpg");
+  //     formData.append("file", blob, originalImageFactory.name);
+  //     // formData.append("pcb_id", 1);
+
+  //     const apiResponse = await fetch(
+  //       `http://${window.location.hostname}:8000/factory/create_pcb`,
+  //       {
+  //         method: "POST",
+  //         body: formData,
+  //       }
+  //     );
+
+  //     const data = await apiResponse.json();
+
+  //     if (apiResponse.ok) {
+  //       alert("Image saved successfully!");
+  //     } else {
+  //       alert(`Failed to save image: ${data.message}`);
+  //     }
+  //     startDetection(data.result.pcb_id);
+  //     setResultId(data.result.pcb_id);
+  //   } catch (error) {
+  //     console.error("Error saving image:", error);
+  //     alert("Failed to save image");
+  //   }
+  // };
+
+  const fetchOriginalImages = async (pcb_Id) => {
     try {
-      const response = await fetch(originalImageFactory.url);
-      const blob = await response.blob();
-
-      const formData = new FormData();
-      // formData.append("file", blob, "factory_original_image.jpg");
-      formData.append(
-        "file",
-        blob,
-        originalImageFactory.name || "factory_original_image.jpg"
+      const response = await fetch(
+        `http://localhost:8000/factory/get_images/${pcb_Id}`
       );
-      // formData.append("pcb_id", 1);
-
-      const apiResponse = await fetch(
-        `http://${window.location.hostname}:8000/factory/create_pcb`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const data = await apiResponse.json();
-
-      if (apiResponse.ok) {
-        alert("Image saved successfully!");
-      } else {
-        alert(`Failed to save image: ${data.message}`);
+      const data = await response.json();
+      console.log("Fetched saved images:", data);
+      if (data.status === "success") {
+        setOriginalImageFactory(data);
       }
-      startDetection(data.result.pcb_id);
-      setResultId(data.result.pcb_id);
     } catch (error) {
-      console.error("Error saving image:", error);
-      alert("Failed to save image");
+      console.error("Error fetching saved images:", error);
     }
   };
+
+  useEffect(() => {
+    fetchOriginalImages(pcb_id);
+  }, [pcb_id]);
 
   // useEffect(() => {
   //     return () => {
@@ -352,7 +367,7 @@ export default function ProcessFactoryWorkflow() {
     // console.log(originalPCB)
     if (originalImageFactory && originalImageFactory.url) {
       URL.revokeObjectURL(originalImageFactory.url);
-      sessionStorage.removeItem("OriginalImage");
+      sessionStorage.removeItem("OriginalImageFactory");
     }
     setOriginalImageFactory(null);
     if (fileInputRef.current) {
@@ -405,8 +420,8 @@ export default function ProcessFactoryWorkflow() {
                 <div className="w-full h-full flex flex-col">
                   <div className="relative mb-4 gradient-border-red rounded-lg overflow-hidden">
                     <img
-                      src={originalImageFactory.url}
-                      alt={originalImageFactory.name}
+                      src={`data:image/jpeg;base64,${originalImageFactory.image_data}`}
+                      alt={originalImageFactory.filename}
                       className="h-full max-h-60 w-full object-contain rounded-md border border-gray-200"
                     />
                     {/* <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none"></div> */}
@@ -416,7 +431,7 @@ export default function ProcessFactoryWorkflow() {
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse-red"></div>
                       <span className="text-sm text-gray-300 truncate max-w-[160px]">
-                        {originalImageFactory.name}
+                        {originalImageFactory.filename}
                       </span>
                     </div>
                     <button
@@ -502,14 +517,11 @@ export default function ProcessFactoryWorkflow() {
             </h2>
             <div className="flex flex-wrap gap-4 mb-4 items-center">
               <button
-                onClick={async () => {
-                  if (isStreaming) {
-                    stopDetection();
-                  } else {
-                    await createPcb();
-                  }
-                }}
-                // onClick={isStreaming ? stopDetection : startDetection}
+                // onClick={() => stopDetection()}
+                // onClick={isStreaming ? stopDetection : startDetection(pcb_id)}
+                onClick={
+                  isStreaming ? stopDetection : () => startDetection(pcb_id)
+                }
                 className={`px-4 py-2 rounded-md font-medium ${
                   isStreaming
                     ? "bg-red-600 hover:bg-red-700"
