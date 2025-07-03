@@ -22,8 +22,8 @@ class ImagePCB(Base):
     __tablename__ = "imagepcb"
 
     image_id = Column(Integer, primary_key=True, index=True)
-    filename = Column(String)
-    filepath = Column(String)
+    filename = Column(String, nullable=False)
+    filepath = Column(String, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     pcb_id = Column(Integer, ForeignKey("pcb.id"))
 
@@ -54,14 +54,13 @@ class Result(Base):
     results_id = Column(Integer, primary_key=True, index=True)
     accuracy = Column(DECIMAL(5, 2))
     description = Column(String)
-    pcb_analysis = Column(Integer)
 
-    template_image = Column(LargeBinary)
-    defective_image = Column(LargeBinary)
-    aligned_image = Column(LargeBinary)
-    diff_image = Column(LargeBinary)
-    cleaned_image = Column(LargeBinary)
-    result_image = Column(LargeBinary)
+    template_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    defective_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    aligned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    diff_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    cleaned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    result_image = Column(Integer, ForeignKey("imagepcb.image_id"))
 
     pcb = relationship("PCB", back_populates="result")
 

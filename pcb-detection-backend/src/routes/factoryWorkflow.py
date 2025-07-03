@@ -160,12 +160,16 @@ async def websocket_endpoint(
             await websocket.close()
             return
 
-        original_base64 = database.get_pcb(db=db, pcb_id=pcb_id)
+        original_base64 = database.get_pcb_original_images(db=db, pcb_id=pcb_id)
 
         if not original_base64:
             await websocket.close()
             logger.error("No original PCB found")
             return
+
+        # decoded_bytes = base64.b64decode(original_base64)
+        # template_np = np.frombuffer(decoded_bytes, np.uint8)
+        # template_image = cv2.imdecode(template_np, cv2.IMREAD_COLOR)
 
         while True:
             ret, frame = camera.read()
@@ -363,6 +367,11 @@ async def create_pcb_image(
     return result
 
 
+def generate_filename(name: str) -> str:
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    return f"{name}_{timestamp}.jpg"
+
+
 async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
     try:
         # original_bytes คือ bytes จากฐานข้อมูล ไม่ต้อง base64 decode
@@ -505,26 +514,48 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             accuracy_result = "The PCB picture has some errors."
 
         # Convert all images to BGR for consistent display in React
-        template_bgr = cv2.cvtColor(template, cv2.COLOR_GRAY2BGR)
-        defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
-        aligned_bgr = cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR)
-        diff_bgr = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR)
-        cleaned_bgr = cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR)
-        result_bgr = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+        # template_bgr = cv2.cvtColor(template, cv2.COLOR_GRAY2BGR)
+        # defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
+        # aligned_bgr = cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR)
+        # diff_bgr = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR)
+        # cleaned_bgr = cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR)
+        # result_bgr = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+
+        images = {}
+        # image_map = {
+        #     "template": cv2.cvtColor(template, cv2.COLOR_GRAY2BGR),
+        #     "defective": cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR),
+        #     "aligned": cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR),
+        #     "diff": cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR),
+        #     "cleaned": cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR),
+        #     "result": cv2.cvtColor(result, cv2.COLOR_GRAY2BGR),
+        # }
+
+        image_map = {
+            "template": template,
+            "defective": defective,
+            "aligned": aligned,
+            "diff": diff,
+            "cleaned": specific_gray,
+            "result": result,
+        }
+        for name, gray_image in image_map.items():
+            bgr_image = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
+            filename = generate_filename(name)
+            filepath = save_image_bytes(
+                cv2.imencode(".jpg", bgr_image)[1].tobytes(), filename
+            )
+            images[name] = {
+                "filename": filename,
+                "filepath": filepath,
+            }
 
         return {
             "detected": True,
             "message": "PCB analysis completed successfully",
             "accuracy": accuracy_percentage,
             "result": accuracy_result,
-            "images": {
-                "template": decode_base64_image(template_bgr),
-                "defective": decode_base64_image(defective_bgr),
-                "aligned": decode_base64_image(aligned_bgr),
-                "diff": decode_base64_image(diff_bgr),
-                "cleaned": decode_base64_image(cleaned_bgr),
-                "result": decode_base64_image(result_bgr),
-            },
+            "images": images,
         }
 
     except Exception as e:
