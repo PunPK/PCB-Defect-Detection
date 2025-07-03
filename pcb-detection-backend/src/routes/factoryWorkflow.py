@@ -35,6 +35,10 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from ..database import database, model
 from . import pcb_detection
+import os
+from datetime import datetime
+
+UPLOAD_DIR = "./tmp"
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +142,10 @@ def image_to_base64(image):
     return base64.b64encode(buffer).decode("utf-8")
 
 
+def decode_base64_image(base64_str):
+    return base64.b64decode(base64_str)
+
+
 @router.websocket("/ws/factory-workflow")
 async def websocket_endpoint(
     websocket: WebSocket, pcb_id: int = Query(...), db: Session = Depends(model.get_db)
@@ -216,6 +224,7 @@ async def websocket_endpoint(
                         )
 
                         # Save image if cooldown has passed
+                        print("=====> Center line detected")
                         if pcb_frame is not None:
                             _, buffer = cv2.imencode(".jpg", pcb_frame)
                             image_data = buffer.tobytes()
@@ -223,13 +232,15 @@ async def websocket_endpoint(
                             prepare_result = await analysis_pcb_prepare(
                                 original_base64, image_data
                             )
+                            print("=====> PCB analysis prepared")
+                            print(prepare_result)
                             if prepare_result["detected"]:
 
                                 print(prepare_result["detected"])
                                 push_to_database = await database.create_pcb_result(
                                     db=db, prepare_result=prepare_result, pcb_id=pcb_id
                                 )
-                                print("Database updated with PCB result")
+                                print("=====> Database updated with PCB result")
 
             # Send display frame with annotations
             _, display_buffer = cv2.imencode(".jpg", display_frame)
@@ -264,16 +275,27 @@ async def get_images(
     pcb_id: int,
     db: Session = Depends(model.get_db),
 ):
-    print(pcb_id)
-    image = database.get_pcb_images(db=db, pcb_id=pcb_id)
+    image_list = database.get_pcb(db=db, pcb_id=pcb_id)
 
-    return {
-        "status": "success",
-        "image_id": image[0].image_id,
-        "filename": image[0].filename,
-        "uploaded_at": image[0].uploaded_at.isoformat(),
-        "image_data": (base64.b64encode(image[0].image_data).decode("utf-8")),
-    }
+    if not image_list:
+        raise HTTPException(status_code=404, detail="Image not found for this PCB ID")
+
+    print("=====> Image data retrieved from database", image_list)
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "image_id": image_list["image_id"],
+            "filename": image_list["filename"],
+            "uploaded_at": image_list["uploaded_at"],
+            "image_data": (
+                base64.b64encode(image_list["image_data"]).decode("utf-8")
+                if image_list["image_data"]
+                else None
+            ),
+        },
+    )
 
 
 async def get_images(db: Session = Depends(model.get_db), pcb_id: int = 1):
@@ -298,12 +320,35 @@ async def get_images(db: Session = Depends(model.get_db), pcb_id: int = 1):
         return {"message": "Failed to fetch images", "error": str(e)}
 
 
+def save_image_bytes(image_bytes: bytes, filename: str) -> str:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    save_dir = os.path.join(BASE_DIR, "../..", "database.db", "tmp")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, filename)
+    with open(save_path, "wb") as f:
+        f.write(image_bytes)
+    return save_path
+
+
 @router.post("/create_pcb")
 async def create_pcb(
     file: UploadFile = File(...),
     db: Session = Depends(model.get_db),
 ):
-    result = await database.upload_and_create_pcb(db=db, file=file)
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    image_bytes = await file.read()
+
+    file_path = save_image_bytes(image_bytes, file.filename)
+    if not file.filename.lower().endswith((".jpg", ".jpeg", ".png")):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Only JPG, JPEG, and PNG are allowed.",
+        )
+
+    result = await database.upload_and_create_pcb(
+        db=db, filename=file.filename, filepath=file_path
+    )
 
     return {"status": "success", "result": result}
 
@@ -380,10 +425,17 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
         )
         search_params = dict(checks=50)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
-        matches = flann.knnMatch(des1, des2, k=2)
-        good_matches = [m for m, n in matches if m.distance < 0.7 * n.distance][:200]
 
-        if len(good_matches) < 10:
+        matches = flann.knnMatch(des1, des2, k=2)
+
+        good_matches = []
+        for m_n in matches:
+            if len(m_n) == 2:
+                m, n = m_n
+                if m.distance < 0.7 * n.distance:
+                    good_matches.append(m)
+
+        if len(good_matches) < 1:
             return {
                 "detected": False,
                 "message": "Not enough good matches for alignment",
@@ -466,12 +518,12 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             "accuracy": accuracy_percentage,
             "result": accuracy_result,
             "images": {
-                "template": image_to_base64(template_bgr),
-                "defective": image_to_base64(defective_bgr),
-                "aligned": image_to_base64(aligned_bgr),
-                "diff": image_to_base64(diff_bgr),
-                "cleaned": image_to_base64(cleaned_bgr),
-                "result": image_to_base64(result_bgr),
+                "template": decode_base64_image(template_bgr),
+                "defective": decode_base64_image(defective_bgr),
+                "aligned": decode_base64_image(aligned_bgr),
+                "diff": decode_base64_image(diff_bgr),
+                "cleaned": decode_base64_image(cleaned_bgr),
+                "result": decode_base64_image(result_bgr),
             },
         }
 

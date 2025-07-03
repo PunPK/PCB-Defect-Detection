@@ -12,7 +12,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
-engine = create_engine("sqlite:///database.db/images.db", echo=True)
+engine = create_engine(
+    "sqlite:///pcb-detection-backend/database.db/images.db", echo=True
+)
 Base = declarative_base()
 
 
@@ -21,7 +23,7 @@ class ImagePCB(Base):
 
     image_id = Column(Integer, primary_key=True, index=True)
     filename = Column(String)
-    image_data = Column(LargeBinary)
+    filepath = Column(String)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     pcb_id = Column(Integer, ForeignKey("pcb.id"))
 
@@ -34,6 +36,7 @@ class PCB(Base):
     id = Column(Integer, primary_key=True, index=True)
     create_at = Column(DateTime, default=datetime.utcnow)
     # originalPcb = relationship("ImagePCB", back_populates="pcb")
+
     originalPcb = Column(Integer, ForeignKey("imagepcb.image_id"))
     # original_filename = Column(String)
     # originalPcb_data = Column(LargeBinary)

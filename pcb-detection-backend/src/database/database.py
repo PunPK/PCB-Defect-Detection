@@ -43,15 +43,19 @@ async def update_pcb(
 
 
 async def upload_and_create_pcb(
-    file: UploadFile,
+    filename: str,
+    filepath: str,
     db: Session,
 ):
 
-    contents = await file.read()
+    # contents = await file.read()
 
     # Create image record
     db_image = model.ImagePCB(
-        filename=file.filename, image_data=contents, uploaded_at=datetime.utcnow()
+        filename=filename,
+        filepath=filepath,
+        # filename=file.filename, image_data=contents,
+        uploaded_at=datetime.utcnow(),
     )
     db.add(db_image)
     db.commit()
@@ -90,17 +94,18 @@ async def create_pcb_result(
     print_dict_structure(prepare_result)
 
     print("Creating PCB result in database...")
-    print(prepare_result.result)
+    print(prepare_result["result"])
     db_result = model.Result(
-        accuracy=prepare_result.accuracy,
-        description=prepare_result.result,
-        template_image=prepare_result.images.template,
-        defective_image=prepare_result.images.defective,
-        aligned_image=prepare_result.images.aligned,
-        diff_image=prepare_result.images.diff,
-        cleaned_image=prepare_result.images.cleaned,
-        result_image=prepare_result.images.result,
+        accuracy=prepare_result["accuracy"],
+        description=prepare_result["result"],
+        template_image=prepare_result["images"]["template"],
+        defective_image=prepare_result["images"]["defective"],
+        aligned_image=prepare_result["images"]["aligned"],
+        diff_image=prepare_result["images"]["diff"],
+        cleaned_image=prepare_result["images"]["cleaned"],
+        result_image=prepare_result["images"]["result"],
     )
+
     db.add(db_result)
     db.commit()
     db.refresh(db_result)
@@ -126,14 +131,47 @@ async def create_pcb_image(db: Session, file: UploadFile, pcb_id: int):
 
 
 def get_pcb(db: Session, pcb_id: int):
-    image_data = (
-        db.query(model.ImagePCB.image_data)
+
+    image_path = (
+        db.query(model.ImagePCB.filepath)
         .join(model.PCB, model.ImagePCB.image_id == model.PCB.originalPcb)
         .filter(model.PCB.id == pcb_id)
         .scalar()
     )
+    print(f"Image data for PCB id {pcb_id}: {image_path}")
 
-    return image_data
+    if image_path is None:
+        raise FileNotFoundError(f"No image path found for PCB id: {pcb_id}")
+
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found at: {image_path}")
+
+    with open(image_path, "rb") as f:
+        image_bytes = f.read()
+
+    imageData = (
+        db.query(model.ImagePCB)
+        .join(model.PCB, model.ImagePCB.image_id == model.PCB.originalPcb)
+        .filter(model.PCB.id == pcb_id)
+        .first()
+    )
+
+    print(f"Image data for PCB id {pcb_id}: {imageData}")
+    print("==========================================================")
+    # print(imageData.
+
+    return {
+        "image_id": imageData.image_id,
+        "filename": imageData.filename,
+        "filepath": imageData.filepath,
+        "uploaded_at": (
+            imageData.uploaded_at.isoformat() if imageData.uploaded_at else None
+        ),
+        "image_data": image_bytes,
+    }
+
+    # return image_bytes
+
     # return db.query(model.PCB.originalPcb).filter(model.PCB.id == pcb_id).scalar()
 
 
