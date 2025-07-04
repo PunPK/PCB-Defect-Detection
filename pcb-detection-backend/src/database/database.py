@@ -4,6 +4,7 @@ from . import model, schemas
 from datetime import datetime
 from fastapi import UploadFile
 import uuid
+import base64
 
 
 def save_uploaded_file(file: UploadFile, upload_dir: str = "uploads"):
@@ -219,3 +220,121 @@ def get_pcb_original_images(db: Session, pcb_id: int):
         image_bytes = f.read()
 
     return image_bytes
+
+
+def get_pcb_result(db: Session, pcb_id: int):
+
+    pcbData = db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
+
+    print(pcbData.__dict__)
+
+    resultData = (
+        db.query(model.Result)
+        .join(model.PCB, model.Result.results_id == model.PCB.result_id)
+        .filter(model.PCB.id == pcb_id)
+        .scalar()
+    )
+
+    print(resultData.__dict__)
+
+    imageList = {
+        "template_image": None,
+        "defective_image": None,
+        "aligned_image": None,
+        "diff_image": None,
+        "cleaned_image": None,
+        "result_image": None,
+    }
+
+    for key in imageList.keys():
+        image_id = getattr(resultData, key, None)
+        image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+        if image and os.path.exists(image.filepath):
+            with open(image.filepath, "rb") as f:
+                imageList[key] = {
+                    "image_id": image.image_id,
+                    "filename": image.filename,
+                    "filepath": image.filepath,
+                    "uploaded_at": (
+                        image.uploaded_at.isoformat() if image.uploaded_at else None
+                    ),
+                    "image_data": base64.b64encode(f.read()).decode("utf-8"),
+                }
+
+    return {
+        "results_id": resultData.results_id,
+        "pcb_result_id": resultData.pcb_result_id,
+        "accuracy": float(getattr(resultData, "accuracy", 0)),
+        "description": resultData.description,
+        "imageList": imageList,
+    }
+
+
+def get_pcb_result_working(db: Session, pcb_id: int):
+
+    pcbData = db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
+
+    print("=============>", pcbData.result_ids)
+    print(pcbData.__dict__)
+
+    result_List = []
+
+    for result_id in pcbData.result_ids:
+
+        resultData = (
+            db.query(model.Result)
+            # .join(model.PCB, model.Result.results_id == model.PCB.result_id)
+            .filter(model.Result.results_id == result_id).scalar()
+        )
+
+        print(resultData.__dict__)
+
+        image_id = getattr(resultData, "result_image", None)
+        image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+        if image and os.path.exists(image.filepath):
+            with open(image.filepath, "rb") as f:
+                result_image = {
+                    "image_id": image.image_id,
+                    "filename": image.filename,
+                    "filepath": image.filepath,
+                    "uploaded_at": (
+                        image.uploaded_at.isoformat() if image.uploaded_at else None
+                    ),
+                    "image_data": base64.b64encode(f.read()).decode("utf-8"),
+                }
+
+            result = {
+                "results_id": resultData.results_id,
+                "pcb_result_id": resultData.pcb_result_id,
+                "accuracy": float(getattr(resultData, "accuracy", 0)),
+                "description": resultData.description,
+                "imageList": result_image,
+            }
+            result_List.append(result)
+
+    print("Result List:", result_List)
+    return {
+        "pcb_id": pcbData.id,
+        "result_List": result_List,
+    }
+
+    # resultData = (
+    #     db.query(model.Result)
+    #     .join(model.PCB, model.Result.results_id == model.PCB.pcb_id)
+    #     .filter(model.PCB.id == pcb_id)
+    #     .scalar()
+    # )
+
+    # image_id = getattr(resultData, "result_image", None)
+    # image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+    # if image and os.path.exists(image.filepath):
+    #     with open(image.filepath, "rb") as f:
+    #         result_image = {
+    #             "image_id": image.image_id,
+    #             "filename": image.filename,
+    #             "filepath": image.filepath,
+    #             "uploaded_at": (
+    #                 image.uploaded_at.isoformat() if image.uploaded_at else None
+    #             ),
+    #             "image_data": base64.b64encode(f.read()).decode("utf-8"),
+    #         }

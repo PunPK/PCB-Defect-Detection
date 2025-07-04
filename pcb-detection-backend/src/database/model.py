@@ -44,7 +44,7 @@ class Result(Base):
     cleaned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
     result_image = Column(Integer, ForeignKey("imagepcb.image_id"))
 
-    pcb = relationship("PCB", back_populates="result", foreign_keys=[pcb_result_id])
+    pcb = relationship("PCB", back_populates="results")
 
 
 class PCB(Base):
@@ -57,14 +57,18 @@ class PCB(Base):
     originalPcb = Column(Integer, ForeignKey("imagepcb.image_id"))
     # original_filename = Column(String)
     # originalPcb_data = Column(LargeBinary)
-    result_id = Column(Integer, ForeignKey("result.results_id"))
+    results = relationship("Result", back_populates="pcb")
 
-    result = relationship(
-        "Result", back_populates="pcb", foreign_keys=[Result.pcb_result_id]
-    )
+    # result = relationship(
+    #     "Result", back_populates="pcb", foreign_keys=[Result.pcb_result_id]
+    # )
     images = relationship(
         "ImagePCB", back_populates="pcb", foreign_keys=[ImagePCB.pcb_id]
     )
+
+    @property
+    def result_ids(self):
+        return [r.results_id for r in self.results]
 
 
 Base.metadata.create_all(engine)

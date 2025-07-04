@@ -236,7 +236,6 @@ async def websocket_endpoint(
                             )
                         if elapsed >= cooldown_seconds:
 
-                            # Save image if cooldown has passed
                             print("=====> Center line detected")
                             if pcb_frame is not None:
                                 _, buffer = cv2.imencode(".jpg", pcb_frame)
@@ -256,6 +255,14 @@ async def websocket_endpoint(
                                         pcb_id=pcb_id,
                                     )
                                     print("=====> Database updated with PCB result")
+                                    if push_to_database:
+                                        await websocket.send_json(
+                                            {
+                                                "type": "new_result",
+                                                "message": "PCB result created",
+                                                "result_id": push_to_database.results_id,
+                                            }
+                                        )
                                     center_line_start_time = None
                                     center_line_detected = False
 
@@ -263,16 +270,13 @@ async def websocket_endpoint(
                         center_line_start_time = None
                         center_line_detected = False
 
-            # Send display frame with annotations
             _, display_buffer = cv2.imencode(".jpg", display_frame)
             await websocket.send_bytes(display_buffer.tobytes())
 
-            # Send processed PCB frame if available
             if pcb_frame is not None:
                 _, pcb_buffer = cv2.imencode(".jpg", pcb_frame)
                 await websocket.send_bytes(pcb_buffer.tobytes())
             else:
-                # Send empty frame if no PCB detected
                 empty_frame = np.zeros((100, 100, 3), dtype=np.uint8)
                 _, empty_buffer = cv2.imencode(".jpg", empty_frame)
                 await websocket.send_bytes(empty_buffer.tobytes())
@@ -578,3 +582,38 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
     except Exception as e:
         logger.error(f"Error processing images: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/get_result_pcb/{pcb_id}")
+async def get_result_pcb(
+    pcb_id: int,
+    db: Session = Depends(model.get_db),
+):
+    result = database.get_pcb_result(db=db, pcb_id=pcb_id)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "results_id": result["results_id"],
+            "pcb_result_id": result["pcb_result_id"],
+            "accuracy": result["accuracy"],
+            "description": result["description"],
+            "imageList": result["imageList"],
+        },
+    )
+
+
+@router.get("/get_result_pcb_working/{pcb_id}")
+async def get_result_pcb_working(
+    pcb_id: int,
+    db: Session = Depends(model.get_db),
+):
+    result = database.get_pcb_result_working(db=db, pcb_id=pcb_id)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "pcb_id": result["pcb_id"],
+            "result_List": result["result_List"],
+        },
+    )

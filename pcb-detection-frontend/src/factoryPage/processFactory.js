@@ -39,7 +39,7 @@ export default function ProcessFactoryWorkflow() {
   const timerRef = useRef(null);
   const imageQueueRef = useRef([]);
 
-  const [pcbFrame, setPcbFrame] = useState(null);
+  const [resultData, setResultData] = useState(null);
   // const [isConnected, setIsConnected] = useState(false);
   // const [status, setStatus] = useState("Not connected");
   const [savedImages, setSavedImages] = useState([]);
@@ -155,12 +155,23 @@ export default function ProcessFactoryWorkflow() {
 
     ws.onmessage = (event) => {
       if (event.data instanceof Blob) {
+        // ถ้าเป็นภาพ
         const reader = new FileReader();
         reader.onload = () => {
           imageQueueRef.current.push(new Uint8Array(reader.result));
           processImageQueue();
         };
         reader.readAsArrayBuffer(event.data);
+      } else {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === "new_result") {
+            console.log("New result from server:", message);
+            fetchResultData(pcb_id);
+          }
+        } catch (e) {
+          console.error("Failed to parse message:", e);
+        }
       }
     };
 
@@ -287,8 +298,24 @@ export default function ProcessFactoryWorkflow() {
     }
   };
 
+  const fetchResultData = async (pcb_Id) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/factory/get_result_pcb_working/${pcb_Id}`
+      );
+      const data = await response.json();
+      console.log("Fetched saved images:", data);
+      if (response.ok) {
+        setResultData(data);
+      }
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    }
+  };
+
   useEffect(() => {
     fetchOriginalImages(pcb_id);
+    fetchResultData(pcb_id);
   }, [pcb_id]);
 
   // useEffect(() => {
@@ -599,7 +626,7 @@ export default function ProcessFactoryWorkflow() {
                 </div>
                 <h1 className="text-4xl  font-bold text-gray-100">
                   <span className="text-cyan-400">
-                    {detectionResults.length}
+                    {resultData?.result_List?.length || 0}
                   </span>
                   <span className="text-gray-400 text-sm ml-2">ชิ้น</span>
                 </h1>
@@ -611,7 +638,10 @@ export default function ProcessFactoryWorkflow() {
                 </div>
                 <div className="relative inline-block">
                   <h3 className="text-2xl font-bold text-gray-100">
-                    {totalAccuracy}
+                    {resultData?.result_List?.reduce(
+                      (sum, item) => sum + item.accuracy,
+                      0
+                    ) / resultData?.result_List?.length || 0}
                     <span className="text-lg text-purple-400">%</span>
                   </h3>
                 </div>
@@ -625,9 +655,9 @@ export default function ProcessFactoryWorkflow() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {detectionResults.map((result, index) => (
+              {resultData?.result_List.map((result, index) => (
                 <motion.div
-                  key={result.id}
+                  key={result.results_id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.1 }}
@@ -639,12 +669,12 @@ export default function ProcessFactoryWorkflow() {
                     </div>
                     <div
                       className="relative group cursor-pointer mb-3"
-                      onClick={() => openPreview(result)}
+                      onClick={() => openPreview(result.imageList)}
                     >
                       <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
                         <img
-                          src={result.imageUrl}
-                          alt={result.name}
+                          src={`data:image/jpeg;base64,${result.imageList.image_data}`}
+                          alt={result.imageList.filename}
                           className="h-full w-full object-contain"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
@@ -670,7 +700,9 @@ export default function ProcessFactoryWorkflow() {
                         คลิกเพื่อดูรายละเอียด
                       </button> */}
                         <button
-                          onClick={() => navigate(`/details/${result.id}`)}
+                          onClick={() =>
+                            navigate(`/details/${result.results_id}`)
+                          }
                           type="button"
                           className="relative  max-w-md h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                         >
@@ -727,12 +759,12 @@ export default function ProcessFactoryWorkflow() {
               </svg>
             </button>
             <img
-              src={previewImage.imageUrl}
-              alt={previewImage.name}
-              className="max-w-full max-h-[80vh] object-contain mx-auto"
+              src={`data:image/jpeg;base64,${previewImage.image_data}`}
+              alt={previewImage.filename}
+              className="w-full max-h-[70vh] object-contain mx-auto"
             />
             <div className="mt-2 text-center text-white">
-              {previewImage.name}
+              {previewImage.filename}
             </div>
           </div>
         </div>
