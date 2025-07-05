@@ -617,3 +617,23 @@ async def get_result_pcb_working(
             "result_List": result["result_List"],
         },
     )
+
+
+@router.delete("/delete_pcb/{pcb_id}")
+async def delete_pcb(
+    pcb_id: int,
+    db: Session = Depends(model.get_db),
+):
+    try:
+        database.delete_pcb(db=db, pcb_id=pcb_id)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": "PCB deleted successfully",
+                "pcb_id": pcb_id,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error deleting PCB: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

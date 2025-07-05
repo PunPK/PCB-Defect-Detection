@@ -318,23 +318,35 @@ def get_pcb_result_working(db: Session, pcb_id: int):
         "result_List": result_List,
     }
 
-    # resultData = (
-    #     db.query(model.Result)
-    #     .join(model.PCB, model.Result.results_id == model.PCB.pcb_id)
-    #     .filter(model.PCB.id == pcb_id)
-    #     .scalar()
-    # )
 
-    # image_id = getattr(resultData, "result_image", None)
-    # image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
-    # if image and os.path.exists(image.filepath):
-    #     with open(image.filepath, "rb") as f:
-    #         result_image = {
-    #             "image_id": image.image_id,
-    #             "filename": image.filename,
-    #             "filepath": image.filepath,
-    #             "uploaded_at": (
-    #                 image.uploaded_at.isoformat() if image.uploaded_at else None
-    #             ),
-    #             "image_data": base64.b64encode(f.read()).decode("utf-8"),
-    #         }
+def delete_pcb(db: Session, pcb_id: int):
+    pcb = db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
+    if not pcb:
+        return None
+
+    results = db.query(model.Result).filter(model.Result.pcb_result_id == pcb_id).all()
+
+    image_keys = [
+        "template_image",
+        "defective_image",
+        "aligned_image",
+        "diff_image",
+        "cleaned_image",
+        "result_image",
+    ]
+
+    for result in results:
+        for key in image_keys:
+            image_id = getattr(result, key, None)
+            if image_id:
+                image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+                if image:
+                    db.delete(image)
+
+        db.delete(result)
+    db.query(model.ImagePCB).filter(model.ImagePCB.pcb_id == pcb_id).delete()
+
+    db.delete(pcb)
+    db.commit()
+
+    return True

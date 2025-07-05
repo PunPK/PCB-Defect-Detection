@@ -392,13 +392,30 @@ export default function ProcessFactoryWorkflow() {
 
   const removeOriginalImage = () => {
     // console.log(originalPCB)
-    if (originalImageFactory && originalImageFactory.url) {
-      URL.revokeObjectURL(originalImageFactory.url);
+    if (pcb_id) {
+      // URL.revokeObjectURL(originalImageFactory.url);
       sessionStorage.removeItem("OriginalImageFactory");
+      deletePcb(pcb_id);
+      navigate("/home-factory");
     }
     setOriginalImageFactory(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const deletePcb = async (pcb_Id) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/factory/delete_pcb/${pcb_Id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await response.json();
+      console.log("Delete Pcb:", data);
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
     }
   };
 
@@ -604,127 +621,136 @@ export default function ProcessFactoryWorkflow() {
         </div>
       </div>
 
-      <div className="min-h-screen p-4 md:p-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="backdrop-blur-sm bg-black/40 rounded-xl p-6 border border-cyan-500/30 border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
-        >
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-10 px-4">
-              <h2 className="text-xl font-bold mb-6 text-center relative">
-                <span className="bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
-                  Result of PCB Factory Workflow Detection
-                </span>
-                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-32 bg-gradient-to-r from-pink-400 to-purple-500"></div>
-              </h2>
-
-              <div className="bg-gray-800/50 border border-cyan-500/20 rounded-xl p-4 h-full text-center  shadow-[0_0_10px_rgba(0,200,255,0.1)] hover:shadow-[0_0_15px_rgba(0,200,255,0.2)] transition-all duration-300 group">
-                <div className="text-lg uppercase tracking-widest text-cyan-400/80 mb-1">
-                  จำนวนที่ตรวจสอบได้โดยรวม
-                </div>
-                <h1 className="text-4xl  font-bold text-gray-100">
-                  <span className="text-cyan-400">
-                    {resultData?.result_List?.length || 0}
+      {resultData?.result_List?.length >= 1 && (
+        <div className="min-h-screen p-4 md:p-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="backdrop-blur-sm bg-black/40 rounded-xl p-6 border border-cyan-500/30 border-gray-800 shadow-[0_0_15px_rgba(0,200,255,0.15)]"
+          >
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center mb-10 px-4">
+                <h2 className="text-xl font-bold mb-6 text-center relative">
+                  <span className="bg-gradient-to-r from-pink-400 to-purple-500 text-transparent bg-clip-text">
+                    Result of PCB Factory Workflow Detection
                   </span>
-                  <span className="text-gray-400 text-sm ml-2">ชิ้น</span>
-                </h1>
-              </div>
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 h-0.5 w-32 bg-gradient-to-r from-pink-400 to-purple-500"></div>
+                </h2>
 
-              <div className="bg-gray-800/50 border border-purple-500/20 rounded-xl p-4 text-center shadow-[0_0_10px_rgba(180,70,255,0.1)] hover:shadow-[0_0_15px_rgba(180,70,255,0.2)] transition-all duration-300 group">
-                <div className="text-lg uppercase tracking-widest text-purple-400/80 mb-1">
-                  เปอร์เซ็นของถูกต้องของการตรวจสอบโดยรวม
+                <div className="bg-gray-800/50 border border-cyan-500/20 rounded-xl p-4 h-full text-center  shadow-[0_0_10px_rgba(0,200,255,0.1)] hover:shadow-[0_0_15px_rgba(0,200,255,0.2)] transition-all duration-300 group">
+                  <div className="text-lg uppercase tracking-widest text-cyan-400/80 mb-1">
+                    จำนวนที่ตรวจสอบได้โดยรวม
+                  </div>
+                  <h1 className="text-4xl  font-bold text-gray-100">
+                    <span className="text-cyan-400">
+                      {resultData?.result_List?.length || 0}
+                    </span>
+                    <span className="text-gray-400 text-sm ml-2">ชิ้น</span>
+                  </h1>
                 </div>
-                <div className="relative inline-block">
-                  <h3 className="text-2xl font-bold text-gray-100">
-                    {resultData?.result_List?.reduce(
-                      (sum, item) => sum + item.accuracy,
-                      0
-                    ) / resultData?.result_List?.length || 0}
-                    <span className="text-lg text-purple-400">%</span>
-                  </h3>
-                </div>
-                <div className="mt-3 h-1.5 bg-gradient-to-r from-purple-500/10 to-purple-500/30 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-purple-400 to-purple-600"
-                    style={{ width: `${totalAccuracy}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {resultData?.result_List.map((result, index) => (
-                <motion.div
-                  key={result.results_id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 group"
-                >
-                  <div className="relative mb-3">
-                    <div className="absolute -top-6 -left-6 z-10 bg-cyan-500 text-gray-900 text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
-                      {index + 1}
-                    </div>
+                <div className="bg-gray-800/50 border border-purple-500/20 rounded-xl p-4 text-center shadow-[0_0_10px_rgba(180,70,255,0.1)] hover:shadow-[0_0_15px_rgba(180,70,255,0.2)] transition-all duration-300 group">
+                  <div className="text-lg uppercase tracking-widest text-purple-400/80 mb-1">
+                    เปอร์เซ็นของถูกต้องของการตรวจสอบโดยรวม
+                  </div>
+                  <div className="relative inline-block">
+                    <h3 className="text-2xl font-bold text-gray-100">
+                      {resultData?.result_List?.reduce(
+                        (sum, item) => sum + item.accuracy,
+                        0
+                      ) / resultData?.result_List?.length || 0}
+                      <span className="text-lg text-purple-400">%</span>
+                    </h3>
+                  </div>
+                  <div className="mt-3 h-1.5 bg-gradient-to-r from-purple-500/10 to-purple-500/30 rounded-full overflow-hidden">
                     <div
-                      className="relative group cursor-pointer mb-3"
-                      onClick={() => openPreview(result.imageList)}
-                    >
-                      <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
-                        <img
-                          src={`data:image/jpeg;base64,${result.imageList.image_data}`}
-                          alt={result.imageList.filename}
-                          className="h-full w-full object-contain"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
-                          <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
-                            คลิกเพื่อดูรูปภาพเต็ม
-                          </span>
+                      className="h-full bg-gradient-to-r from-purple-400 to-purple-600"
+                      style={{
+                        width: `${
+                          resultData?.result_List?.reduce(
+                            (sum, item) => sum + item.accuracy,
+                            0
+                          ) / resultData?.result_List?.length || 0
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {resultData?.result_List.map((result, index) => (
+                  <motion.div
+                    key={result.results_id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 group"
+                  >
+                    <div className="relative mb-3">
+                      <div className="absolute -top-6 -left-6 z-10 bg-cyan-500 text-gray-900 text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
+                        {index + 1}
+                      </div>
+                      <div
+                        className="relative group cursor-pointer mb-3"
+                        onClick={() => openPreview(result.imageList)}
+                      >
+                        <div className="aspect-square bg-black rounded-lg overflow-hidden flex items-center justify-center">
+                          <img
+                            src={`data:image/jpeg;base64,${result.imageList.image_data}`}
+                            alt={result.imageList.filename}
+                            className="h-full w-full object-contain"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                            <span className="text-white opacity-0 group-hover:opacity-100 text-sm">
+                              คลิกเพื่อดูรูปภาพเต็ม
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="space-y-2 ">
-                      <h3 className="font-medium text-gray-300">
-                        {result.name}
-                      </h3>
-                      <div className="flex justify-between items-center">
-                        <span className="text-cyan-400 font-semibold">
-                          ความถูกต้อง : {result.accuracy} %
-                        </span>
-                        {/* <button
+                      <div className="space-y-2 ">
+                        <h3 className="font-medium text-gray-300">
+                          {result.name}
+                        </h3>
+                        <div className="flex justify-between items-center">
+                          <span className="text-cyan-400 font-semibold">
+                            ความถูกต้อง : {result.accuracy} %
+                          </span>
+                          {/* <button
                         onClick={() => navigate(`/details/${result.id}`)}
                         className="text-xs text-gray-400 hover:text-cyan-400 transition-colors"
                       >
                         คลิกเพื่อดูรายละเอียด
                       </button> */}
-                        <button
-                          onClick={() =>
-                            navigate(`/details/${result.results_id}`)
-                          }
-                          type="button"
-                          className="relative  max-w-md h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                          <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                            <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
-                            <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
-                              คลิกเพื่อดูรายละเอียด
-                            </span>
-                          </div>
-                        </button>
+                          <button
+                            onClick={() =>
+                              navigate(`/details/${result.results_id}`)
+                            }
+                            type="button"
+                            className="relative  max-w-md h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                            <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                              <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                              <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                                คลิกเพื่อดูรายละเอียด
+                              </span>
+                            </div>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
 
-      <div className="text-center">
+      <div className="text-center mt-10">
         <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-900/30 px-3 py-1.5 rounded-full backdrop-blur-sm border border-gray-800/50">
           <Cpu className="h-3 w-3 text-cyan-600" />
           <span>Running on Raspberry Pi 4</span>
