@@ -1,0 +1,362 @@
+import AnalysisBar, { steps } from "../components/analysisBar.js";
+import { ArrowDown, ArrowRight, IterationCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
+import "../page/HomePage.css";
+
+export default function DetailResult() {
+  const [activeStep, setActiveStep] = useState(0);
+  const navigate = useNavigate();
+  const [originalImage, setOriginalImage] = useState(null);
+  const [analysisImage, setAnalysisImage] = useState(null);
+  const [processedImages, setProcessedImages] = useState(null);
+  const [status, setStatus] = useState("Waiting for image...");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [namePreviewImage, setNamePreviewImage] = useState(null);
+  const [openPreviewImage, setOpenPreviewImage] = useState(false);
+  const [result, setResult] = useState(null);
+  const { result_id } = useParams();
+
+  function ImageCard({ title, src, alt, className = "" }) {
+    return (
+      <div
+        className={`bg-gray-800 rounded-xl overflow-hidden border-b-4 ${className} transition-all hover:scale-[1.02] hover:shadow-lg`}
+      >
+        <div className="p-4 bg-gradient-to-r from-gray-800 to-gray-700">
+          <h3 className="text-lg font-medium text-gray-200 text-center truncate">
+            {title}
+          </h3>
+        </div>
+        <div
+          className="p-2 bg-gray-800 relative group cursor-pointer"
+          onClick={() => openPreview(src, title)}
+        >
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-48 object-contain rounded-md bg-gray-900 p-1"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-all duration-300">
+            <span className="text-white opacity-0 group-hover:opacity-100 transform group-hover:translate-y-0 translate-y-2 transition-all duration-300 px-3 py-1.5 bg-black/60 rounded-full text-sm">
+              คลิกเพื่อดูรูปภาพเต็ม
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  useEffect(() => {
+    getImg();
+  }, []);
+
+  const getImg = async () => {
+    try {
+      const savedAnalysisImage = sessionStorage.getItem("AnalysisImage");
+      const analysisImgData = JSON.parse(savedAnalysisImage);
+      setAnalysisImage(analysisImgData);
+
+      const savedOriginalImage = sessionStorage.getItem("OriginalImage");
+      const originalImgData = JSON.parse(savedOriginalImage);
+      setOriginalImage(originalImgData);
+      processImage(
+        originalImgData.url,
+        originalImgData.name,
+        analysisImgData.url,
+        analysisImgData.name
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const processImage = async (
+    originalImageUrl,
+    originalName = "original_pcb.jpg",
+    analysisImageUrl,
+    analysisName = "analysis_pcb.jpg"
+  ) => {
+    if (!originalImageUrl || !analysisImageUrl) return;
+
+    setIsProcessing(true);
+    setStatus("Processing image...");
+    setError(null);
+
+    try {
+      const formData = new FormData();
+
+      const originalResponse = await fetch(originalImageUrl);
+      const originalblob = await originalResponse.blob();
+      formData.append("files", originalblob, originalName);
+
+      const analysisResponse = await fetch(analysisImageUrl);
+      const analysisblob = await analysisResponse.blob();
+      formData.append("files", analysisblob, analysisName);
+
+      const apiResponse = await fetch(
+        "http://localhost:8000/api/analysis/prepare",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!apiResponse.ok) {
+        throw new Error(`Server error: ${apiResponse.status}`);
+      }
+
+      const result = await apiResponse.json();
+
+      console.log(result);
+
+      setProcessedImages({
+        template: `data:image/jpeg;base64,${result.images.template}`,
+        defective: `data:image/jpeg;base64,${result.images.defective}`,
+        aligned: `data:image/jpeg;base64,${result.images.aligned}`,
+        diff: `data:image/jpeg;base64,${result.images.diff}`,
+        cleaned: `data:image/jpeg;base64,${result.images.cleaned}`,
+        result: `data:image/jpeg;base64,${result.images.result}`,
+      });
+
+      setResult({ percent: result.accuracy, summarize: result.result });
+
+      setStatus(result.detected ? "PCB detected!" : "No PCB detected");
+    } catch (err) {
+      setError(err.message);
+      setStatus("Processing failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const openPreview = (image, name = "pcb_image.jpg") => {
+    setPreviewImage(image);
+    setNamePreviewImage(name);
+    setOpenPreviewImage(true);
+  };
+
+  const closePreview = () => {
+    setPreviewImage(null);
+    setNamePreviewImage(null);
+    setOpenPreviewImage(false);
+  };
+
+  if (isProcessing) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[#050816]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    // <div className="flex bg-gray-900 min-h-screen">
+    <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full grid-bg"></div>
+        <div className="absolute top-1/4 -left-20 w-60 h-60 bg-purple-700/20 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-1/3 -right-20 w-80 h-80 bg-cyan-700/20 rounded-full filter blur-3xl"></div>
+      </div>
+
+      <div className="p-8 flex-1 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row justify-between items-start mb-8 lg:mb-12 gap-6">
+            <div className="max-w-2xl ml-2">
+              <div className="flex items-center mb-6">
+                <span className="text-blue-400 font-mono text-lg lg:text-xl tracking-widest flex items-center">
+                  <span className="inline-block w-3 h-3 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+                  Detail Result
+                </span>
+                <div className="ml-4 h-px flex-1 bg-gradient-to-r from-blue-400/20 to-transparent"></div>
+              </div>
+
+              <h2 className="mb-4 text-2xl lg:text-4xl font-bold text-white bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                Result of
+              </h2>
+
+              {result && (
+                <div className="mb-6 p-4 border border-gray-700 rounded-lg bg-gray-900/50 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 opacity-30"></div>
+                  <h3 className="relative text-lg lg:text-2xl font-bold text-gray-100">
+                    <span className="text-blue-400">Result:</span> [
+                    <span className="text-cyan-300">
+                      {result.percent.toFixed(2)}%
+                    </span>
+                    ] <span className="text-gray-300">{result.summarize}</span>
+                  </h3>
+                </div>
+              )}
+
+              {/* Description with improved readability */}
+              <p className="text-gray-300 font-light text-base lg:text-lg leading-relaxed space-y-4">
+                <span className="block">
+                  แบ่งไปด้วยหลายๆขั้นตอน
+                  ตั้งแต่การแปลงรูปภาพจากรูปแบบสีปกติให้กลายเป็นขาวดำ
+                  และทำให้รูปภาพอยู่ในพิกัดเดียวกัน และตรวจหาความแตกต่างระหว่าง
+                  PCB ทั้ง 2 แผ่น
+                  เพื่อใช้ในการตรวจสอบข้อผิดพลาดด้วยความแม่นยำสูง
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 relative">
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-center">
+                Original PCB
+              </h2>
+              <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-4 mb-6"></div>
+
+              <div className="mb-8">
+                <ImageCard
+                  title="รูปภาพต้นฉบับ PCB (สี)"
+                  src={originalImage?.url}
+                  alt="Final Result"
+                  className="border-teal-400"
+                />
+              </div>
+
+              <div className="flex justify-center mb-8">
+                <ArrowDown className="w-8 h-8 text-white" />
+              </div>
+
+              <div className="mb-8">
+                <ImageCard
+                  title="รูปภาพต้นฉบับ PCB (สีเทา)"
+                  src={processedImages?.template}
+                  alt="Template PCB"
+                  className="border-blue-400"
+                />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold mb-2 text-center">
+                Analysis PCB
+              </h2>
+              <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-4 mb-6"></div>
+
+              <div className="mb-8">
+                <ImageCard
+                  title="รูปภาพตรวจจับ PCB (สี)"
+                  src={analysisImage?.url}
+                  alt="Defective PCB"
+                  className="border-red-400"
+                />
+              </div>
+
+              {/* Arrow Down */}
+              <div className="flex justify-center mb-8">
+                <ArrowDown className="w-8 h-8 text-white" />
+              </div>
+
+              <div className="mb-8 relative">
+                <ImageCard
+                  title="รูปภาพตรวจจับ PCB (สีเทา)"
+                  src={processedImages?.defective}
+                  alt="Defective PCB"
+                  className="border-red-400"
+                />
+
+                <div className="absolute left-0 top-1/2 transform -translate-x-16 -translate-y-1/2 hidden lg:block">
+                  <ArrowRight className="w-12 h-12 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <div className="flex justify-center mb-8">
+              <ArrowDown className="w-8 h-8 text-white" />
+            </div>
+            <div className="mb-8">
+              <ImageCard
+                title="รูปภาพที่ได้จากการจัดรูปภาพทั้ง 2 รูป ให้อยู่ในตำแหน่งเดียวกัน"
+                src={processedImages?.aligned}
+                alt="Defective PCB"
+                className="border-red-400"
+              />
+            </div>
+
+            <div className="flex justify-center mb-8">
+              <ArrowDown className="w-8 h-8 text-white" />
+            </div>
+            <div className="mb-8">
+              <ImageCard
+                title="ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพ"
+                src={processedImages?.diff}
+                alt="Defective PCB"
+                className="border-red-400"
+              />
+            </div>
+            <div className="flex justify-center mb-8">
+              <ArrowDown className="w-8 h-8 text-white" />
+            </div>
+            <div className="mb-8">
+              <ImageCard
+                title="แยกจุดที่ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพเจอ"
+                src={processedImages?.cleaned}
+                alt="Defective PCB"
+                className="border-red-400"
+              />
+            </div>
+            <div className="flex justify-center mb-8">
+              <ArrowDown className="w-8 h-8 text-white" />
+            </div>
+            <div className="mb-8">
+              <ImageCard
+                title="ผลลัพธ์ของการตรวจจับจุดแตกต่าง"
+                src={processedImages?.result}
+                alt="Defective PCB"
+                className="border-red-400"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-5"></div>
+        </div>
+        {openPreviewImage && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+            onClick={closePreview}
+          >
+            <div
+              className="relative max-w-4xl w-full max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute -top-10 right-0 text-white hover:text-gray-300"
+                onClick={closePreview}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-8 w-8"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <img
+                src={previewImage}
+                alt={namePreviewImage}
+                className="max-w-full max-h-[80vh] object-contain mx-auto"
+              />
+              <div className="mt-2 text-center text-white">
+                {namePreviewImage}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

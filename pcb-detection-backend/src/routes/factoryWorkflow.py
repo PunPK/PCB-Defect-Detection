@@ -637,3 +637,19 @@ async def delete_pcb(
     except Exception as e:
         logger.error(f"Error deleting PCB: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/get_result/{result_id}")
+async def get_result(
+    result_id: int,
+    db: Session = Depends(model.get_db),
+):
+    result = database.get_result(db=db, result_id=result_id)
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "result_id": result_id,
+            "result_List": result,
+        },
+    )

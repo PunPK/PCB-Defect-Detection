@@ -14,6 +14,7 @@ import LayoutWithNavFactory from "./LayoutWithNav copy.js";
 import ProcessFactoryWorkflow from "./factoryPage/processFactory.js";
 // import ImageUploader from "./factoryPage/test_upload.js";
 import PCBCameraView from "./factoryPage/test_process.js";
+import DetailResult from "./factoryPage/detailResult.js";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
               path="/factoryWorkflow/:pcb_id"
               element={<ProcessFactoryWorkflow />}
             />
+            <Route path="/details/:result_id" element={<DetailResult />} />
           </Route>
 
           {/* without NavBar */}

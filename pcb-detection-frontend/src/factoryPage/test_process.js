@@ -131,7 +131,7 @@ const PCBCameraView = () => {
   const fetchOriginalImages = async (pcb_Id) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/get_images/${pcb_Id}`
+        `http://localhost:8000/factory/get_result/7`
       );
       const data = await response.json();
       console.log("Fetched saved images:", data);
@@ -169,7 +169,7 @@ const PCBCameraView = () => {
 
       <div className="saved-images">
         <h2>Images</h2>
-        <button onClick={() => fetchOriginalImages(18)}>
+        <button onClick={() => fetchOriginalImages(1)}>
           {" "}
           #test Refresh fetchOriginal Image
         </button>
