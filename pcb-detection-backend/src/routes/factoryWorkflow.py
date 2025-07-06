@@ -653,3 +653,18 @@ async def get_result(
             "result_List": result,
         },
     )
+
+
+@router.get("/get_all_pcb_results")
+async def get_all_pcb_results(
+    db: Session = Depends(model.get_db),
+):
+    results = database.get_all_pcb_results(db=db)
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "results": results,
+        },
+    )

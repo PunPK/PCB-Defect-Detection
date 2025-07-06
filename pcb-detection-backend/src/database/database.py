@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import UploadFile
 import uuid
 import base64
+from sqlalchemy import func
 
 
 def save_uploaded_file(file: UploadFile, upload_dir: str = "uploads"):
@@ -353,8 +354,6 @@ def get_result(db: Session, result_id: int):
         db.query(model.Result).filter(model.Result.results_id == result_id).scalar()
     )
 
-    print(resultData.__dict__)
-
     imageList = {
         "template_image": None,
         "defective_image": None,
@@ -386,3 +385,48 @@ def get_result(db: Session, result_id: int):
         "description": resultData.description,
         "imageList": imageList,
     }
+
+
+def get_all_pcb_results(db: Session):
+
+    pcb_data = db.query(model.PCB).all()
+    pcbList = []
+    try:
+        for pcb in pcb_data:
+
+            pcb_dict = {
+                "pcb_id": pcb.id,
+                "originalPcb": pcb.originalPcb,
+                "result_ids": pcb.result_ids,
+            }
+
+            image = db.query(model.ImagePCB).filter_by(image_id=pcb.originalPcb).first()
+            if image and os.path.exists(image.filepath):
+                with open(image.filepath, "rb") as f:
+                    imageList = {
+                        "image_id": image.image_id,
+                        "filename": image.filename,
+                        "filepath": image.filepath,
+                        "uploaded_at": (
+                            image.uploaded_at.isoformat() if image.uploaded_at else None
+                        ),
+                        "image_data": base64.b64encode(f.read()).decode("utf-8"),
+                    }
+
+                pcb_dict["originalPcb"] = imageList
+
+            resultData = (
+                db.query(func.avg(model.Result.accuracy))
+                .filter(model.Result.results_id.in_(pcb.result_ids))
+                .scalar()
+            )
+
+            pcb_dict["sum_accuracy"] = resultData
+
+            pcbList.append(pcb_dict)
+
+    except Exception as e:
+        print(f"Error processing PCB data: {e}")
+        return {"error": "Failed to retrieve PCB data"}
+
+    return pcbList

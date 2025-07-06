@@ -13,57 +13,53 @@ import {
   ArchiveX,
   DatabaseZap,
 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
 
 const ResultPage = () => {
-  // Sample data
-  const testResults = [
-    {
-      id: 1,
-      image: "image1.jpg",
-      accuracy: 85,
-      size: "040",
-      status: "pass",
-      count: 1,
-    },
-    {
-      id: 2,
-      image: "image2.jpg",
-      accuracy: 85,
-      size: "040",
-      status: "pass",
-      count: 1,
-    },
-    {
-      id: 3,
-      image: "image3.jpg",
-      accuracy: 85,
-      size: "040",
-      status: "pass",
-      count: 1,
-    },
-    {
-      id: 4,
-      image: "image4.jpg",
-      accuracy: 85,
-      size: "040",
-      status: "pass",
-      count: 1,
-    },
-    {
-      id: 5,
-      image: "image5.jpg",
-      accuracy: 72,
-      size: "040",
-      status: "fail",
-      count: 1,
-    },
-  ];
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [results, setResults] = useState(null);
+  const navigate = useNavigate();
+  useEffect(() => {
+    handleGetResults();
+  }, {});
 
-  // Calculate stats
-  const totalTests = testResults.length;
-  const passedTests = testResults.filter((r) => r.status === "pass").length;
+  const handleGetResults = async () => {
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/factory/get_all_pcb_results`
+      );
+      const data = await response.json();
+
+      if (response.ok) {
+        const processedResults = data.results.map((result) => {
+          const status = result.sum_accuracy > 50 ? "pass" : "fail";
+          return { ...result, status };
+        });
+        console.log("Fetched saved images:", data.results);
+        console.log("Processed Results:", processedResults);
+        setResults(processedResults);
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    }
+  };
+
+  const totalTests = results?.length;
+  const passedTests = results?.filter((r) => r.status === "pass").length || 0;
   const avgAccuracy =
-    testResults.reduce((sum, r) => sum + r.accuracy, 0) / totalTests;
+    results?.reduce((sum, r) => sum + r.sum_accuracy, 0) / totalTests;
+
+  if (isProcessing) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[#050816]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
@@ -145,18 +141,16 @@ const ResultPage = () => {
           </div>
         </div>
 
-        {/* Results Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {testResults.map((result) => (
+          {results?.map((result) => (
             <div
-              key={result.id}
+              key={result.pcb_id}
               className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-cyan-400 transition-colors"
             >
-              {/* Image Section */}
-              <div className="bg-gray-900 h-48 flex items-center justify-center p-4 border-b border-gray-700">
+              <div className="bg-gray-900 h-52 flex items-center justify-center p-4 border-b border-gray-700">
                 <img
-                  src={result.image}
-                  alt={`PCB Test ${result.id}`}
+                  src={`data:image/jpeg;base64,${result?.originalPcb?.image_data}`}
+                  alt={`PCB Test ${result.pcb_id}`}
                   className="max-h-full max-w-full object-contain"
                 />
               </div>
@@ -165,7 +159,7 @@ const ResultPage = () => {
               <div className="p-4">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-medium text-gray-100">
-                    Test #{result.id}
+                    Inspection No. {result.pcb_id}
                   </h3>
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -199,27 +193,36 @@ const ResultPage = () => {
                             : "text-red-400"
                         }`}
                       >
-                        {result.accuracy}%
+                        {result?.sum_accuracy || "NULL"}%
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Size:</span>
-                    <span className="font-medium text-gray-300">
-                      {result.size}
+                    <span className="text-sm text-gray-400">
+                      Count of Results:
                     </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Count:</span>
                     <span className="font-medium text-gray-300">
-                      {result.count}
+                      {result?.result_ids?.length || "N/A"}
                     </span>
                   </div>
                 </div>
+                <div className="flex justify-center  mt-4">
+                  <button
+                    onClick={() => navigate(`/pcb-details/${result.pcb_id}`)}
+                    type="button"
+                    className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                    <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                      <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
+                      <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
+                        คลิกเพื่อดูรายละเอียด
+                      </span>
+                    </div>
+                  </button>
+                </div>
 
-                {/* Status Icon */}
                 <div className="mt-4 flex justify-center">
                   {result.status === "pass" ? (
                     <CheckCircle className="h-6 w-6 text-green-500" />
@@ -232,7 +235,6 @@ const ResultPage = () => {
           ))}
         </div>
 
-        {/* Summary Panel */}
         <div className="mt-8 bg-gray-800 p-5 rounded-lg border border-gray-700">
           <h2 className="text-lg font-medium text-gray-100 mb-3 flex items-center">
             <svg
@@ -256,10 +258,10 @@ const ResultPage = () => {
             {((passedTests / totalTests) * 100).toFixed(0)}% pass rate) with an
             average accuracy of {avgAccuracy.toFixed(1)}%.
             {passedTests < totalTests &&
-              ` Test #${
-                testResults.find((r) => r.status === "fail")?.id
+              ` Inspection No. ${
+                results.find((r) => r.status === "fail")?.pcb_id
               } failed with ${
-                testResults.find((r) => r.status === "fail")?.accuracy
+                results.find((r) => r.status === "fail")?.sum_accuracy
               }% accuracy.`}
           </p>
         </div>
