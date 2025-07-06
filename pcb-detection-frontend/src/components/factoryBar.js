@@ -10,8 +10,8 @@ import { useEffect, useState } from "react";
 const navigation = [
   { name: "HomeFactory", href: "/home-factory", current: false, icon: Home },
   {
-    name: "Factory Workflow",
-    href: "/factoryWorkflow",
+    name: "Record of Results",
+    href: "/results",
     current: false,
     icon: Factory,
   },
@@ -23,7 +23,7 @@ function classNames(...classes) {
 }
 
 export default function FactoryBar() {
-  const [hasOriginalImage, setHasOriginalImage] = useState(false)
+  const [hasOriginalImage, setHasOriginalImage] = useState(false);
 
   useEffect(() => {
     const savedImage = sessionStorage.getItem("OriginalImageFactory");
@@ -66,7 +66,8 @@ export default function FactoryBar() {
               <div className="flex space-x-1 mt-2">
                 {navigation.map((item) => {
                   const Icon = item.icon;
-                  const isHomeDisabled = item.name === "HomeFactory" && hasOriginalImage;
+                  const isHomeDisabled =
+                    item.name === "HomeFactory" && hasOriginalImage;
                   return (
                     <a
                       key={item.name}
@@ -76,20 +77,22 @@ export default function FactoryBar() {
                         item.current
                           ? "bg-cyan-900/40 text-cyan-400"
                           : isHomeDisabled
-                            ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
-                            : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
+                          ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
+                          : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
                         "group flex items-center rounded-lg px-3 py-2 text-base font-medium gap-3 transition-all duration-200"
                       )}
                       aria-current={item.current ? "page" : undefined}
                       disabled={isHomeDisabled}
                       aria-disabled={isHomeDisabled}
                     >
-                      <Icon className={classNames(
-                        "h-6 w-6 transition-colors",
-                        isHomeDisabled
-                          ? "text-gray-500"
-                          : "group-hover:text-cyan-400"
-                      )} />
+                      <Icon
+                        className={classNames(
+                          "h-6 w-6 transition-colors",
+                          isHomeDisabled
+                            ? "text-gray-500"
+                            : "group-hover:text-cyan-400"
+                        )}
+                      />
                       {item.name}
                       {isHomeDisabled && (
                         <span
@@ -123,7 +126,8 @@ export default function FactoryBar() {
         <div className="space-y-1 px-2 pb-3 pt-2 ">
           {navigation.map((item) => {
             const Icon = item.icon;
-            const isHomeDisabled = item.name === "HomeFactory" && hasOriginalImage;
+            const isHomeDisabled =
+              item.name === "HomeFactory" && hasOriginalImage;
 
             return (
               <DisclosureButton
@@ -134,20 +138,22 @@ export default function FactoryBar() {
                   item.current
                     ? "bg-cyan-900/40 text-cyan-400"
                     : isHomeDisabled
-                      ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
-                      : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
+                    ? "text-gray-500 cursor-not-allowed bg-gray-800/30"
+                    : "text-gray-300 hover:bg-gray-800/60 hover:text-white",
                   "group flex items-center rounded-lg px-3 py-2 text-base font-medium gap-3 transition-all duration-200"
                 )}
                 aria-current={item.current ? "page" : undefined}
                 disabled={isHomeDisabled}
                 aria-disabled={isHomeDisabled}
               >
-                <Icon className={classNames(
-                  "h-6 w-6 transition-colors",
-                  isHomeDisabled
-                    ? "text-gray-500"
-                    : "group-hover:text-cyan-400"
-                )} />
+                <Icon
+                  className={classNames(
+                    "h-6 w-6 transition-colors",
+                    isHomeDisabled
+                      ? "text-gray-500"
+                      : "group-hover:text-cyan-400"
+                  )}
+                />
                 {item.name}
                 {isHomeDisabled && (
                   <span

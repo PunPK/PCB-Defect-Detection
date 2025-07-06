@@ -15,6 +15,7 @@ import ProcessFactoryWorkflow from "./factoryPage/processFactory.js";
 // import ImageUploader from "./factoryPage/test_upload.js";
 import PCBCameraView from "./factoryPage/test_process.js";
 import DetailResult from "./factoryPage/detailResult.js";
+import ResultPage from "./factoryPage/resultPage.js";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             <Route path="/home-factory" element={<HomeFactoryWorkflow />} />
             <Route path="/camDetectPCB" element={<CamDetectPCB />} />
             <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
+            <Route path="/results" element={<ResultPage />} />
             <Route
               path="/factoryWorkflow/:pcb_id"
               element={<ProcessFactoryWorkflow />}
