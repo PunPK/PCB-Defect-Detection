@@ -1,21 +1,12 @@
-import AnalysisBar, { steps } from "../components/analysisBar.js";
 import { ArrowDown, ArrowRight, IterationCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import "../page/HomePage.css";
 
 export default function DetailResult() {
-  const [activeStep, setActiveStep] = useState(0);
   const navigate = useNavigate();
-  const [originalImage, setOriginalImage] = useState(null);
-  const [analysisImage, setAnalysisImage] = useState(null);
-  const [processedImages, setProcessedImages] = useState(null);
-  const [status, setStatus] = useState("Waiting for image...");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [namePreviewImage, setNamePreviewImage] = useState(null);
-  const [openPreviewImage, setOpenPreviewImage] = useState(false);
   const [result, setResult] = useState(null);
   const { result_id } = useParams();
 
@@ -34,7 +25,7 @@ export default function DetailResult() {
           onClick={() => openPreview(src, title)}
         >
           <img
-            src={src}
+            src={`data:image/jpeg;base64,${src}`}
             alt={alt}
             className="w-full h-48 object-contain rounded-md bg-gray-900 p-1"
           />
@@ -49,98 +40,41 @@ export default function DetailResult() {
   }
 
   useEffect(() => {
-    getImg();
-  }, []);
+    handleGetResult();
+  }, [result_id]);
 
-  const getImg = async () => {
-    try {
-      const savedAnalysisImage = sessionStorage.getItem("AnalysisImage");
-      const analysisImgData = JSON.parse(savedAnalysisImage);
-      setAnalysisImage(analysisImgData);
-
-      const savedOriginalImage = sessionStorage.getItem("OriginalImage");
-      const originalImgData = JSON.parse(savedOriginalImage);
-      setOriginalImage(originalImgData);
-      processImage(
-        originalImgData.url,
-        originalImgData.name,
-        analysisImgData.url,
-        analysisImgData.name
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const processImage = async (
-    originalImageUrl,
-    originalName = "original_pcb.jpg",
-    analysisImageUrl,
-    analysisName = "analysis_pcb.jpg"
-  ) => {
-    if (!originalImageUrl || !analysisImageUrl) return;
-
+  const handleGetResult = async () => {
     setIsProcessing(true);
-    setStatus("Processing image...");
-    setError(null);
+    if (!result_id) {
+      console.error("No result_id provided");
+      return;
+    }
 
     try {
-      const formData = new FormData();
-
-      const originalResponse = await fetch(originalImageUrl);
-      const originalblob = await originalResponse.blob();
-      formData.append("files", originalblob, originalName);
-
-      const analysisResponse = await fetch(analysisImageUrl);
-      const analysisblob = await analysisResponse.blob();
-      formData.append("files", analysisblob, analysisName);
-
-      const apiResponse = await fetch(
-        "http://localhost:8000/api/analysis/prepare",
-        {
-          method: "POST",
-          body: formData,
-        }
+      const response = await fetch(
+        `http://localhost:8000/factory/get_result/${result_id}`
       );
+      const data = await response.json();
 
-      if (!apiResponse.ok) {
-        throw new Error(`Server error: ${apiResponse.status}`);
+      if (response.ok) {
+        setResult(data);
+        setIsProcessing(false);
       }
-
-      const result = await apiResponse.json();
-
-      console.log(result);
-
-      setProcessedImages({
-        template: `data:image/jpeg;base64,${result.images.template}`,
-        defective: `data:image/jpeg;base64,${result.images.defective}`,
-        aligned: `data:image/jpeg;base64,${result.images.aligned}`,
-        diff: `data:image/jpeg;base64,${result.images.diff}`,
-        cleaned: `data:image/jpeg;base64,${result.images.cleaned}`,
-        result: `data:image/jpeg;base64,${result.images.result}`,
-      });
-
-      setResult({ percent: result.accuracy, summarize: result.result });
-
-      setStatus(result.detected ? "PCB detected!" : "No PCB detected");
-    } catch (err) {
-      setError(err.message);
-      setStatus("Processing failed");
-    } finally {
-      setIsProcessing(false);
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
     }
   };
 
-  const openPreview = (image, name = "pcb_image.jpg") => {
-    setPreviewImage(image);
-    setNamePreviewImage(name);
-    setOpenPreviewImage(true);
+  const openPreview = (image_data, filename) => {
+    const image_list = {
+      image_data: image_data,
+      filename: filename,
+    };
+    setPreviewImage(image_list);
   };
 
   const closePreview = () => {
     setPreviewImage(null);
-    setNamePreviewImage(null);
-    setOpenPreviewImage(false);
   };
 
   if (isProcessing) {
@@ -173,7 +107,7 @@ export default function DetailResult() {
               </div>
 
               <h2 className="mb-4 text-2xl lg:text-4xl font-bold text-white bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                Result of
+                {`Result ที่ ${result?.result_List?.results_id} ในการตรวจสอบครั้งที่ ${result?.result_List?.pcb_result_id}`}
               </h2>
 
               {result && (
@@ -182,9 +116,12 @@ export default function DetailResult() {
                   <h3 className="relative text-lg lg:text-2xl font-bold text-gray-100">
                     <span className="text-blue-400">Result:</span> [
                     <span className="text-cyan-300">
-                      {result.percent.toFixed(2)}%
+                      {result?.result_List?.accuracy}%
                     </span>
-                    ] <span className="text-gray-300">{result.summarize}</span>
+                    ]{" "}
+                    <span className="text-gray-300">
+                      {result?.result_List?.description}
+                    </span>
                   </h3>
                 </div>
               )}
@@ -200,6 +137,26 @@ export default function DetailResult() {
                 </span>
               </p>
             </div>
+            <div className="flex flex-col w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  navigate(-1);
+                }}
+                className="flex items-center justify-center px-6 py-3 lg:px-14 lg:py-8 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
+              >
+                <p className="font-light text-lg sm:text-2xl leading-relaxed">
+                  ย้อนกลับ
+                </p>
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <IterationCcw />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16 relative">
@@ -211,22 +168,14 @@ export default function DetailResult() {
 
               <div className="mb-8">
                 <ImageCard
-                  title="รูปภาพต้นฉบับ PCB (สี)"
-                  src={originalImage?.url}
-                  alt="Final Result"
-                  className="border-teal-400"
-                />
-              </div>
-
-              <div className="flex justify-center mb-8">
-                <ArrowDown className="w-8 h-8 text-white" />
-              </div>
-
-              <div className="mb-8">
-                <ImageCard
                   title="รูปภาพต้นฉบับ PCB (สีเทา)"
-                  src={processedImages?.template}
-                  alt="Template PCB"
+                  src={
+                    result?.result_List?.imageList?.template_image?.image_data
+                  }
+                  alt={
+                    result?.result_List?.imageList?.template_image?.filename ||
+                    "Template PCB"
+                  }
                   className="border-blue-400"
                 />
               </div>
@@ -238,25 +187,16 @@ export default function DetailResult() {
               </h2>
               <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-4 mb-6"></div>
 
-              <div className="mb-8">
-                <ImageCard
-                  title="รูปภาพตรวจจับ PCB (สี)"
-                  src={analysisImage?.url}
-                  alt="Defective PCB"
-                  className="border-red-400"
-                />
-              </div>
-
-              {/* Arrow Down */}
-              <div className="flex justify-center mb-8">
-                <ArrowDown className="w-8 h-8 text-white" />
-              </div>
-
               <div className="mb-8 relative">
                 <ImageCard
                   title="รูปภาพตรวจจับ PCB (สีเทา)"
-                  src={processedImages?.defective}
-                  alt="Defective PCB"
+                  src={
+                    result?.result_List?.imageList?.defective_image?.image_data
+                  }
+                  alt={
+                    result?.result_List?.imageList?.defective_image?.filename ||
+                    "Defective PCB"
+                  }
                   className="border-red-400"
                 />
 
@@ -274,8 +214,11 @@ export default function DetailResult() {
             <div className="mb-8">
               <ImageCard
                 title="รูปภาพที่ได้จากการจัดรูปภาพทั้ง 2 รูป ให้อยู่ในตำแหน่งเดียวกัน"
-                src={processedImages?.aligned}
-                alt="Defective PCB"
+                src={result?.result_List?.imageList?.aligned_image?.image_data}
+                alt={
+                  result?.result_List?.imageList?.aligned_image?.filename ||
+                  "Aligend PCB"
+                }
                 className="border-red-400"
               />
             </div>
@@ -286,8 +229,11 @@ export default function DetailResult() {
             <div className="mb-8">
               <ImageCard
                 title="ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพ"
-                src={processedImages?.diff}
-                alt="Defective PCB"
+                src={result?.result_List?.imageList?.diff_image?.image_data}
+                alt={
+                  result?.result_List?.imageList?.diff_image?.filename ||
+                  "Diff PCB"
+                }
                 className="border-red-400"
               />
             </div>
@@ -297,8 +243,11 @@ export default function DetailResult() {
             <div className="mb-8">
               <ImageCard
                 title="แยกจุดที่ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพเจอ"
-                src={processedImages?.cleaned}
-                alt="Defective PCB"
+                src={result?.result_List?.imageList?.cleaned_image?.image_data}
+                alt={
+                  result?.result_List?.imageList?.cleaned_image?.filename ||
+                  "Cleaned PCB"
+                }
                 className="border-red-400"
               />
             </div>
@@ -308,8 +257,11 @@ export default function DetailResult() {
             <div className="mb-8">
               <ImageCard
                 title="ผลลัพธ์ของการตรวจจับจุดแตกต่าง"
-                src={processedImages?.result}
-                alt="Defective PCB"
+                src={result?.result_List?.imageList?.result_image?.image_data}
+                alt={
+                  result?.result_List?.imageList?.result_image?.filename ||
+                  "Result PCB"
+                }
                 className="border-red-400"
               />
             </div>
@@ -317,7 +269,7 @@ export default function DetailResult() {
 
           <div className="flex justify-between items-center border-t border-gray-800 pt-6 mt-5"></div>
         </div>
-        {openPreviewImage && (
+        {previewImage && (
           <div
             className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
             onClick={closePreview}
@@ -346,12 +298,12 @@ export default function DetailResult() {
                 </svg>
               </button>
               <img
-                src={previewImage}
-                alt={namePreviewImage}
-                className="max-w-full max-h-[80vh] object-contain mx-auto"
+                src={`data:image/jpeg;base64,${previewImage.image_data}`}
+                alt={previewImage.filename}
+                className="w-full max-h-[60vh] object-contain mx-auto"
               />
               <div className="mt-2 text-center text-white">
-                {namePreviewImage}
+                {previewImage.filename}
               </div>
             </div>
           </div>
