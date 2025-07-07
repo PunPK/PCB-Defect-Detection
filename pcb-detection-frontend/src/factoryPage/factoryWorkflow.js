@@ -6,20 +6,9 @@ import "../page/HomePage.css";
 export default function HomeFactoryWorkflow() {
   const [originalImageFactory, setOriginalImageFactory] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  // const [showCamera, setShowCamera] = useState(false)
-  // const videoRef = useRef(null)
-  // const canvasRef = useRef(null)
   const fileInputRef = useRef(null);
-  // const [stream, setStream] = useState(null)
   const [previewImage, setPreviewImage] = useState(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const savedImage = sessionStorage.getItem("OriginalImageFactory");
-    if (savedImage) {
-      setOriginalImageFactory(JSON.parse(savedImage));
-    }
-  }, []);
 
   useEffect(() => {
     if (originalImageFactory) {
@@ -31,14 +20,6 @@ export default function HomeFactoryWorkflow() {
       sessionStorage.removeItem("PreOriginalImageFactory");
     }
   }, [originalImageFactory]);
-
-  // useEffect(() => {
-  //     return () => {
-  //         if (stream) {
-  //             stream.getTracks().forEach((track) => track.stop())
-  //         }
-  //     }
-  // }, [stream])
 
   const handleFileChange = (e) => {
     const fileList = e.target.files;
@@ -75,7 +56,6 @@ export default function HomeFactoryWorkflow() {
     }
     setOriginalImageFactory(null);
     sessionStorage.removeItem("PreOriginalImageFactory");
-    sessionStorage.removeItem("OriginalImageFactory");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }

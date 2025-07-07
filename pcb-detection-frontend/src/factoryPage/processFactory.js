@@ -17,20 +17,12 @@ import "../page/uploadPage.css";
 import { Button } from "../page/uploadPCBChecked.js";
 export default function ProcessFactoryWorkflow() {
   const [originalImageFactory, setOriginalImageFactory] = useState(null);
-  const [analysisImage, setAnalysisImage] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [cameraFeed, setCameraFeed] = useState(null);
-  const [pcbImage, setPcbImage] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [status, setStatus] = useState("Disconnected");
-  const [fileName, setFileName] = useState("");
   const [fps, setFps] = useState(0);
   const { pcb_id } = useParams();
-  // const [showCamera, setShowCamera] = useState(false)
-  // const videoRef = useRef(null)
-  // const canvasRef = useRef(null)
   const fileInputRef = useRef(null);
-  // const [stream, setStream] = useState(null)
   const [previewImage, setPreviewImage] = useState(null);
   const navigate = useNavigate();
 
@@ -40,76 +32,13 @@ export default function ProcessFactoryWorkflow() {
   const imageQueueRef = useRef([]);
 
   const [resultData, setResultData] = useState(null);
-  // const [isConnected, setIsConnected] = useState(false);
-  // const [status, setStatus] = useState("Not connected");
-  const [savedImages, setSavedImages] = useState([]);
-  const [resultId, setResultId] = useState(null);
-  const detectionResults = [
-    {
-      id: 1,
-      name: "ผิดพลาดเล็กน้อย",
-      accuracy: 85,
-      type: "UD",
-      imageUrl: originalImageFactory
-        ? originalImageFactory.url
-        : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect...",
-    },
-    {
-      id: 2,
-      name: "ผิดพลากมาก",
-      accuracy: 85,
-      type: "UD",
-      imageUrl: originalImageFactory
-        ? originalImageFactory.url
-        : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect...",
-    },
-    {
-      id: 3,
-      name: "คนละแบบกันเลย",
-      accuracy: 85,
-      type: "UD",
-      imageUrl: originalImageFactory
-        ? originalImageFactory.url
-        : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect...",
-    },
-    {
-      id: 4,
-      name: "ผิดพลาดเล็กน้อย",
-      accuracy: 80,
-      type: "UD",
-      imageUrl: originalImageFactory
-        ? originalImageFactory.url
-        : "https://example.com/pcb1.jpg",
-      description: "Detailed description about this PCB defect...",
-    },
-    // Add more items as needed
-  ];
 
-  const [totalAccuracy, setTotalAccuracy] = useState(0);
-
-  useEffect(() => {
-    if (detectionResults.length === 0) {
-      setTotalAccuracy(0);
-      return;
-    }
-
-    let sum = 0;
-    for (const result of detectionResults) {
-      sum += result.accuracy;
-    }
-
-    const average = sum / detectionResults.length;
-    setTotalAccuracy(average);
-  }, [detectionResults]);
+  sessionStorage.removeItem("PreOriginalImageFactory");
 
   const processImageQueue = () => {
     if (imageQueueRef.current.length >= 2) {
       const [cameraData, pcbData] = imageQueueRef.current.splice(0, 2);
 
-      // Process camera feed
       const cameraBlob = new Blob([cameraData], { type: "image/jpeg" });
       const cameraUrl = URL.createObjectURL(cameraBlob);
       setCameraFeed((prev) => {
@@ -130,18 +59,6 @@ export default function ProcessFactoryWorkflow() {
     setIsStreaming(false);
     imageQueueRef.current = [];
 
-    // const response = await fetch(originalImageFactory.url);
-    // const blob = await response.blob();
-
-    // const formData = new FormData();
-    // formData.append(
-    //   "file",
-    //   blob,
-    //   originalImageFactory.name || "factory_original_image.jpg"
-    // );
-    // formData.append("result_Id", result_Id);
-
-    console.log(result_Id);
     const ws = new WebSocket(
       `ws://${window.location.hostname}:8000/factory/ws/factory-workflow?pcb_id=${result_Id}`
     );
@@ -155,7 +72,6 @@ export default function ProcessFactoryWorkflow() {
 
     ws.onmessage = (event) => {
       if (event.data instanceof Blob) {
-        // ถ้าเป็นภาพ
         const reader = new FileReader();
         reader.onload = () => {
           imageQueueRef.current.push(new Uint8Array(reader.result));
@@ -166,7 +82,6 @@ export default function ProcessFactoryWorkflow() {
         try {
           const message = JSON.parse(event.data);
           if (message.type === "new_result") {
-            console.log("New result from server:", message);
             fetchResultData(pcb_id);
           }
         } catch (e) {
@@ -187,7 +102,6 @@ export default function ProcessFactoryWorkflow() {
   };
 
   const startDetection = async (result_Id) => {
-    console.log(result_Id);
     if (!result_Id) {
       alert("Please create a PCB before starting detection.");
       return;
@@ -227,69 +141,12 @@ export default function ProcessFactoryWorkflow() {
     }
   };
 
-  // useEffect(() => {
-  //   const savedImage = sessionStorage.getItem("OriginalImageFactory");
-  //   if (savedImage) {
-  //     setOriginalImageFactory(JSON.parse(savedImage));
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   if (originalImageFactory) {
-  //     sessionStorage.setItem(
-  //       "PreOriginalImageFactory",
-  //       JSON.stringify(originalImageFactory)
-  //     );
-  //   } else {
-  //     sessionStorage.removeItem("PreOriginalImageFactory");
-  //   }
-  // }, [originalImageFactory]);
-
-  // const createPcb = async () => {
-  //   if (!originalImageFactory) {
-  //     alert("No PCB frame available to save.");
-  //     return;
-  //   }
-
-  //   try {
-  //     const response = await fetch(originalImageFactory.url);
-  //     const blob = await response.blob();
-
-  //     const formData = new FormData();
-  //     // formData.append("file", blob, "factory_original_image.jpg");
-  //     formData.append("file", blob, originalImageFactory.name);
-  //     // formData.append("pcb_id", 1);
-
-  //     const apiResponse = await fetch(
-  //       `http://${window.location.hostname}:8000/factory/create_pcb`,
-  //       {
-  //         method: "POST",
-  //         body: formData,
-  //       }
-  //     );
-
-  //     const data = await apiResponse.json();
-
-  //     if (apiResponse.ok) {
-  //       alert("Image saved successfully!");
-  //     } else {
-  //       alert(`Failed to save image: ${data.message}`);
-  //     }
-  //     startDetection(data.result.pcb_id);
-  //     setResultId(data.result.pcb_id);
-  //   } catch (error) {
-  //     console.error("Error saving image:", error);
-  //     alert("Failed to save image");
-  //   }
-  // };
-
   const fetchOriginalImages = async (pcb_Id) => {
     try {
       const response = await fetch(
         `http://localhost:8000/factory/get_images/${pcb_Id}`
       );
       const data = await response.json();
-      console.log("Fetched saved images:", data);
       if (data.status === "success") {
         setOriginalImageFactory(data);
       }
@@ -304,7 +161,6 @@ export default function ProcessFactoryWorkflow() {
         `http://localhost:8000/factory/get_result_pcb_working/${pcb_Id}`
       );
       const data = await response.json();
-      console.log("Fetched saved images:", data);
       if (response.ok) {
         setResultData(data);
       }
@@ -317,71 +173,6 @@ export default function ProcessFactoryWorkflow() {
     fetchOriginalImages(pcb_id);
     fetchResultData(pcb_id);
   }, [pcb_id]);
-
-  // useEffect(() => {
-  //     return () => {
-  //         if (stream) {
-  //             stream.getTracks().forEach((track) => track.stop())
-  //         }
-  //     }
-  // }, [stream])
-
-  const handleFileChange = (e) => {
-    const fileList = e.target.files;
-    if (fileList && fileList[0]) {
-      const file = fileList[0];
-
-      if (!file.type.startsWith("image/")) {
-        alert("Please upload an image file only");
-        return;
-      }
-
-      setIsUploading(true);
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          const newImage = {
-            id: Math.random().toString(36).substring(2, 9),
-            name: file.name,
-            url: event.target.result,
-            file,
-          };
-          setOriginalImageFactory(newImage);
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removeImage = () => {
-    if (originalImageFactory && originalImageFactory.url) {
-      URL.revokeObjectURL(originalImageFactory.url);
-    }
-    setOriginalImageFactory(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const startCamera = async () => {
-    try {
-      // const mediaStream = await navigator.mediaDevices.getUserMedia({
-      //     video: { facingMode: "environment" },
-      // })
-
-      navigate("/camDetectPCB", {
-        state: { PCB: "OriginalImageFactory" },
-      });
-      // setShowCamera(true)
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      alert("Could not access camera. Please check permissions.");
-    }
-  };
-
   const openPreview = (image) => {
     setPreviewImage(image);
   };
@@ -411,7 +202,7 @@ export default function ProcessFactoryWorkflow() {
         }
       );
       const data = await response.json();
-      console.log("Delete Pcb:", data);
+      console.log("Delete Pcb:");
     } catch (error) {
       console.error("Error fetching saved images:", error);
     }
@@ -514,14 +305,6 @@ export default function ProcessFactoryWorkflow() {
                   <p className="text-gray-400 mb-4 text-center text-sm">
                     UPLOAD ORIGINAL PCB IMAGE
                   </p>
-                  {/* 
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleFileChange}
-                                            /> */}
 
                   <Button
                     onClick={() => navigate("/home-factory")}
@@ -531,18 +314,6 @@ export default function ProcessFactoryWorkflow() {
                   >
                     UPLOAD IMAGE
                   </Button>
-                </div>
-              )}
-
-              {isUploading && (
-                <div className="absolute inset-0 bg-black/80 flex items-center justify-center rounded-lg">
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-full border-2 border-red-500 border-t-transparent animate-spin mb-3"></div>
-                    <p className="text-red-400 text-sm font-mono">
-                      UPLOADING...
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">{fileName}</p>
-                  </div>
                 </div>
               )}
             </div>

@@ -126,7 +126,6 @@ export default function DetailResult() {
                 </div>
               )}
 
-              {/* Description with improved readability */}
               <p className="text-gray-300 font-light text-base lg:text-lg leading-relaxed space-y-4">
                 <span className="block">
                   แบ่งไปด้วยหลายๆขั้นตอน

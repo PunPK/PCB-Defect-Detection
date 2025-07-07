@@ -1,21 +1,13 @@
 import {
   CheckCircle,
   XCircle,
-  HardDrive,
   BarChart2,
-  Upload,
-  X,
   Hexagon,
-  Cpu,
-  BadgeCheck,
-  Factory,
-  Layers,
-  ArchiveX,
   DatabaseZap,
   Trash2,
   ArchiveRestore,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
 const ResultPage = () => {
@@ -41,8 +33,6 @@ const ResultPage = () => {
           const status = result.sum_accuracy > 50 ? "pass" : "fail";
           return { ...result, status };
         });
-        console.log("Fetched saved images:", data.results);
-        console.log("Processed Results:", processedResults);
         setResults(processedResults);
         setIsProcessing(false);
       }
@@ -70,7 +60,7 @@ const ResultPage = () => {
         }
       );
       const data = await response.json();
-      console.log("Delete Pcb:", data);
+      console.log("Delete Pcb:");
       handleGetResults();
     } catch (error) {
       console.error("Error fetching saved images:", error);
@@ -120,7 +110,6 @@ const ResultPage = () => {
           </header>
         </div>
 
-        {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <div className="flex items-center">
@@ -184,7 +173,6 @@ const ResultPage = () => {
                 />
               </div>
 
-              {/* Result Details */}
               <div className="p-4">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-medium text-gray-100">
