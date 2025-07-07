@@ -391,9 +391,7 @@ export default function ProcessFactoryWorkflow() {
   };
 
   const removeOriginalImage = () => {
-    // console.log(originalPCB)
     if (pcb_id) {
-      // URL.revokeObjectURL(originalImageFactory.url);
       sessionStorage.removeItem("OriginalImageFactory");
       deletePcb(pcb_id);
       navigate("/home-factory");
@@ -652,7 +650,7 @@ export default function ProcessFactoryWorkflow() {
 
                 <div className="bg-gray-800/50 border border-purple-500/20 rounded-xl p-4 text-center shadow-[0_0_10px_rgba(180,70,255,0.1)] hover:shadow-[0_0_15px_rgba(180,70,255,0.2)] transition-all duration-300 group">
                   <div className="text-lg uppercase tracking-widest text-purple-400/80 mb-1">
-                    เปอร์เซ็นของถูกต้องของการตรวจสอบโดยรวม
+                    เปอร์เซ็นของถูกต้องของการตรวจสอบ
                   </div>
                   <div className="relative inline-block">
                     <h3 className="text-2xl font-bold text-gray-100">

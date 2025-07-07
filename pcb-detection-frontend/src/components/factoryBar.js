@@ -4,7 +4,15 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { Brain, Home, Hexagon, Award, Factory, Redo2 } from "lucide-react";
+import {
+  Brain,
+  Home,
+  Hexagon,
+  Award,
+  Factory,
+  Redo2,
+  Cctv,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const navigation = [
@@ -15,6 +23,13 @@ const navigation = [
     current: false,
     icon: Factory,
   },
+  // {
+  //   name: "Retrun",
+  //   href: -1,
+  //   current: false,
+  //   icon: Factory,
+  // },
+  { name: "Test Camera", href: "/testcam", current: false, icon: Cctv },
   { name: "Return to HomePage", href: "/", current: false, icon: Redo2 },
 ];
 
@@ -26,7 +41,7 @@ export default function FactoryBar() {
   const [hasOriginalImage, setHasOriginalImage] = useState(false);
 
   useEffect(() => {
-    const savedImage = sessionStorage.getItem("OriginalImageFactory");
+    const savedImage = sessionStorage.getItem("OriginalImageFactorys");
     if (savedImage) {
       setHasOriginalImage(true);
     }

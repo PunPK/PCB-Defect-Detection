@@ -12,6 +12,8 @@ import {
   Layers,
   ArchiveX,
   DatabaseZap,
+  Trash2,
+  ArchiveRestore,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
@@ -20,9 +22,10 @@ const ResultPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
   const navigate = useNavigate();
+
   useEffect(() => {
     handleGetResults();
-  }, {});
+  }, []);
 
   const handleGetResults = async () => {
     setIsProcessing(true);
@@ -43,6 +46,32 @@ const ResultPage = () => {
         setResults(processedResults);
         setIsProcessing(false);
       }
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    }
+  };
+
+  const removeOriginalImage = (pcb_Id) => {
+    if (pcb_Id) {
+      sessionStorage.removeItem("OriginalImageFactory");
+      deletePcb(pcb_Id);
+    }
+    // if (fileInputRef.current) {
+    //   fileInputRef.current.value = "";
+    // }
+  };
+
+  const deletePcb = async (pcb_Id) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/factory/delete_pcb/${pcb_Id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const data = await response.json();
+      console.log("Delete Pcb:", data);
+      handleGetResults();
     } catch (error) {
       console.error("Error fetching saved images:", error);
     }
@@ -147,11 +176,11 @@ const ResultPage = () => {
               key={result.pcb_id}
               className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden hover:border-cyan-400 transition-colors"
             >
-              <div className="bg-gray-900 h-52 flex items-center justify-center p-4 border-b border-gray-700">
+              <div className="bg-gray-900 h-64 flex items-center justify-center p-4 border-b border-gray-700">
                 <img
                   src={`data:image/jpeg;base64,${result?.originalPcb?.image_data}`}
                   alt={`PCB Test ${result.pcb_id}`}
-                  className="max-h-full max-w-full object-contain"
+                  className="h-full w-full object-contain"
                 />
               </div>
 
@@ -207,20 +236,46 @@ const ResultPage = () => {
                     </span>
                   </div>
                 </div>
-                <div className="flex justify-center  mt-4">
-                  <button
-                    onClick={() => navigate(`/pcb-details/${result.pcb_id}`)}
-                    type="button"
-                    className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-cyan-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/0 to-purple-500/0 group-hover:from-cyan-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                    <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                      <BadgeCheck className="h-5 w-5 mr-3 text-cyan-500 group-hover:text-cyan-400" />
-                      <span className="text-sm text-gray-300 group-hover:text-cyan-300 transition-colors">
-                        คลิกเพื่อดูรายละเอียด
-                      </span>
-                    </div>
-                  </button>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 justify-center">
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() =>
+                        navigate(`/factoryWorkflow/${result.pcb_id}`)
+                      }
+                      type="button"
+                      className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-green-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 to-purple-500/0 group-hover:from-green-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                      <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                        <ArchiveRestore className="h-9 w-9 mr-3 text-green-500 group-hover:text-green-400" />
+                        <span className="text-sm text-gray-300 group-hover:text-green-300 transition-colors">
+                          เพิ่ม/แก้ไข ข้อมูลการตรวจสอบ
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => {
+                        removeOriginalImage(result.pcb_id);
+                      }}
+                      type="button"
+                      className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-red-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-purple-500/0 group-hover:from-red-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
+                      <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                        <Trash2 className="h-9 w-9 mr-3 text-red-500 group-hover:text-red-400" />
+                        <span className="text-sm text-gray-300 group-hover:text-red-300 transition-colors">
+                          ลบข้อมูลผลการทดสอบ{" "}
+                          <span className="text-red-500">
+                            ครั้งที่ {result.pcb_id}
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 flex justify-center">

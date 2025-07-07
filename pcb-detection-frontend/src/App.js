@@ -16,6 +16,7 @@ import ProcessFactoryWorkflow from "./factoryPage/processFactory.js";
 import PCBCameraView from "./factoryPage/test_process.js";
 import DetailResult from "./factoryPage/detailResult.js";
 import ResultPage from "./factoryPage/resultPage.js";
+// import ShowResultPage from "./factoryPage/showResultPage.js";
 
 function App() {
   return (
@@ -25,16 +26,17 @@ function App() {
           {/* with NavBar */}
           <Route element={<LayoutWithNav />}>
             <Route path="/" element={<Home />} />
-            <Route path="/testcam" element={<TestCam />} />
             <Route path="/PCBVerification" element={<PCBVerificationPage />} />
             <Route path="/AboutUs" element={<AboutUs />} />
           </Route>
 
           <Route element={<LayoutWithNavFactory />}>
             <Route path="/home-factory" element={<HomeFactoryWorkflow />} />
+            <Route path="/testcam" element={<TestCam />} />
             <Route path="/camDetectPCB" element={<CamDetectPCB />} />
             <Route path="/fileDetectPCB" element={<FileDetectPCB />} />
             <Route path="/results" element={<ResultPage />} />
+            {/* <Route path="/results/:pcb_id" element={<ShowResultPage />} /> */}
             <Route
               path="/factoryWorkflow/:pcb_id"
               element={<ProcessFactoryWorkflow />}
