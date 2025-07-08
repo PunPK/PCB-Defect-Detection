@@ -55,7 +55,7 @@ export default function FileDetectPCB() {
       formData.append("file", blob, "original_image.jpg");
 
       const apiResponse = await fetch(
-        "http://localhost:8000/api/pcb-detection/image",
+        `http://${window.location.hostname}:8000/api/pcb-detection/image`,
         {
           method: "POST",
           body: formData,
@@ -171,13 +171,12 @@ export default function FileDetectPCB() {
           <div className="flex items-center gap-4">
             <span className="font-medium">Status:</span>
             <span
-              className={`font-medium ${
-                status.includes("detected")
-                  ? "text-green-500"
-                  : status.includes("failed")
+              className={`font-medium ${status.includes("detected")
+                ? "text-green-500"
+                : status.includes("failed")
                   ? "text-red-500"
                   : "text-blue-400"
-              }`}
+                }`}
             >
               {status}
             </span>

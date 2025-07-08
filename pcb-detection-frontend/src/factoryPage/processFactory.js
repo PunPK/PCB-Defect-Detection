@@ -25,6 +25,7 @@ export default function ProcessFactoryWorkflow() {
   const fileInputRef = useRef(null);
   const [previewImage, setPreviewImage] = useState(null);
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const wsRef = useRef(null);
   const frameCountRef = useRef(0);
@@ -142,9 +143,10 @@ export default function ProcessFactoryWorkflow() {
   };
 
   const fetchOriginalImages = async (pcb_Id) => {
+    setIsProcessing(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/get_images/${pcb_Id}`
+        `http://${window.location.hostname}:8000/factory/get_images/${pcb_Id}`
       );
       const data = await response.json();
       if (data.status === "success") {
@@ -152,13 +154,16 @@ export default function ProcessFactoryWorkflow() {
       }
     } catch (error) {
       console.error("Error fetching saved images:", error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const fetchResultData = async (pcb_Id) => {
+    setIsProcessing(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/get_result_pcb_working/${pcb_Id}`
+        `http://${window.location.hostname}:8000/factory/get_result_pcb_working/${pcb_Id}`
       );
       const data = await response.json();
       if (response.ok) {
@@ -166,6 +171,9 @@ export default function ProcessFactoryWorkflow() {
       }
     } catch (error) {
       console.error("Error fetching saved images:", error);
+    }
+    finally {
+      setIsProcessing(false);
     }
   };
 
@@ -194,9 +202,10 @@ export default function ProcessFactoryWorkflow() {
   };
 
   const deletePcb = async (pcb_Id) => {
+    setIsProcessing(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/delete_pcb/${pcb_Id}`,
+        `http://${window.location.hostname}:8000/factory/delete_pcb/${pcb_Id}`,
         {
           method: "DELETE",
         }
@@ -205,8 +214,18 @@ export default function ProcessFactoryWorkflow() {
       console.log("Delete Pcb:");
     } catch (error) {
       console.error("Error fetching saved images:", error);
+    } finally {
+      setIsProcessing(false);
     }
   };
+
+  if (isProcessing) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-[#050816]">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050816] text-white p-6 relative overflow-hidden">
@@ -335,11 +354,10 @@ export default function ProcessFactoryWorkflow() {
                 onClick={
                   isStreaming ? stopDetection : () => startDetection(pcb_id)
                 }
-                className={`px-4 py-2 rounded-md font-medium ${
-                  isStreaming
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
+                className={`px-4 py-2 rounded-md font-medium ${isStreaming
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-green-600 hover:bg-green-700"
+                  }`}
               >
                 {isStreaming ? "Stop" : "Start"}
               </button>
@@ -348,13 +366,12 @@ export default function ProcessFactoryWorkflow() {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Status:</span>
                   <span
-                    className={`font-medium ${
-                      status.includes("Error")
-                        ? "text-red-400"
-                        : isStreaming
+                    className={`font-medium ${status.includes("Error")
+                      ? "text-red-400"
+                      : isStreaming
                         ? "text-green-400"
                         : "text-blue-400"
-                    }`}
+                      }`}
                   >
                     {status}
                   </span>
@@ -436,12 +453,11 @@ export default function ProcessFactoryWorkflow() {
                     <div
                       className="h-full bg-gradient-to-r from-purple-400 to-purple-600"
                       style={{
-                        width: `${
-                          resultData?.result_List?.reduce(
-                            (sum, item) => sum + item.accuracy,
-                            0
-                          ) / resultData?.result_List?.length || 0
-                        }%`,
+                        width: `${resultData?.result_List?.reduce(
+                          (sum, item) => sum + item.accuracy,
+                          0
+                        ) / resultData?.result_List?.length || 0
+                          }%`,
                       }}
                     ></div>
                   </div>

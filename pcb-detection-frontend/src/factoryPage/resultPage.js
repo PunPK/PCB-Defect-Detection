@@ -24,7 +24,7 @@ const ResultPage = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/get_all_pcb_results`
+        `http://${window.location.hostname}:8000/factory/get_all_pcb_results`
       );
       const data = await response.json();
 
@@ -54,7 +54,7 @@ const ResultPage = () => {
   const deletePcb = async (pcb_Id) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/delete_pcb/${pcb_Id}`,
+        `http://${window.location.hostname}:8000/factory/delete_pcb/${pcb_Id}`,
         {
           method: "DELETE",
         }
@@ -179,11 +179,10 @@ const ResultPage = () => {
                     Inspection No. {result.pcb_id}
                   </h3>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      result.status === "pass"
-                        ? "bg-green-900/50 text-green-400 border border-green-800"
-                        : "bg-red-900/50 text-red-400 border border-red-800"
-                    }`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${result.status === "pass"
+                      ? "bg-green-900/50 text-green-400 border border-green-800"
+                      : "bg-red-900/50 text-red-400 border border-red-800"
+                      }`}
                   >
                     {result.status === "pass" ? "PASS" : "FAIL"}
                   </span>
@@ -195,20 +194,18 @@ const ResultPage = () => {
                     <div className="flex items-center">
                       <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
                         <div
-                          className={`h-2 rounded-full ${
-                            result.status === "pass"
-                              ? "bg-green-500"
-                              : "bg-red-500"
-                          }`}
+                          className={`h-2 rounded-full ${result.status === "pass"
+                            ? "bg-green-500"
+                            : "bg-red-500"
+                            }`}
                           style={{ width: `${result.accuracy}%` }}
                         ></div>
                       </div>
                       <span
-                        className={`font-mono ${
-                          result.status === "pass"
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
+                        className={`font-mono ${result.status === "pass"
+                          ? "text-green-400"
+                          : "text-red-400"
+                          }`}
                       >
                         {result?.sum_accuracy || "NULL"}%
                       </span>
@@ -238,7 +235,7 @@ const ResultPage = () => {
                       <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
                         <ArchiveRestore className="h-9 w-9 mr-3 text-green-500 group-hover:text-green-400" />
                         <span className="text-sm text-gray-300 group-hover:text-green-300 transition-colors">
-                          เพิ่ม/แก้ไข ข้อมูลการตรวจสอบ
+                          เพิ่ม/แก้ไข ข้อมูล
                         </span>
                       </div>
                     </button>
@@ -301,10 +298,8 @@ const ResultPage = () => {
             {((passedTests / totalTests) * 100).toFixed(0)}% pass rate) with an
             average accuracy of {avgAccuracy.toFixed(1)}%.
             {passedTests < totalTests &&
-              ` Inspection No. ${
-                results.find((r) => r.status === "fail")?.pcb_id
-              } failed with ${
-                results.find((r) => r.status === "fail")?.sum_accuracy
+              ` Inspection No. ${results.find((r) => r.status === "fail")?.pcb_id
+              } failed with ${results.find((r) => r.status === "fail")?.sum_accuracy
               }% accuracy.`}
           </p>
         </div>

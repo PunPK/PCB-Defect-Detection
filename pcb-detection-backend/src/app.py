@@ -4,7 +4,10 @@ from .routes import pcb_detection, websocket, upload, factoryWorkflow
 
 app = FastAPI()
 
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost:3000",            # กรณีเปิดจากตัวเครื่องเอง
+    "http://192.168.121.253:3000",      # กรณีเปิดจาก LAN / มือถือ
+]
 
 app.add_middleware(
     CORSMiddleware,

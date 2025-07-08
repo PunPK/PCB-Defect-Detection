@@ -52,7 +52,7 @@ export default function DetailResult() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/factory/get_result/${result_id}`
+        `http://${window.location.hostname}:8000/factory/get_result/${result_id}`
       );
       const data = await response.json();
 
