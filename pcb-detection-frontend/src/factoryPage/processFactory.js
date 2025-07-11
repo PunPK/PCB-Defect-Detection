@@ -14,6 +14,7 @@ import {
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router";
 import "../page/uploadPage.css";
+import Delete from "../components/Delete.js";
 
 import { Button } from "../page/uploadPCBChecked.js";
 export default function ProcessFactoryWorkflow() {
@@ -34,6 +35,17 @@ export default function ProcessFactoryWorkflow() {
   const imageQueueRef = useRef([]);
 
   const [resultData, setResultData] = useState(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState([]);
+
+  const handleRequestDelete = (
+    itemName = "Item",
+    confirmText = "Are you sure you want to delete this Item?",
+    functions
+  ) => {
+    setItemToDelete({ itemName, confirmText, functions });
+    setIsDeleteOpen(true);
+  };
 
   sessionStorage.removeItem("PreOriginalImageFactory");
 
@@ -322,7 +334,13 @@ export default function ProcessFactoryWorkflow() {
                     <Button
                       variant="danger"
                       className="w-full text-sm"
-                      onClick={removeOriginalImage}
+                      onClick={() =>
+                        handleRequestDelete(
+                          "ORIGINAL PCB IMAGE",
+                          "Are you sure you want to delete this ORIGINAL PCB IMAGE?",
+                          () => removeOriginalImage()
+                        )
+                      }
                       icon={<ArchiveX className="h-4 w-4" />}
                     >
                       Delete PCB IMAGE
@@ -503,7 +521,11 @@ export default function ProcessFactoryWorkflow() {
                       <button
                         className="absolute top-2 right-2 z-10 bg-red-700/90 hover:bg-red-800 focus:ring-4 focus:ring-red-500/50 text-white font-semibold px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 text-sm transition-opacity duration-300 opacity-0 group-hover:opacity-100"
                         onClick={() => {
-                          deleteResult(result.results_id);
+                          handleRequestDelete(
+                            `Result of PCB ID: ${result.results_id} `,
+                            `Are you sure you want to delete result of PCB ID: ${result.results_id}?`,
+                            () => deleteResult(result.results_id)
+                          );
                         }}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -574,6 +596,16 @@ export default function ProcessFactoryWorkflow() {
           <span>Running on Raspberry Pi 4</span>
         </div>
       </div>
+      <Delete
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onDelete={
+          itemToDelete?.functions || (() => console.log("No function to call"))
+        }
+        itemName={itemToDelete?.itemName || "Error"}
+        confirmText={itemToDelete?.confirmText || "Error"}
+      />
+
       {previewImage && (
         <div
           className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"

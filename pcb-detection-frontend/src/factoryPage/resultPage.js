@@ -9,11 +9,24 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import Delete from "../components/Delete.js";
 
 const ResultPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
   const navigate = useNavigate();
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState([]);
+
+  const handleRequestDelete = (
+    itemName = "Item",
+    confirmText = "Are you sure you want to delete this Item?",
+    functions
+  ) => {
+    setItemToDelete({ itemName, confirmText, functions });
+    setIsDeleteOpen(true);
+  };
 
   useEffect(() => {
     handleGetResults();
@@ -41,7 +54,7 @@ const ResultPage = () => {
     }
   };
 
-  const removeOriginalImage = (pcb_Id) => {
+  const removePcbResult = (pcb_Id) => {
     if (pcb_Id) {
       sessionStorage.removeItem("OriginalImageFactory");
       deletePcb(pcb_Id);
@@ -179,10 +192,11 @@ const ResultPage = () => {
                     Inspection No. {result.pcb_id}
                   </h3>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${result.status === "pass"
-                      ? "bg-green-900/50 text-green-400 border border-green-800"
-                      : "bg-red-900/50 text-red-400 border border-red-800"
-                      }`}
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      result.status === "pass"
+                        ? "bg-green-900/50 text-green-400 border border-green-800"
+                        : "bg-red-900/50 text-red-400 border border-red-800"
+                    }`}
                   >
                     {result.status === "pass" ? "PASS" : "FAIL"}
                   </span>
@@ -194,18 +208,20 @@ const ResultPage = () => {
                     <div className="flex items-center">
                       <div className="w-16 bg-gray-700 rounded-full h-2 mr-2">
                         <div
-                          className={`h-2 rounded-full ${result.status === "pass"
-                            ? "bg-green-500"
-                            : "bg-red-500"
-                            }`}
+                          className={`h-2 rounded-full ${
+                            result.status === "pass"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                          }`}
                           style={{ width: `${result.accuracy}%` }}
                         ></div>
                       </div>
                       <span
-                        className={`font-mono ${result.status === "pass"
-                          ? "text-green-400"
-                          : "text-red-400"
-                          }`}
+                        className={`font-mono ${
+                          result.status === "pass"
+                            ? "text-green-400"
+                            : "text-red-400"
+                        }`}
                       >
                         {result?.sum_accuracy || "NULL"}%
                       </span>
@@ -243,9 +259,13 @@ const ResultPage = () => {
 
                   <div className="flex justify-center">
                     <button
-                      onClick={() => {
-                        removeOriginalImage(result.pcb_id);
-                      }}
+                      onClick={() =>
+                        handleRequestDelete(
+                          `Pcb Result ID : ${result.pcb_id}`,
+                          `Are you sure you want to delete Pcb Result ID : ${result.pcb_id}?`,
+                          () => removePcbResult(result.pcb_id)
+                        )
+                      }
                       type="button"
                       className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-red-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                     >
@@ -298,12 +318,23 @@ const ResultPage = () => {
             {((passedTests / totalTests) * 100).toFixed(0)}% pass rate) with an
             average accuracy of {avgAccuracy.toFixed(1)}%.
             {passedTests < totalTests &&
-              ` Inspection No. ${results.find((r) => r.status === "fail")?.pcb_id
-              } failed with ${results.find((r) => r.status === "fail")?.sum_accuracy
+              ` Inspection No. ${
+                results.find((r) => r.status === "fail")?.pcb_id
+              } failed with ${
+                results.find((r) => r.status === "fail")?.sum_accuracy
               }% accuracy.`}
           </p>
         </div>
       </div>
+      <Delete
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onDelete={
+          itemToDelete?.functions || (() => console.log("No function to call"))
+        }
+        itemName={itemToDelete?.itemName || "Error"}
+        confirmText={itemToDelete?.confirmText || "Error"}
+      />
     </div>
   );
 };
