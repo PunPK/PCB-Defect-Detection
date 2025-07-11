@@ -430,3 +430,31 @@ def get_all_pcb_results(db: Session):
         return {"error": "Failed to retrieve PCB data"}
 
     return pcbList
+
+
+def delete_result(db: Session, result_id: int):
+    result = db.query(model.Result).filter(model.Result.results_id == result_id).first()
+    if not result:
+        return None
+
+    image_keys = [
+        "template_image",
+        "defective_image",
+        "aligned_image",
+        "diff_image",
+        "cleaned_image",
+        "result_image",
+    ]
+
+    for key in image_keys:
+        image_id = getattr(result, key, None)
+        if image_id:
+            image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+            if image:
+                db.delete(image)
+
+    db.delete(result)
+
+    db.commit()
+
+    return True

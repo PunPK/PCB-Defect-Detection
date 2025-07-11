@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Layers,
   ArchiveX,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router";
@@ -171,8 +172,7 @@ export default function ProcessFactoryWorkflow() {
       }
     } catch (error) {
       console.error("Error fetching saved images:", error);
-    }
-    finally {
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -210,8 +210,25 @@ export default function ProcessFactoryWorkflow() {
           method: "DELETE",
         }
       );
-      const data = await response.json();
       console.log("Delete Pcb:");
+    } catch (error) {
+      console.error("Error fetching saved images:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const deleteResult = async (result_Id) => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch(
+        `http://${window.location.hostname}:8000/factory/delete_result/${result_Id}`,
+        {
+          method: "DELETE",
+        }
+      );
+      console.log("Delete result:");
+      fetchResultData(pcb_id);
     } catch (error) {
       console.error("Error fetching saved images:", error);
     } finally {
@@ -354,10 +371,11 @@ export default function ProcessFactoryWorkflow() {
                 onClick={
                   isStreaming ? stopDetection : () => startDetection(pcb_id)
                 }
-                className={`px-4 py-2 rounded-md font-medium ${isStreaming
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-green-600 hover:bg-green-700"
-                  }`}
+                className={`px-4 py-2 rounded-md font-medium ${
+                  isStreaming
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
                 {isStreaming ? "Stop" : "Start"}
               </button>
@@ -366,12 +384,13 @@ export default function ProcessFactoryWorkflow() {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Status:</span>
                   <span
-                    className={`font-medium ${status.includes("Error")
-                      ? "text-red-400"
-                      : isStreaming
+                    className={`font-medium ${
+                      status.includes("Error")
+                        ? "text-red-400"
+                        : isStreaming
                         ? "text-green-400"
                         : "text-blue-400"
-                      }`}
+                    }`}
                   >
                     {status}
                   </span>
@@ -442,10 +461,13 @@ export default function ProcessFactoryWorkflow() {
                   </div>
                   <div className="relative inline-block">
                     <h3 className="text-2xl font-bold text-gray-100">
-                      {resultData?.result_List?.reduce(
-                        (sum, item) => sum + item.accuracy,
-                        0
-                      ) / resultData?.result_List?.length || 0}
+                      {(
+                        resultData?.result_List?.reduce(
+                          (sum, item) => sum + item.accuracy,
+                          0
+                        ) / resultData?.result_List?.length || 0
+                      ).toFixed(2)}
+
                       <span className="text-lg text-purple-400">%</span>
                     </h3>
                   </div>
@@ -453,11 +475,12 @@ export default function ProcessFactoryWorkflow() {
                     <div
                       className="h-full bg-gradient-to-r from-purple-400 to-purple-600"
                       style={{
-                        width: `${resultData?.result_List?.reduce(
-                          (sum, item) => sum + item.accuracy,
-                          0
-                        ) / resultData?.result_List?.length || 0
-                          }%`,
+                        width: `${
+                          resultData?.result_List?.reduce(
+                            (sum, item) => sum + item.accuracy,
+                            0
+                          ) / resultData?.result_List?.length || 0
+                        }%`,
                       }}
                     ></div>
                   </div>
@@ -477,6 +500,16 @@ export default function ProcessFactoryWorkflow() {
                       <div className="absolute -top-6 -left-6 z-10 bg-cyan-500 text-gray-900 text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
                         {index + 1}
                       </div>
+                      <button
+                        className="absolute top-2 right-2 z-10 bg-red-700/90 hover:bg-red-800 focus:ring-4 focus:ring-red-500/50 text-white font-semibold px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 text-sm transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+                        onClick={() => {
+                          deleteResult(result.results_id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>ลบผลการทดสอบ</span>
+                      </button>
+
                       <div
                         className="relative group cursor-pointer mb-3"
                         onClick={() => openPreview(result.imageList)}

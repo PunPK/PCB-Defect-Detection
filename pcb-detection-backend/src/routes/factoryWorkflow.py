@@ -184,7 +184,7 @@ async def websocket_endpoint(
             # PCB detection
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             lower_copper = np.array([3, 0, 0])
-            upper_copper = np.array([70, 255, 255])
+            upper_copper = np.array([70, 200, 200])
             mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
             kernel = np.ones((5, 5), np.uint8)
@@ -668,3 +668,23 @@ async def get_all_pcb_results(
             "results": results,
         },
     )
+
+
+@router.delete("/delete_result/{result_id}")
+async def delete_result(
+    result_id: int,
+    db: Session = Depends(model.get_db),
+):
+    try:
+        database.delete_result(db=db, result_id=result_id)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "success",
+                "message": "PCB deleted successfully",
+                "result_id": result_id,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Error deleting PCB: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
