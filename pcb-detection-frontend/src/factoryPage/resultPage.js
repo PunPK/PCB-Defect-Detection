@@ -43,7 +43,7 @@ const ResultPage = () => {
 
       if (response.ok) {
         const processedResults = data.results.map((result) => {
-          const status = result.sum_accuracy > 50 ? "pass" : "fail";
+          const status = result.sum_accuracy > 80 ? "pass" : "fail";
           return { ...result, status };
         });
         setResults(processedResults);

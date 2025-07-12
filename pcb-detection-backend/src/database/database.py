@@ -162,7 +162,7 @@ def get_pcb(db: Session, pcb_id: int):
         .filter(model.PCB.id == pcb_id)
         .scalar()
     )
-    print(f"Image data for PCB id {pcb_id}: {image_path}")
+    # print(f"Image data for PCB id {pcb_id}: {image_path}")
 
     if image_path is None:
         raise FileNotFoundError(f"No image path found for PCB id: {pcb_id}")
@@ -283,7 +283,7 @@ def get_pcb_result_working(db: Session, pcb_id: int):
             .filter(model.Result.results_id == result_id).scalar()
         )
 
-        print(resultData.__dict__)
+        # print(resultData.__dict__)
 
         image_id = getattr(resultData, "result_image", None)
         image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
@@ -308,7 +308,7 @@ def get_pcb_result_working(db: Session, pcb_id: int):
             }
             result_List.append(result)
 
-    print("Result List:", result_List)
+    # print("Result List:", result_List)
     return {
         "pcb_id": pcbData.id,
         "result_List": result_List,

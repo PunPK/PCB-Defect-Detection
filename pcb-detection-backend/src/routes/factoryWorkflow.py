@@ -183,8 +183,9 @@ async def websocket_endpoint(
 
             # PCB detection
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            lower_copper = np.array([3, 0, 0])
-            upper_copper = np.array([70, 200, 200])
+            lower_copper = np.array([5, 30, 5])
+            upper_copper = np.array([45, 255, 255])
+
             mask = cv2.inRange(hsv, lower_copper, upper_copper)
 
             kernel = np.ones((5, 5), np.uint8)
@@ -245,9 +246,7 @@ async def websocket_endpoint(
                                     original_base64, image_data
                                 )
                                 print("=====> PCB analysis prepared")
-                                print(prepare_result)
                                 if prepare_result["detected"]:
-
                                     print(prepare_result["detected"])
                                     push_to_database = await database.create_pcb_result(
                                         db=db,
@@ -305,7 +304,7 @@ async def get_images(
     if not image_list:
         raise HTTPException(status_code=404, detail="Image not found for this PCB ID")
 
-    print("=====> Image data retrieved from database", image_list)
+    # print("=====> Image data retrieved from database", image_list)
 
     return JSONResponse(
         status_code=200,
@@ -395,7 +394,6 @@ def generate_filename(name: str) -> str:
 
 async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
     try:
-        # original_bytes คือ bytes จากฐานข้อมูล ไม่ต้อง base64 decode
         template_np = np.frombuffer(original_bytes, np.uint8)
         template_img = cv2.imdecode(template_np, cv2.IMREAD_COLOR)
 
@@ -403,24 +401,30 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
         defective_img = cv2.imdecode(defective_np, cv2.IMREAD_COLOR)
 
         if template_img is None:
-            raise ValueError("Template image decoding failed (base64 may be invalid)")
+            raise ValueError("Template image decoding failed")
         if defective_img is None:
-            raise ValueError("Defective image decoding failed (bytes may be invalid)")
+            raise ValueError("Defective image decoding failed")
 
-        template = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
-        defective = cv2.cvtColor(defective_img, cv2.COLOR_BGR2GRAY)
+        template_gray = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
+        defective_gray = cv2.cvtColor(defective_img, cv2.COLOR_BGR2GRAY)
 
-        _, template = cv2.threshold(
-            template, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        min_height = min(template_gray.shape[0], defective_gray.shape[0])
+        min_width = min(template_gray.shape[1], defective_gray.shape[1])
+        template_gray = cv2.resize(template_gray, (min_width, min_height))
+        defective_gray = cv2.resize(defective_gray, (min_width, min_height))
+
+        # === CLAHE for lighting compensation ===
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        template = clahe.apply(template_gray)
+        defective = clahe.apply(defective_gray)
+
+        # === Adaptive Threshold instead of Otsu ===
+        template = cv2.adaptiveThreshold(
+            template, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 2
         )
-        _, defective = cv2.threshold(
-            defective, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        defective = cv2.adaptiveThreshold(
+            defective, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 2
         )
-
-        min_height = min(template.shape[0], defective.shape[0])
-        min_width = min(template.shape[1], defective.shape[1])
-        template = cv2.resize(template, (min_width, min_height))
-        defective = cv2.resize(defective, (min_width, min_height))
 
         original_template = template.copy()
         original_defective = defective.copy()
@@ -438,17 +442,8 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             return {
                 "detected": False,
                 "message": "Not enough features for matching",
-                # "images": {
-                #     "template": image_to_base64(
-                #         cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
-                #     ),
-                #     "defective": image_to_base64(
-                #         cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
-                #     ),
-                # },
             }
 
-        # Feature Matching and Homography calculation
         FLANN_INDEX_LSH = 6
         index_params = dict(
             algorithm=FLANN_INDEX_LSH, table_number=6, key_size=12, multi_probe_level=1
@@ -469,14 +464,6 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             return {
                 "detected": False,
                 "message": "Not enough good matches for alignment",
-                # "images": {
-                #     "template": image_to_base64(
-                #         cv2.cvtColor(original_template, cv2.COLOR_GRAY2BGR)
-                #     ),
-                #     "defective": image_to_base64(
-                #         cv2.cvtColor(original_defective, cv2.COLOR_GRAY2BGR)
-                #     ),
-                # },
             }
 
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(
@@ -491,39 +478,40 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             defective, H, (template.shape[1], template.shape[0])
         )
 
-        # Calculate difference
-        diff = cv2.absdiff(template, aligned)
+        # === Blur before diff to reduce lighting noise ===
+        template_blur = cv2.GaussianBlur(template, (3, 3), 0)
+        aligned_blur = cv2.GaussianBlur(aligned, (3, 3), 0)
 
+        diff = cv2.absdiff(template_blur, aligned_blur)
+
+        # Specific gray mask for defect highlight
         mask = cv2.inRange(diff, 50, 225)
         specific_gray = cv2.bitwise_and(diff, diff, mask=mask)
 
-        # Thresholding
+        # Thresholding combination
         _, thresh_otsu = cv2.threshold(
             diff, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
         thresh_range = cv2.inRange(diff, 100, 255)
         combined_thresh = cv2.bitwise_or(thresh_otsu, thresh_range)
 
-        # Morphology operations
+        # Morphology
         kernel = np.ones((3, 3), np.uint8)
         cleaned = cv2.morphologyEx(
             combined_thresh, cv2.MORPH_OPEN, kernel, iterations=1
         )
         cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-        # Find contours
         contours, _ = cv2.findContours(
             cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
 
-        # Create result image
         mask_diff = np.zeros_like(cleaned)
         cv2.drawContours(mask_diff, contours, -1, (255), thickness=cv2.FILLED)
         result = cv2.bitwise_and(aligned, aligned, mask=mask_diff)
 
         white_pixels = np.sum(result == 0)
         total_pixels = result.shape[0] * result.shape[1]
-
         accuracy_percentage = (white_pixels / total_pixels) * 100
 
         accuracy_result = ""
@@ -534,24 +522,6 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
         elif accuracy_percentage > 97:
             accuracy_result = "The PCB picture has some errors."
 
-        # Convert all images to BGR for consistent display in React
-        # template_bgr = cv2.cvtColor(template, cv2.COLOR_GRAY2BGR)
-        # defective_bgr = cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR)
-        # aligned_bgr = cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR)
-        # diff_bgr = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR)
-        # cleaned_bgr = cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR)
-        # result_bgr = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
-
-        images = {}
-        # image_map = {
-        #     "template": cv2.cvtColor(template, cv2.COLOR_GRAY2BGR),
-        #     "defective": cv2.cvtColor(defective, cv2.COLOR_GRAY2BGR),
-        #     "aligned": cv2.cvtColor(aligned, cv2.COLOR_GRAY2BGR),
-        #     "diff": cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR),
-        #     "cleaned": cv2.cvtColor(specific_gray, cv2.COLOR_GRAY2BGR),
-        #     "result": cv2.cvtColor(result, cv2.COLOR_GRAY2BGR),
-        # }
-
         image_map = {
             "template": template,
             "defective": defective,
@@ -560,6 +530,8 @@ async def analysis_pcb_prepare(original_bytes: bytes, image_bytes: bytes):
             "cleaned": specific_gray,
             "result": result,
         }
+
+        images = {}
         for name, gray_image in image_map.items():
             bgr_image = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
             filename = generate_filename(name)
