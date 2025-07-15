@@ -38,6 +38,9 @@ from . import pcb_detection
 import os
 from datetime import datetime
 
+from ..function.withRaspberrypi import Belt, Lcd
+
+
 UPLOAD_DIR = "./tmp"
 
 logger = logging.getLogger(__name__)
@@ -154,7 +157,14 @@ async def websocket_endpoint(
     camera_manager.active_connections += 1
     logger.info(f"New connection. Total: {camera_manager.active_connections}")
 
+    belt = None
+    lcd = None
+    waitting = False
     try:
+        lcd = Lcd()
+        lcd.lcd_running()
+        belt = Belt()
+        belt.on()
         camera = await camera_manager.get_camera()
         if not camera:
             await websocket.close()
@@ -167,13 +177,14 @@ async def websocket_endpoint(
             logger.error("No original PCB found")
             return
 
+
         # decoded_bytes = base64.b64decode(original_base64)
         # template_np = np.frombuffer(decoded_bytes, np.uint8)
         # template_image = cv2.imdecode(template_np, cv2.IMREAD_COLOR)
 
         center_line_start_time = None
         center_line_detected = False
-        cooldown_seconds = 4
+        cooldown_seconds = 1
 
         while True:
             ret, frame = camera.read()
@@ -205,11 +216,14 @@ async def websocket_endpoint(
             cv2.line(display_frame, (center_x, 0), (center_x, height), (0, 0, 255), 2)
 
             if contours:
-                largest_contour = max(contours, key=cv2.contourArea)
-                expanded_contour = expand_contour(largest_contour, 0.05)
-                hull = cv2.convexHull(expanded_contour)
+             largest_contour = max(contours, key=cv2.contourArea)
+             expanded_contour = expand_contour(largest_contour, 0.05)
+             hull = cv2.convexHull(expanded_contour)
 
                 # Draw green contour around PCB
+             area = cv2.contourArea(hull)
+             min_area_threshold = 5000
+             if area >= min_area_threshold:
                 cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
 
                 epsilon = 0.02 * cv2.arcLength(hull, True)
@@ -220,11 +234,11 @@ async def websocket_endpoint(
                     pcb_frame = four_point_transform(frame, approx)
 
                     x, y, w, h = cv2.boundingRect(hull)
-                    if x < center_x < x + w:
-                        if center_line_start_time is None:
-                            center_line_start_time = time.time()  # เริ่มจับเวลา
-                        elapsed = time.time() - center_line_start_time
-                        if not center_line_detected:
+                    if area >= min_area_threshold and x < center_x < x + w:
+                      if center_line_start_time is None:
+                            center_line_start_time = time.time()
+                      elapsed = time.time() - center_line_start_time
+                      if not center_line_detected:
                             center_line_detected = True
                             cv2.putText(
                                 display_frame,
@@ -235,10 +249,19 @@ async def websocket_endpoint(
                                 (0, 0, 255),
                                 2,
                             )
+                      
+                      if waitting is False:
+                        belt.off()
+
                         if elapsed >= cooldown_seconds:
 
                             print("=====> Center line detected")
+
+                            await asyncio.sleep(0.5)
                             if pcb_frame is not None:
+                                print("=====> Belt off")
+                                
+                                
                                 _, buffer = cv2.imencode(".jpg", pcb_frame)
                                 image_data = buffer.tobytes()
                                 #######################################################
@@ -253,6 +276,7 @@ async def websocket_endpoint(
                                         prepare_result=prepare_result,
                                         pcb_id=pcb_id,
                                     )
+                                    print("===========================================>",prepare_result["accuracy"])
                                     print("=====> Database updated with PCB result")
                                     if push_to_database:
                                         await websocket.send_json(
@@ -265,7 +289,24 @@ async def websocket_endpoint(
                                     center_line_start_time = None
                                     center_line_detected = False
 
+                                    # await asyncio.sleep(2)
+                                    print("=====> ",prepare_result["accuracy"])
+                                    belt.test_log(prepare_result["accuracy"])
+                                    if prepare_result["accuracy"] >= 90 :
+                                        lcd.lcd_show_result(prepare_result["accuracy"])
+                                        belt.run_for(2)
+                                    else:
+                                        belt.Waitting()
+                                        lcd.lcd_show_log(prepare_result["result"], prepare_result["accuracy"])
+                                        waitting = True
+                                        print("=====> Waitting for start")
+                                    # belt.on()
+                                    
+                                    # await asyncio.sleep(2)
+
                     else:
+                        if waitting is True:
+                            belt.Stop_Waitting()
                         center_line_start_time = None
                         center_line_detected = False
 
@@ -283,6 +324,11 @@ async def websocket_endpoint(
             await asyncio.sleep(camera_manager.frame_interval)
 
     except Exception as e:
+        if belt:
+            belt.off()
+            belt.close()
+        if lcd:
+            lcd.lcd_stop_runnung()
         logger.error(f"WebSocket error: {str(e)}")
     finally:
         camera_manager.active_connections -= 1
@@ -290,6 +336,12 @@ async def websocket_endpoint(
 
         if camera_manager.active_connections == 0:
             await camera_manager.release_camera()
+
+        if belt:
+            belt.off()
+            belt.close()
+        if lcd:
+            lcd.lcd_stop_runnung()
 
         await websocket.close()
 
