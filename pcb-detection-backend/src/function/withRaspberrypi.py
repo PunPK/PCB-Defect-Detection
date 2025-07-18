@@ -54,7 +54,7 @@ class Belt:
         self.belt.close()
 
     def __del__(self):
-        self.close()
+        self.belt.close()
 
     def is_on(self):
         return self._running
@@ -77,7 +77,7 @@ class Belt:
         #     print("Belt Stop Waitting")
         #     self._task = True
 
-class Lcd(Belt) :
+class Lcd :
     def __init__(self):
         self.lcd = CharLCD('PCF8574', 0x27, cols=16, rows=2, charmap='A02')
 
@@ -129,6 +129,7 @@ class Pilotlamp :
         self.green = OutputDevice(23, active_high=False, initial_value=False)
 
     def running(self):
+        print("============================================================================>Pilotlamp running")
         self.green.on()
         self.red.off()
     

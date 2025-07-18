@@ -296,7 +296,7 @@ async def websocket_endpoint(
                                     # await asyncio.sleep(2)
                                     print("=====> ",prepare_result["accuracy"])
                                     belt.test_log(prepare_result["accuracy"])
-                                    if prepare_result["accuracy"] >= 90 :
+                                    if prepare_result["accuracy"] >= 80 :
                                         lcd.lcd_show_result(prepare_result["accuracy"])
                                         belt.run_for(2)
                                     else:
@@ -312,7 +312,9 @@ async def websocket_endpoint(
                     else:
                         if waitting is True:
                             belt.Stop_Waitting()
+                            lcd.lcd_running()
                             pilotlamp.running()
+                            waitting = False
                         center_line_start_time = None
                         center_line_detected = False
 
