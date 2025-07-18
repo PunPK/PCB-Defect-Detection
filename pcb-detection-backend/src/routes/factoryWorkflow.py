@@ -38,7 +38,7 @@ from . import pcb_detection
 import os
 from datetime import datetime
 
-from ..function.withRaspberrypi import Belt, Lcd
+from ..function.withRaspberrypi import Belt, Lcd, Pilotlamp
 
 
 UPLOAD_DIR = "./tmp"
@@ -160,11 +160,15 @@ async def websocket_endpoint(
     belt = None
     lcd = None
     waitting = False
+    pilotlamp = None
     try:
         lcd = Lcd()
         lcd.lcd_running()
         belt = Belt()
         belt.on()
+        pilotlamp = Pilotlamp()
+        pilotlamp.running()
+        
         camera = await camera_manager.get_camera()
         if not camera:
             await websocket.close()
@@ -296,6 +300,7 @@ async def websocket_endpoint(
                                         lcd.lcd_show_result(prepare_result["accuracy"])
                                         belt.run_for(2)
                                     else:
+                                        pilotlamp.error()
                                         belt.Waitting()
                                         lcd.lcd_show_log(prepare_result["result"], prepare_result["accuracy"])
                                         waitting = True
@@ -307,6 +312,7 @@ async def websocket_endpoint(
                     else:
                         if waitting is True:
                             belt.Stop_Waitting()
+                            pilotlamp.running()
                         center_line_start_time = None
                         center_line_detected = False
 

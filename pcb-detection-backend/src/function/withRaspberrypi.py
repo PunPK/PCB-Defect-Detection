@@ -123,4 +123,33 @@ class Lcd(Belt) :
         self.lcd.close()
 
 
+class Pilotlamp :
+    def __init__(self):
+        self.red = OutputDevice(24, active_high=False, initial_value=False)
+        self.green = OutputDevice(23, active_high=False, initial_value=False)
+
+    def running(self):
+        self.green.on()
+        self.red.off()
+    
+    # def processing(self):
+    #     self.red.off()
+    #     for _ in range(3):
+    #         self.green.on()
+    #         time.sleep(0.5)
+    #         self.green.off()
+    #         time.sleep(0.5)
+
+    def error(self):
+        self.green.off()
+        self.red.on()
+
+    def close(self):
+        self.green.off()
+        self.red.off()
+        self.green.close()
+        self.red.close()
+
+    def __del__(self):
+        self.close()
 
