@@ -4,3 +4,6 @@ content
 __pycache__
 pcb-env
 img
+test
+train
+runs

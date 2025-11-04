@@ -1,32 +1,74 @@
-from sqlalchemy import Column, Integer, String, DateTime, create_engine
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    create_engine,
+    ForeignKey,
+    DECIMAL,
+    LargeBinary,
+)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
-engine = create_engine("sqlite:///database.db", echo=True)
+engine = create_engine(
+    "sqlite:///pcb-detection-backend/database.db/images.db", echo=True
+)
 Base = declarative_base()
 
 
-class Challenge(Base):
-    __tablename__ = "challenges"
+class ImagePCB(Base):
+    __tablename__ = "imagepcb"
 
-    id = Column(Integer, primary_key=True)
-    difficulty = Column(String, nullable=False)
-    date_created = Column(DateTime, default=datetime.now)
-    created_by = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    options = Column(String, nullable=False)
-    correct_answer_id = Column(Integer, nullable=False)
-    explanation = Column(String, nullable=False)
+    image_id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    filepath = Column(String, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    pcb_id = Column(Integer, ForeignKey("pcb.id"))
+
+    pcb = relationship("PCB", back_populates="images", foreign_keys=[pcb_id])
 
 
-class ChallengeQuota(Base):
-    __tablename__ = "challenge_quotas"
+class Result(Base):
+    __tablename__ = "result"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(String, nullable=False, unique=True)
-    quota_remaining = Column(Integer, nullable=False, default=50)
-    last_reset_date = Column(DateTime, default=datetime.now)
+    results_id = Column(Integer, primary_key=True, index=True)
+    pcb_result_id = Column(Integer, ForeignKey("pcb.id"))
+    accuracy = Column(DECIMAL(5, 2))
+    description = Column(String)
+    template_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    defective_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    aligned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    diff_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    cleaned_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+    result_image = Column(Integer, ForeignKey("imagepcb.image_id"))
+
+    pcb = relationship("PCB", back_populates="results")
+
+
+class PCB(Base):
+    __tablename__ = "pcb"
+
+    id = Column(Integer, primary_key=True, index=True)
+    create_at = Column(DateTime, default=datetime.utcnow)
+    # originalPcb = relationship("ImagePCB", back_populates="pcb")
+
+    originalPcb = Column(Integer, ForeignKey("imagepcb.image_id"))
+    # original_filename = Column(String)
+    # originalPcb_data = Column(LargeBinary)
+    results = relationship("Result", back_populates="pcb")
+
+    # result = relationship(
+    #     "Result", back_populates="pcb", foreign_keys=[Result.pcb_result_id]
+    # )
+    images = relationship(
+        "ImagePCB", back_populates="pcb", foreign_keys=[ImagePCB.pcb_id]
+    )
+
+    @property
+    def result_ids(self):
+        return [r.results_id for r in self.results]
 
 
 Base.metadata.create_all(engine)

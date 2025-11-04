@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  pcb-api:
+    build: .
+    container_name: pcb-detection
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./database.db:/app/database.db
+    restart: unless-stopped

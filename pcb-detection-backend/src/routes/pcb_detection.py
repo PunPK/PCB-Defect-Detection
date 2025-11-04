@@ -132,6 +132,7 @@ async def check_api():
 @router.post("/pcb-detection/image")
 async def detect_pcb_from_image(file: UploadFile = File(...)):
     try:
+
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)
         frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
