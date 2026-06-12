@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import arm_contoller, factoryWorkflow, pcb_detection, upload, websocket
+from .routes import factoryWorkflow, pcb_detection, upload, websocket
 
 app = FastAPI()
 
@@ -22,4 +22,3 @@ app.include_router(pcb_detection.router, prefix="/api")
 app.include_router(websocket.router, prefix="/ws")
 app.include_router(upload.router, prefix="/api/image")
 app.include_router(factoryWorkflow.router, prefix="/factory")
-app.include_router(arm_contoller.router, prefix="/api/arm")
