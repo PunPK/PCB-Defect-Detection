@@ -10,7 +10,7 @@ Device.pin_factory = LGPIOFactory()
 
 
 import asyncio
-from gpiozero import OutputDevice
+from gpiozero import OutputDevice, Servo
 from RPLCD.i2c import CharLCD
 
 
@@ -122,6 +122,25 @@ class Lcd :
     def close(self):
         self.lcd.close()
 
+class Servo :
+    def __init__(self):
+        self.servo = Servo(14, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+
+    def mid(self):
+        self.servo.value = -0.2
+        self.detach()
+    
+    def left(self):
+        self.servo.value = -0.51
+        self.detach()
+    
+    def right(self):
+        self.servo.value = 0.1
+        self.detach()
+    
+    def detach(self):
+        self.servo.value = None
+        # time.sleep(1.0)
 
 class Pilotlamp :
     def __init__(self):
