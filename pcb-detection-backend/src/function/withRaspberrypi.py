@@ -124,7 +124,7 @@ class Lcd :
 
 class Servo :
     def __init__(self):
-        self.servo = Servo(14, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+        self.servo = Servo(18, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
 
     def mid(self):
         self.servo.value = -0.2
