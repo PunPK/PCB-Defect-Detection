@@ -38,7 +38,7 @@ from . import pcb_detection
 import os
 from datetime import datetime
 
-from ..function.withRaspberrypi import Belt, Lcd, Pilotlamp
+from ..function.withRaspberrypi import Belt, Lcd, Pilotlamp, ServoController
 
 
 UPLOAD_DIR = "./tmp"
@@ -168,6 +168,9 @@ async def websocket_endpoint(
         belt.on()
         pilotlamp = Pilotlamp()
         pilotlamp.running()
+        # pilotlamp.testing()
+        servo = ServoController()
+        servo.mid()
         
         camera = await camera_manager.get_camera()
         if not camera:
@@ -188,7 +191,7 @@ async def websocket_endpoint(
 
         center_line_start_time = None
         center_line_detected = False
-        cooldown_seconds = 1
+        cooldown_seconds = 0.4
 
         while True:
             ret, frame = camera.read()
@@ -255,8 +258,8 @@ async def websocket_endpoint(
                             )
                       
                       if waitting is False:
+                        # print(elapsed,"time =============<")
                         belt.off()
-
                         if elapsed >= cooldown_seconds:
 
                             print("=====> Center line detected")
@@ -298,15 +301,24 @@ async def websocket_endpoint(
                                     belt.test_log(prepare_result["accuracy"])
                                     if prepare_result["accuracy"] >= 80 :
                                         lcd.lcd_show_result(prepare_result["accuracy"])
+                                        print("mid <==================================")
+                                        servo.mid()
                                         belt.run_for(2)
                                     else:
-                                        pilotlamp.error()
-                                        belt.Waitting()
+                                        if prepare_result["accuracy"] >= 70 :
+                                            print("left <===================================")
+                                            servo.left()
+                                        else :
+                                            print("rignt <===================================")
+                                            servo.right()
+                                            pilotlamp.error()
+                                        # pilotlamp.error()
+                                        # belt.Waitting()
                                         lcd.lcd_show_log(prepare_result["result"], prepare_result["accuracy"])
-                                        waitting = True
+                                        # waitting = True
                                         print("=====> Waitting for start")
+                                        belt.run_for(2)
                                     # belt.on()
-                                    
                                     # await asyncio.sleep(2)
 
                     else:

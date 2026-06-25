@@ -84,6 +84,7 @@ class Lcd :
     def lcd_running(self):
         self.lcd.clear()
         self.lcd.write_string('Running........')
+        print("running<==================================================================")
         self.lcd.cursor_pos = (1, 0)
         
 
@@ -122,25 +123,26 @@ class Lcd :
     def close(self):
         self.lcd.close()
 
-class Servo :
+class ServoController :
     def __init__(self):
-        self.servo = Servo(14, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
+        self.servo = Servo(18, min_pulse_width=0.5/1000, max_pulse_width=2.5/1000)
 
     def mid(self):
-        self.servo.value = -0.2
+        print("mid=========================================================================================")
+        self.servo.value = 0
         self.detach()
     
     def left(self):
-        self.servo.value = -0.51
+        self.servo.value = -0.31
         self.detach()
     
     def right(self):
-        self.servo.value = 0.1
+        self.servo.value = 0.3
         self.detach()
     
     def detach(self):
+        time.sleep(1.0)
         self.servo.value = None
-        # time.sleep(1.0)
 
 class Pilotlamp :
     def __init__(self):
@@ -150,6 +152,11 @@ class Pilotlamp :
     def running(self):
         print("============================================================================>Pilotlamp running")
         self.green.on()
+        self.red.off()
+    
+    def testing(self):
+        print("============================================================================>Pilotlamp testing")
+        self.green.off()
         self.red.off()
     
     # def processing(self):
