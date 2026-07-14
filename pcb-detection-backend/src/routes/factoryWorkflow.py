@@ -302,14 +302,16 @@ async def websocket_endpoint(
                                     if prepare_result["accuracy"] >= 80 :
                                         lcd.lcd_show_result(prepare_result["accuracy"])
                                         print("mid <==================================")
+                                        pilotlamp.running()
                                         servo.mid()
                                         belt.run_for(2)
                                     else:
                                         if prepare_result["accuracy"] >= 70 :
+                                            pilotlamp.running()
                                             print("left <===================================")
                                             servo.left()
                                         else :
-                                            print("rignt <===================================")
+                                            print("right <===================================")
                                             servo.right()
                                             pilotlamp.error()
                                         # pilotlamp.error()

@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
 engine = create_engine(
-    "sqlite:///pcb-detection-backend/database.db/images.db", echo=True
+    "sqlite:///database.db/images.db", echo=True
 )
 Base = declarative_base()
 
