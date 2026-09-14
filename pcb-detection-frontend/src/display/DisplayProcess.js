@@ -279,29 +279,29 @@ export default function DisplayProcess({ onNavigateTab }) {
     : [];
 
   return (
-    <div className="flex-1 flex flex-col gap-3 p-2.5 sm:p-4 overflow-y-auto touch-scrollbar">
+    <div className="h-full min-h-0 flex flex-col gap-1.5 p-1.5 sm:p-2 overflow-hidden">
       {/* ==================== 2-COLUMN MAIN LAYOUT ==================== */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-4 flex-1">
+      <div className="grid grid-cols-12 gap-1.5 sm:gap-2 flex-1 min-h-0">
         {/* ==================== LEFT AREA (8 COLUMNS) ==================== */}
-        <div className="xl:col-span-8 flex flex-col gap-3 sm:gap-4">
+        <div className="col-span-8 flex flex-col gap-1.5 min-h-0">
           {/* 1. TOP CARD: "ภาพจากกล้อง (Live)" */}
           <div
-            className={`rounded-2xl border p-3 sm:p-4 shadow-md flex flex-col ${
+            className={`flex-[1.15] min-h-0 rounded-xl border p-2 shadow-sm flex flex-col ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
             {/* Card Header */}
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-1 shrink-0">
+              <div className="flex items-center gap-1.5">
                 <Video
-                  className={`w-4 h-4 sm:w-5 sm:h-5 ${
+                  className={`w-3.5 h-3.5 ${
                     isDark ? "text-cyan-400" : "text-blue-600"
                   }`}
                 />
                 <h2
-                  className={`text-xs sm:text-sm font-bold tracking-wide ${
+                  className={`text-xs font-bold tracking-wide ${
                     isDark ? "text-white" : "text-slate-800"
                   }`}
                 >
@@ -309,24 +309,24 @@ export default function DisplayProcess({ onNavigateTab }) {
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Template PCB button */}
                 <button
                   onClick={() => setIsTemplateModalOpen(true)}
-                  className={`touch-btn px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs flex items-center gap-1.5 transition-all ${
+                  className={`touch-btn px-2 py-0.5 rounded-lg border text-[10px] flex items-center gap-1 transition-all ${
                     isDark
                       ? "bg-cyan-950/60 hover:bg-cyan-900 border-cyan-500/40 text-cyan-300"
                       : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
                   }`}
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>ภาพต้นแบบ PCB</span>
+                  <Layers className="w-3 h-3" />
+                  <span>ภาพต้นแบบ</span>
                 </button>
 
                 {/* Camera Status Pill */}
-                <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono">
+                <div className="flex items-center gap-1 text-[10px] font-mono">
                   <div
-                    className={`w-2 h-2 rounded-full ${
+                    className={`w-1.5 h-1.5 rounded-full ${
                       isStreaming ? "bg-emerald-400 animate-pulse" : "bg-slate-400"
                     }`}
                   />
@@ -339,33 +339,33 @@ export default function DisplayProcess({ onNavigateTab }) {
                         : "text-slate-500"
                     }
                   >
-                    {isStreaming ? `Online (${fps} FPS)` : status}
+                    {isStreaming ? `Live (${fps} FPS)` : status}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Card Content: Live Viewport + Sample Thumbnails */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-[220px] sm:min-h-[260px]">
-              {/* Camera Stream Viewport (9 cols) */}
+            <div className="flex-1 min-h-0 flex gap-1.5 sm:gap-2">
+              {/* Camera Stream Viewport */}
               <div
-                className={`lg:col-span-9 relative rounded-xl overflow-hidden border flex items-center justify-center ${
+                className={`flex-1 min-h-0 relative rounded-lg overflow-hidden border flex items-center justify-center ${
                   isDark
                     ? "bg-[#02050b] border-cyan-500/30"
                     : "bg-slate-900 border-slate-300"
                 }`}
               >
                 {cameraFeed ? (
-                  <div className="relative w-full h-full flex items-center justify-center bg-black min-h-[220px] sm:min-h-[260px]">
+                  <div className="relative w-full h-full flex items-center justify-center bg-black">
                     <img
                       src={cameraFeed}
                       alt="Live Camera Feed"
-                      className="w-full h-auto max-h-[280px] sm:max-h-[320px] object-contain"
+                      className="w-full h-full object-contain"
                     />
 
                     {/* HUD Status Overlay */}
-                    <div className="absolute top-2 left-2 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-lg border border-cyan-500/40 text-[10px] sm:text-[11px] font-mono text-cyan-300 flex items-center gap-2 pointer-events-none">
-                      <Radio className="w-3 h-3 text-rose-500 animate-pulse" />
+                    <div className="absolute top-1.5 left-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-md border border-cyan-500/40 text-[9px] font-mono text-cyan-300 flex items-center gap-1.5 pointer-events-none">
+                      <Radio className="w-2.5 h-2.5 text-rose-500 animate-pulse" />
                       <span>LIVE</span>
                       <span>|</span>
                       <span>{fps} FPS</span>
@@ -373,8 +373,8 @@ export default function DisplayProcess({ onNavigateTab }) {
 
                     {/* Green Inspection Bounding Box on Detected PCB */}
                     {sensorTriggered && (
-                      <div className="absolute inset-x-[28%] inset-y-[20%] border-2 border-emerald-400 rounded-lg pointer-events-none animate-pulse shadow-[0_0_15px_rgba(52,211,153,0.5)]">
-                        <span className="absolute -top-5 left-1 bg-emerald-500 text-black text-[9px] font-bold px-1.5 py-0.5 rounded">
+                      <div className="absolute inset-x-[25%] inset-y-[15%] border-2 border-emerald-400 rounded-lg pointer-events-none animate-pulse shadow-[0_0_12px_rgba(52,211,153,0.5)]">
+                        <span className="absolute -top-4 left-1 bg-emerald-500 text-black text-[8px] font-bold px-1 rounded">
                           PCB DETECTED
                         </span>
                       </div>
@@ -382,60 +382,60 @@ export default function DisplayProcess({ onNavigateTab }) {
                   </div>
                 ) : (
                   /* Inactive Camera View */
-                  <div className="relative w-full h-[220px] sm:h-[260px] flex flex-col items-center justify-center p-4 text-center">
+                  <div className="relative w-full h-full flex flex-col items-center justify-center p-2 text-center">
                     <div
-                      className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border flex items-center justify-center mb-2.5 ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center mb-1 ${
                         isDark
                           ? "bg-cyan-950/40 border-cyan-800/40 text-cyan-400"
                           : "bg-slate-800 border-slate-700 text-cyan-300"
                       }`}
                     >
-                      <Camera className="w-7 h-7" />
+                      <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                    <div className="text-xs sm:text-sm font-semibold text-slate-300">
+                    <div className="text-[11px] sm:text-xs font-semibold text-slate-300">
                       {isStreaming
-                        ? "กำลังรอสัญญาณภาพจากกล้อง..."
+                        ? "กำลังรอสัญญาณภาพ..."
                         : "กล้องยังไม่ได้เริ่มทำงาน"}
                     </div>
-                    <p className="text-[11px] text-slate-400 max-w-xs mt-1">
+                    <p className="text-[9px] text-slate-400 max-w-xs mt-0.5">
                       กดปุ่ม{" "}
                       <span className="text-emerald-400 font-bold">
                         "เริ่มการทำงาน"
                       </span>{" "}
-                      ด้านล่างเพื่อเริ่มการตรวจจับ PCB อัตโนมัติ
+                      ด้านล่างเพื่อเริ่มการตรวจจับ
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Sample Previews Sidebar: "ภาพตัวอย่าง" (3 cols) */}
+              {/* Sample Previews Sidebar: "ภาพตัวอย่าง" */}
               <div
-                className={`lg:col-span-3 flex flex-col justify-between rounded-xl border p-2.5 ${
+                className={`w-32 sm:w-36 md:w-40 shrink-0 flex flex-col justify-between rounded-lg border p-1.5 ${
                   isDark
                     ? "bg-[#040c18] border-cyan-500/20"
                     : "bg-slate-50 border-slate-200"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700/30 shrink-0">
                   <span
-                    className={`text-xs font-bold ${
+                    className={`text-[10px] sm:text-[11px] font-bold ${
                       isDark ? "text-slate-200" : "text-slate-700"
                     }`}
                   >
                     ภาพตัวอย่าง
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {hasResults ? "ล่าสุด" : "-"}
+                  <span className="text-[8px] sm:text-[9px] text-emerald-400 font-mono">
+                    {isStreaming ? "Live" : (hasResults ? "ล่าสุด" : "-")}
                   </span>
                 </div>
 
                 {/* Thumbnails Stack */}
-                <div className="space-y-1.5 flex-1 overflow-hidden">
+                <div className="flex-1 flex flex-col justify-between py-1 min-h-0 space-y-1">
                   {!hasResults || recentSamples.length === 0 ? (
-                    <div className="h-full min-h-[140px] flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/60 p-2 text-center text-slate-400">
-                      <span className="text-[11px] font-mono">รอผลการตรวจ</span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">
-                        จะแสดงที่นี่เมื่อตรวจเสร็จ
+                    <div className="h-full flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/60 p-1 text-center text-slate-400">
+                      <span className="text-[9px] font-mono">รอผลการตรวจ</span>
+                      <span className="text-[8px] text-slate-500 mt-0.5">
+                        แสดงที่นี่เมื่อตรวจเสร็จ
                       </span>
                     </div>
                   ) : (
@@ -443,15 +443,15 @@ export default function DisplayProcess({ onNavigateTab }) {
                       <div
                         key={sample.id || idx}
                         onClick={() => setPreviewSample(sample)}
-                        className={`touch-btn p-1.5 rounded-lg border cursor-pointer transition-all ${
+                        className={`touch-btn p-1 rounded-md border cursor-pointer transition-all flex flex-col justify-between flex-1 min-h-0 ${
                           isDark
                             ? "bg-[#061122] hover:bg-[#0b1b34] border-cyan-500/30"
                             : "bg-white hover:bg-slate-100 border-slate-300"
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center justify-between leading-none">
                           <span
-                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                            className={`text-[7.5px] sm:text-[8px] font-bold px-1 rounded ${
                               sample.status === "OK"
                                 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
                                 : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
@@ -459,13 +459,13 @@ export default function DisplayProcess({ onNavigateTab }) {
                           >
                             {sample.status}
                           </span>
-                          <span className="text-[10px] font-mono font-bold text-cyan-400">
+                          <span className="text-[8.5px] sm:text-[9px] font-mono font-bold text-cyan-400">
                             {sample.accuracy ? `${sample.accuracy}%` : "-"}
                           </span>
                         </div>
 
                         {/* Thumbnail */}
-                        <div className="w-full h-11 bg-black/80 rounded flex items-center justify-center overflow-hidden">
+                        <div className="w-full flex-1 min-h-0 my-0.5 bg-black/80 rounded flex items-center justify-center overflow-hidden">
                           {sample.imageData ? (
                             <img
                               src={`data:image/jpeg;base64,${sample.imageData}`}
@@ -473,12 +473,12 @@ export default function DisplayProcess({ onNavigateTab }) {
                               className="w-full h-full object-contain"
                             />
                           ) : (
-                            <Cpu className="w-5 h-5 text-slate-600" />
+                            <Cpu className="w-3.5 h-3.5 text-slate-600" />
                           )}
                         </div>
 
-                        <div className="mt-1 flex items-center justify-between text-[9px] text-slate-400">
-                          <span className="truncate max-w-[70px]">
+                        <div className="flex items-center justify-between text-[7.5px] sm:text-[8px] text-slate-400 leading-none">
+                          <span className="truncate max-w-[55px]">
                             {sample.name}
                           </span>
                           <span className="font-mono">{sample.time}</span>
@@ -491,52 +491,51 @@ export default function DisplayProcess({ onNavigateTab }) {
                 {/* "ดูเพิ่มเติม v" Button */}
                 <button
                   onClick={() => setIsMoreSamplesOpen(true)}
-                  className={`touch-btn w-full mt-2 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
+                  className={`touch-btn w-full py-0.5 sm:py-1 rounded-md border text-[9px] sm:text-[10px] font-semibold flex items-center justify-center gap-1 shrink-0 transition-colors ${
                     isDark
                       ? "bg-cyan-950/50 hover:bg-cyan-900 border-cyan-500/30 text-cyan-300"
                       : "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-700"
                   }`}
                 >
                   <span>ดูเพิ่มเติม</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
+                  <ChevronDown className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
 
           {/* 2. BOTTOM CARD: "ภาพรวมระบบ" (Conveyor Belt Simulation with 1 PCB detection) */}
-          {/* User note: "โดยจะมีการตรวจจับ PCB ทีละแผ่น ถ้ามี PCB จะแสดงบนสายพาน และเมื่อประมวลผลเสร็จ จะขึ้นมาที่ด้านข้าง" */}
           <div
-            className={`rounded-2xl border p-3 sm:p-4 shadow-md flex flex-col ${
+            className={`flex-1 min-h-0 rounded-xl border p-2 shadow-sm flex flex-col ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-1 shrink-0">
+              <div className="flex items-center gap-1.5">
                 <Layers
-                  className={`w-4 h-4 ${
+                  className={`w-3.5 h-3.5 ${
                     isDark ? "text-cyan-400" : "text-blue-600"
                   }`}
                 />
                 <h2
-                  className={`text-xs sm:text-sm font-bold tracking-wide ${
+                  className={`text-xs font-bold tracking-wide ${
                     isDark ? "text-white" : "text-slate-800"
                   }`}
                 >
                   ภาพรวมระบบ (Smart Conveyor Belt)
                 </h2>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-emerald-500 font-mono font-semibold">
+              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-emerald-500 font-mono font-semibold">
                 <span>ทิศทางการลำเลียง</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3 h-3" />
               </div>
             </div>
 
             {/* Industrial Conveyor SVG with 1 Single PCB Detection */}
             <div
-              className={`relative w-full h-32 sm:h-36 rounded-xl overflow-hidden border flex items-center justify-center ${
+              className={`flex-1 min-h-0 w-full rounded-lg overflow-hidden border flex items-center justify-center ${
                 isDark
                   ? "bg-gradient-to-b from-[#02050f] via-[#040c1c] to-[#01040a] border-cyan-500/20"
                   : "bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-slate-300"
@@ -724,24 +723,24 @@ export default function DisplayProcess({ onNavigateTab }) {
 
           {/* 3. BOTTOM CONTROL BAR: Start & Stop (Clean touch buttons matching design.png) */}
           <div
-            className={`rounded-2xl border p-2.5 sm:p-3 shadow-md flex items-center justify-between gap-3 ${
+            className={`h-9 sm:h-10 shrink-0 rounded-xl border px-2 sm:px-3 shadow-sm flex items-center justify-between gap-2 ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
-            <div className="flex items-center gap-2 sm:gap-4 flex-1">
+            <div className="flex items-center gap-2 flex-1 h-full py-0.5">
               {/* Start Button - Green */}
               <button
                 onClick={startDetection}
                 disabled={isStreaming}
-                className={`touch-btn flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                className={`touch-btn flex-1 h-full rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all ${
                   isStreaming
                     ? "bg-emerald-950/40 border border-emerald-800/40 text-emerald-600 opacity-50 cursor-not-allowed"
-                    : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)] border border-emerald-400/40"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-400/40"
                 }`}
               >
-                <Play className="w-4 h-4 fill-current" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 <span>เริ่มการทำงาน</span>
               </button>
 
@@ -749,13 +748,13 @@ export default function DisplayProcess({ onNavigateTab }) {
               <button
                 onClick={stopDetection}
                 disabled={!isStreaming}
-                className={`touch-btn flex-1 py-3 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                className={`touch-btn flex-1 h-full rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all ${
                   !isStreaming
                     ? "bg-rose-950/30 border border-rose-900/30 text-rose-600 opacity-50 cursor-not-allowed"
-                    : "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_15px_rgba(244,63,94,0.35)] border border-rose-400/40"
+                    : "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] border border-rose-400/40"
                 }`}
               >
-                <Square className="w-4 h-4 fill-current" />
+                <Square className="w-3.5 h-3.5 fill-current" />
                 <span>หยุดการทำงาน</span>
               </button>
             </div>
@@ -763,37 +762,37 @@ export default function DisplayProcess({ onNavigateTab }) {
             {/* Quick Refresh Data button */}
             <button
               onClick={() => fetchResultData(activePcbId)}
-              className={`touch-btn py-3 px-3.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              className={`touch-btn h-full px-2.5 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-all ${
                 isDark
                   ? "bg-[#0b1e38] border-cyan-500/40 text-cyan-300 hover:bg-[#122e54]"
                   : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
               }`}
               title="รีเฟรชข้อมูล"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">รีเฟรช</span>
             </button>
           </div>
         </div>
 
         {/* ==================== RIGHT SIDEBAR (4 COLUMNS) ==================== */}
-        <div className="xl:col-span-4 flex flex-col gap-3 sm:gap-4">
+        <div className="col-span-4 flex flex-col gap-1.5 min-h-0">
           {/* CARD 1: "ผลการตรวจสอบ (ล่าสุด)" */}
           <div
-            className={`rounded-2xl border p-3 sm:p-4 shadow-md ${
+            className={`rounded-xl border p-2 shadow-sm shrink-0 ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
-            <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <BarChart3
-                className={`w-4 h-4 ${
+                className={`w-3.5 h-3.5 ${
                   isDark ? "text-cyan-400" : "text-blue-600"
                 }`}
               />
               <h2
-                className={`text-xs sm:text-sm font-bold tracking-wide ${
+                className={`text-xs font-bold tracking-wide ${
                   isDark ? "text-white" : "text-slate-800"
                 }`}
               >
@@ -801,38 +800,38 @@ export default function DisplayProcess({ onNavigateTab }) {
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {/* OK Tile */}
               <div
-                className={`rounded-xl p-3 border flex flex-col justify-between transition-all ${
+                className={`rounded-lg p-1.5 border flex flex-col justify-between ${
                   isDark
-                    ? "bg-[#041a14]/90 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                    ? "bg-[#041a14]/90 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
                     : "bg-emerald-50 border-emerald-300"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-500">
-                    <CheckCircle2 className="w-4 h-4" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/50 flex items-center justify-center text-emerald-500 shrink-0">
+                    <CheckCircle2 className="w-3 h-3" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-emerald-500">
+                    <div className="text-[11px] font-bold text-emerald-500 leading-tight">
                       OK
                     </div>
-                    <div className="text-[10px] text-slate-400">
-                      ผ่านการตรวจสอบ
+                    <div className="text-[8px] sm:text-[9px] text-slate-400 leading-none">
+                      ผ่านการตรวจ
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-baseline justify-between">
+                <div className="mt-1 flex items-baseline justify-between">
                   <span
-                    className={`text-2xl font-black font-mono ${
+                    className={`text-lg sm:text-xl font-black font-mono leading-none ${
                       isDark ? "text-white" : "text-slate-900"
                     }`}
                   >
                     {okCount}
                   </span>
-                  <span className="text-[11px] font-mono text-emerald-500 font-bold">
+                  <span className="text-[9.5px] sm:text-[10px] font-mono text-emerald-500 font-bold">
                     ({okPercent}%)
                   </span>
                 </div>
@@ -840,35 +839,35 @@ export default function DisplayProcess({ onNavigateTab }) {
 
               {/* NG Tile */}
               <div
-                className={`rounded-xl p-3 border flex flex-col justify-between transition-all ${
+                className={`rounded-lg p-1.5 border flex flex-col justify-between ${
                   isDark
-                    ? "bg-[#1e070c]/90 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]"
+                    ? "bg-[#1e070c]/90 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
                     : "bg-rose-50 border-rose-300"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-rose-500/20 border border-rose-400/50 flex items-center justify-center text-rose-500">
-                    <XCircle className="w-4 h-4" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-rose-500/20 border border-rose-400/50 flex items-center justify-center text-rose-500 shrink-0">
+                    <XCircle className="w-3 h-3" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-rose-500">
+                    <div className="text-[11px] font-bold text-rose-500 leading-tight">
                       NG
                     </div>
-                    <div className="text-[10px] text-slate-400">
+                    <div className="text-[8px] sm:text-[9px] text-slate-400 leading-none">
                       ไม่ผ่านการตรวจ
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-baseline justify-between">
+                <div className="mt-1 flex items-baseline justify-between">
                   <span
-                    className={`text-2xl font-black font-mono ${
+                    className={`text-lg sm:text-xl font-black font-mono leading-none ${
                       isDark ? "text-white" : "text-slate-900"
                     }`}
                   >
                     {ngCount}
                   </span>
-                  <span className="text-[11px] font-mono text-rose-500 font-bold">
+                  <span className="text-[9.5px] sm:text-[10px] font-mono text-rose-500 font-bold">
                     ({ngPercent}%)
                   </span>
                 </div>
@@ -878,20 +877,20 @@ export default function DisplayProcess({ onNavigateTab }) {
 
           {/* CARD 2: "ประสิทธิภาพการตรวจจับ" */}
           <div
-            className={`rounded-2xl border p-3 sm:p-4 shadow-md ${
+            className={`rounded-xl border p-2 shadow-sm shrink-0 ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
-            <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <Sparkles
-                className={`w-4 h-4 ${
+                className={`w-3.5 h-3.5 ${
                   isDark ? "text-cyan-400" : "text-blue-600"
                 }`}
               />
               <h2
-                className={`text-xs sm:text-sm font-bold tracking-wide ${
+                className={`text-xs font-bold tracking-wide ${
                   isDark ? "text-white" : "text-slate-800"
                 }`}
               >
@@ -899,9 +898,9 @@ export default function DisplayProcess({ onNavigateTab }) {
               </h2>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {/* Donut Progress Ring */}
-              <div className="relative w-20 h-20 sm:w-22 sm:h-22 shrink-0 flex items-center justify-center">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                   <circle
                     cx="50"
@@ -943,7 +942,7 @@ export default function DisplayProcess({ onNavigateTab }) {
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                   <span
-                    className={`text-sm sm:text-base font-black font-mono tracking-tight ${
+                    className={`text-xs sm:text-sm font-black font-mono leading-none ${
                       isDark ? "text-white" : "text-slate-900"
                     }`}
                   >
@@ -953,14 +952,14 @@ export default function DisplayProcess({ onNavigateTab }) {
               </div>
 
               {/* Rows */}
-              <div className="flex-1 space-y-1.5 text-xs">
+              <div className="flex-1 space-y-0.5 text-[10px] sm:text-[11px]">
                 <div
-                  className={`flex items-center justify-between pb-1 border-b ${
+                  className={`flex items-center justify-between pb-0.5 border-b ${
                     isDark ? "border-slate-800" : "border-slate-200"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                     <span>ตรวจจับสำเร็จ</span>
                   </div>
                   <span
@@ -973,12 +972,12 @@ export default function DisplayProcess({ onNavigateTab }) {
                 </div>
 
                 <div
-                  className={`flex items-center justify-between pb-1 border-b ${
+                  className={`flex items-center justify-between pb-0.5 border-b ${
                     isDark ? "border-slate-800" : "border-slate-200"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <XCircle className="w-3 h-3 text-rose-500 shrink-0" />
                     <span>ตรวจจับผิดพลาด</span>
                   </div>
                   <span
@@ -991,8 +990,8 @@ export default function DisplayProcess({ onNavigateTab }) {
                 </div>
 
                 <div className="flex items-center justify-between pt-0.5">
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <Archive className="w-3.5 h-3.5 text-cyan-400" />
+                  <div className="flex items-center gap-1 text-slate-400">
+                    <Archive className="w-3 h-3 text-cyan-400 shrink-0" />
                     <span>รวมทั้งหมด</span>
                   </div>
                   <span className="font-mono font-bold text-cyan-400">
@@ -1005,20 +1004,20 @@ export default function DisplayProcess({ onNavigateTab }) {
 
           {/* CARD 3: "สถานะระบบ" */}
           <div
-            className={`rounded-2xl border p-3 sm:p-4 shadow-md ${
+            className={`flex-1 min-h-0 rounded-xl border p-2 shadow-sm flex flex-col justify-between ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
             }`}
           >
-            <div className="flex items-center gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5 mb-1 shrink-0">
               <Sliders
-                className={`w-4 h-4 ${
+                className={`w-3.5 h-3.5 ${
                   isDark ? "text-cyan-400" : "text-blue-600"
                 }`}
               />
               <h2
-                className={`text-xs sm:text-sm font-bold tracking-wide ${
+                className={`text-xs font-bold tracking-wide ${
                   isDark ? "text-white" : "text-slate-800"
                 }`}
               >
@@ -1026,7 +1025,7 @@ export default function DisplayProcess({ onNavigateTab }) {
               </h2>
             </div>
 
-            <div className="space-y-1.5 text-xs">
+            <div className="flex-1 min-h-0 flex flex-col justify-around py-0.5 text-xs">
               {[
                 {
                   label: "กล้องตรวจจับ",
@@ -1063,19 +1062,19 @@ export default function DisplayProcess({ onNavigateTab }) {
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center justify-between p-2 rounded-lg border ${
+                    className={`flex items-center justify-between py-1 px-2 rounded-md ${
                       isDark
-                        ? "bg-[#040a14]/60 border-slate-800/80"
-                        : "bg-slate-50 border-slate-200"
+                        ? "bg-[#040a14]/50"
+                        : "bg-slate-50"
                     }`}
                   >
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <RowIcon className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>{row.label}</span>
+                    <div className="flex items-center gap-1.5 text-slate-400">
+                      <RowIcon className="w-3 h-3 text-cyan-400 shrink-0" />
+                      <span className="text-[10px] sm:text-[11px] truncate">{row.label}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 font-mono">
+                    <div className="flex items-center gap-1 font-mono text-[10px] sm:text-[11px]">
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 rounded-full ${
                           row.isOk ? "bg-emerald-400" : "bg-slate-400"
                         }`}
                       />

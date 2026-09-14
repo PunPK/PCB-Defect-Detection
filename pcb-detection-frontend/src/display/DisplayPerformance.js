@@ -99,31 +99,31 @@ export default function DisplayPerformance() {
   });
 
   return (
-    <div className="flex-1 flex flex-col gap-3 p-3 sm:p-4 overflow-y-auto touch-scrollbar">
+    <div className="h-full min-h-0 flex flex-col gap-1.5 p-1.5 sm:p-2 overflow-hidden">
       {/* Top Header Card */}
       <div
-        className={`rounded-2xl border p-3 sm:p-4 shadow-md flex items-center justify-between ${
+        className={`rounded-xl border p-2 shadow-sm flex items-center justify-between shrink-0 ${
           isDark
             ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
             : "bg-white border-slate-200 text-slate-800"
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border shrink-0 ${
               isDark
                 ? "bg-cyan-950/60 border-cyan-500/40 text-cyan-400"
                 : "bg-blue-50 border-blue-200 text-blue-600"
             }`}
           >
-            <BarChart3 className="w-5 h-5" />
+            <BarChart3 className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-bold">
-              ประสิทธิภาพการตรวจจับ (Inspection Performance & Analytics)
+            <h2 className="text-xs sm:text-sm font-bold">
+              ประสิทธิภาพการตรวจจับ (Inspection Analytics)
             </h2>
-            <p className="text-[11px] text-slate-400">
-              วิเคราะห์ความแม่นยำ อัตราการผ่าน และรายละเอียดผลการตรวจสอบ PCB #{activePcbId}
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">
+              วิเคราะห์ความแม่นยำ อัตราการผ่าน และประวัติผลการตรวจสอบ PCB #{activePcbId}
             </p>
           </div>
         </div>
@@ -131,122 +131,122 @@ export default function DisplayPerformance() {
         <button
           onClick={fetchResults}
           disabled={isLoading}
-          className={`touch-btn px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+          className={`touch-btn px-2.5 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 transition-all ${
             isDark
               ? "bg-[#0b1e38] border-cyan-500/40 text-cyan-300 hover:bg-[#122e54]"
               : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
           }`}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
           <span>รีเฟรช</span>
         </button>
       </div>
 
       {/* Overview Stat Cards (4 columns) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-4 gap-1.5 shrink-0">
         {/* Total Inspected */}
         <div
-          className={`rounded-xl border p-3 shadow-sm ${
+          className={`rounded-xl border p-1.5 sm:p-2 shadow-sm ${
             isDark
               ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
               : "bg-white border-slate-200 text-slate-800"
           }`}
         >
-          <div className="flex items-center gap-2 text-slate-400 text-xs">
-            <Archive className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="flex items-center gap-1 text-slate-400 text-[10px]">
+            <Archive className="w-3 h-3 text-cyan-400" />
             <span>ชิ้นงานทั้งหมด</span>
           </div>
-          <div className="mt-2 text-2xl font-black font-mono">{totalCount}</div>
-          <div className="text-[10px] text-slate-400 mt-0.5">ชิ้นที่ตรวจสอบแล้ว</div>
+          <div className="mt-1 text-lg sm:text-xl font-black font-mono leading-none">{totalCount}</div>
+          <div className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5">ชิ้นที่ตรวจแล้ว</div>
         </div>
 
         {/* Pass Count */}
         <div
-          className={`rounded-xl border p-3 shadow-sm ${
+          className={`rounded-xl border p-1.5 sm:p-2 shadow-sm ${
             isDark
               ? "bg-[#041a14]/90 border-emerald-500/40 text-white"
               : "bg-emerald-50 border-emerald-300 text-slate-800"
           }`}
         >
-          <div className="flex items-center gap-2 text-emerald-500 text-xs font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>ผ่านการตรวจสอบ (OK)</span>
+          <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-semibold">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>ผ่าน (OK)</span>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-emerald-500">
+          <div className="mt-1 flex items-baseline justify-between leading-none">
+            <span className="text-lg sm:text-xl font-black font-mono text-emerald-500">
               {okCount}
             </span>
-            <span className="text-xs font-mono font-bold text-emerald-500">
+            <span className="text-[10px] font-mono font-bold text-emerald-500">
               {okPercent}%
             </span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
+          <div className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5">
             เกณฑ์ &ge; {passThreshold}%
           </div>
         </div>
 
         {/* Fail Count */}
         <div
-          className={`rounded-xl border p-3 shadow-sm ${
+          className={`rounded-xl border p-1.5 sm:p-2 shadow-sm ${
             isDark
               ? "bg-[#1e070c]/90 border-rose-500/40 text-white"
               : "bg-rose-50 border-rose-300 text-slate-800"
           }`}
         >
-          <div className="flex items-center gap-2 text-rose-500 text-xs font-semibold">
-            <XCircle className="w-3.5 h-3.5" />
-            <span>พบข้อบกพร่อง (NG)</span>
+          <div className="flex items-center gap-1 text-rose-500 text-[10px] font-semibold">
+            <XCircle className="w-3 h-3" />
+            <span>มีข้อบกพร่อง (NG)</span>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black font-mono text-rose-500">
+          <div className="mt-1 flex items-baseline justify-between leading-none">
+            <span className="text-lg sm:text-xl font-black font-mono text-rose-500">
               {ngCount}
             </span>
-            <span className="text-xs font-mono font-bold text-rose-500">
+            <span className="text-[10px] font-mono font-bold text-rose-500">
               {ngPercent}%
             </span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
+          <div className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5">
             เกณฑ์ &lt; {passThreshold}%
           </div>
         </div>
 
         {/* Average Accuracy */}
         <div
-          className={`rounded-xl border p-3 shadow-sm ${
+          className={`rounded-xl border p-1.5 sm:p-2 shadow-sm ${
             isDark
               ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
               : "bg-white border-slate-200 text-slate-800"
           }`}
         >
-          <div className="flex items-center gap-2 text-slate-400 text-xs">
-            <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="flex items-center gap-1 text-slate-400 text-[10px]">
+            <TrendingUp className="w-3 h-3 text-cyan-400" />
             <span>ความแม่นยำเฉลี่ย</span>
           </div>
-          <div className="mt-2 text-2xl font-black font-mono text-cyan-400">
+          <div className="mt-1 text-lg sm:text-xl font-black font-mono text-cyan-400 leading-none">
             {avgAccuracy}%
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            ค่าเฉลี่ยทุกชิ้นงาน
+          <div className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5">
+            ค่าเฉลี่ยทั้งหมด
           </div>
         </div>
       </div>
 
       {/* Filter and Results Grid */}
       <div
-        className={`rounded-2xl border p-3.5 shadow-md flex-1 flex flex-col ${
+        className={`rounded-xl border p-2 sm:p-2.5 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden ${
           isDark
             ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
             : "bg-white border-slate-200 text-slate-800"
         }`}
       >
         {/* Filter Controls */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-700/40 mb-3">
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <Filter className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-700/40 mb-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Filter className="w-3.5 h-3.5 text-cyan-400" />
             <span>รายการผลการตรวจ ({filteredItems.length})</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-slate-700/40 text-xs">
+          <div className="flex items-center gap-1 bg-black/20 p-0.5 rounded-lg border border-slate-700/40 text-[11px]">
             <button
               onClick={() => setFilterMode("all")}
               className={`px-3 py-1 rounded-lg font-semibold transition-all ${

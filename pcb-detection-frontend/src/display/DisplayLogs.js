@@ -68,30 +68,30 @@ export default function DisplayLogs() {
   const ngCount = logs.filter((l) => l.status === "NG").length;
 
   return (
-    <div className="flex-1 flex flex-col gap-3 p-3 sm:p-4 overflow-y-auto touch-scrollbar">
+    <div className="h-full min-h-0 flex flex-col gap-1.5 p-1.5 sm:p-2 overflow-hidden">
       {/* Top Header Card */}
       <div
-        className={`rounded-2xl border p-3 sm:p-4 shadow-md flex items-center justify-between ${
+        className={`rounded-xl border p-2 shadow-sm flex items-center justify-between shrink-0 ${
           isDark
             ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
             : "bg-white border-slate-200 text-slate-800"
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border shrink-0 ${
               isDark
                 ? "bg-cyan-950/60 border-cyan-500/40 text-cyan-400"
                 : "bg-blue-50 border-blue-200 text-blue-600"
             }`}
           >
-            <FileText className="w-5 h-5" />
+            <FileText className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-bold">
+            <h2 className="text-xs sm:text-sm font-bold">
               บันทึกข้อมูล (System Logs & Inspection History)
             </h2>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[9px] sm:text-[10px] text-slate-400 truncate">
               ประวัติและบันทึกการตรวจสอบคุณภาพชิ้นงานอัตโนมัติบนสายพาน
             </p>
           </div>
@@ -100,33 +100,33 @@ export default function DisplayLogs() {
         <button
           onClick={fetchLogs}
           disabled={isLoading}
-          className={`touch-btn px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+          className={`touch-btn px-2.5 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 transition-all ${
             isDark
               ? "bg-[#0b1e38] border-cyan-500/40 text-cyan-300 hover:bg-[#122e54]"
               : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
           }`}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
           <span>รีเฟรช</span>
         </button>
       </div>
 
       {/* Main Table Card */}
       <div
-        className={`rounded-2xl border p-3.5 shadow-md flex-1 flex flex-col ${
+        className={`rounded-xl border p-2 sm:p-2.5 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden ${
           isDark
             ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
             : "bg-white border-slate-200 text-slate-800"
         }`}
       >
         {/* Table Header / Filters */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-700/40 mb-3">
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <Filter className="w-4 h-4 text-cyan-400" />
+        <div className="flex items-center justify-between pb-1.5 border-b border-slate-700/40 mb-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 text-xs font-bold">
+            <Filter className="w-3.5 h-3.5 text-cyan-400" />
             <span>ประวัติทั้งหมด ({filteredLogs.length} รายการ)</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-slate-700/40 text-xs">
+          <div className="flex items-center gap-1 bg-black/20 p-0.5 rounded-lg border border-slate-700/40 text-[11px]">
             <button
               onClick={() => setFilterMode("all")}
               className={`px-3 py-1 rounded-lg font-semibold transition-all ${
