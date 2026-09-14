@@ -145,21 +145,33 @@ export default function DisplayCamera() {
         {/* Live Status Indicators */}
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right font-mono leading-tight">
-            <div className="text-[9px] text-slate-400">FPS</div>
-            <div className="text-xs sm:text-sm font-bold text-cyan-400">
+            <div
+              className={`text-[9px] ${
+                isDark ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              FPS
+            </div>
+            <div
+              className={`text-xs sm:text-sm font-bold ${
+                isDark ? "text-cyan-400" : "text-blue-600"
+              }`}
+            >
               {fps}
             </div>
           </div>
           <div
             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] sm:text-xs font-semibold ${
               isStreaming
-                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
-                : "bg-slate-800/40 border-slate-700/60 text-slate-400"
+                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-500"
+                : isDark
+                ? "bg-slate-800/40 border-slate-700/60 text-slate-400"
+                : "bg-slate-100 border-slate-300 text-slate-600"
             }`}
           >
             <div
               className={`w-1.5 h-1.5 rounded-full ${
-                isStreaming ? "bg-emerald-400 animate-ping" : "bg-slate-500"
+                isStreaming ? "bg-emerald-400 animate-ping" : "bg-slate-400"
               }`}
             />
             <span>{status}</span>
@@ -229,10 +241,14 @@ export default function DisplayCamera() {
             <button
               onClick={startDetection}
               disabled={isStreaming}
-              className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all ${
+              className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                 isStreaming
-                  ? "bg-emerald-950/40 border border-emerald-800/40 text-emerald-600 opacity-50 cursor-not-allowed"
-                  : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-400/40"
+                  ? isDark
+                    ? "bg-emerald-950/40 border border-emerald-800/40 text-emerald-600 opacity-50 cursor-not-allowed"
+                    : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
+                  : isDark
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-400/40"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border border-emerald-600"
               }`}
             >
               <Play className="w-3.5 h-3.5 fill-current" />
@@ -243,10 +259,14 @@ export default function DisplayCamera() {
             <button
               onClick={stopDetection}
               disabled={!isStreaming}
-              className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all ${
+              className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                 !isStreaming
-                  ? "bg-rose-950/30 border border-rose-900/30 text-rose-600 opacity-50 cursor-not-allowed"
-                  : "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] border border-rose-400/40"
+                  ? isDark
+                    ? "bg-rose-950/30 border border-rose-900/30 text-rose-600 opacity-50 cursor-not-allowed"
+                    : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
+                  : isDark
+                  ? "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] border border-rose-400/40"
+                  : "bg-rose-600 hover:bg-rose-700 text-white shadow-sm border border-rose-600"
               }`}
             >
               <Square className="w-3.5 h-3.5 fill-current" />
@@ -267,27 +287,63 @@ export default function DisplayCamera() {
             </h3>
 
             <div className="space-y-1.5 flex-1 flex flex-col justify-around py-1">
-              <div className="flex justify-between py-0.5 border-b border-slate-700/40">
-                <span className="text-slate-400">โปรโตคอล</span>
-                <span className="font-mono font-semibold text-cyan-400">
+              <div
+                className={`flex justify-between py-0.5 border-b ${
+                  isDark ? "border-slate-700/40" : "border-slate-200"
+                }`}
+              >
+                <span className={isDark ? "text-slate-400" : "text-slate-600 font-medium"}>
+                  โปรโตคอล
+                </span>
+                <span
+                  className={`font-mono font-semibold ${
+                    isDark ? "text-cyan-400" : "text-blue-600"
+                  }`}
+                >
                   WebSocket
                 </span>
               </div>
-              <div className="flex justify-between py-0.5 border-b border-slate-700/40">
-                <span className="text-slate-400">Endpoint</span>
-                <span className="font-mono text-[10px] text-slate-300">
+              <div
+                className={`flex justify-between py-0.5 border-b ${
+                  isDark ? "border-slate-700/40" : "border-slate-200"
+                }`}
+              >
+                <span className={isDark ? "text-slate-400" : "text-slate-600 font-medium"}>
+                  Endpoint
+                </span>
+                <span
+                  className={`font-mono text-[10px] ${
+                    isDark ? "text-slate-300" : "text-slate-700 font-semibold"
+                  }`}
+                >
                   /ws/pcb-detection
                 </span>
               </div>
-              <div className="flex justify-between py-0.5 border-b border-slate-700/40">
-                <span className="text-slate-400">จำนวนเฟรม</span>
-                <span className="font-mono font-semibold text-emerald-400">
+              <div
+                className={`flex justify-between py-0.5 border-b ${
+                  isDark ? "border-slate-700/40" : "border-slate-200"
+                }`}
+              >
+                <span className={isDark ? "text-slate-400" : "text-slate-600 font-medium"}>
+                  จำนวนเฟรม
+                </span>
+                <span
+                  className={`font-mono font-semibold ${
+                    isDark ? "text-emerald-400" : "text-emerald-600 font-bold"
+                  }`}
+                >
                   {frameCount}
                 </span>
               </div>
               <div className="flex justify-between py-0.5">
-                <span className="text-slate-400">ความเร็วเฉลี่ย</span>
-                <span className="font-mono font-semibold text-cyan-300">
+                <span className={isDark ? "text-slate-400" : "text-slate-600 font-medium"}>
+                  ความเร็วเฉลี่ย
+                </span>
+                <span
+                  className={`font-mono font-semibold ${
+                    isDark ? "text-cyan-300" : "text-blue-600 font-bold"
+                  }`}
+                >
                   {fps} FPS
                 </span>
               </div>
