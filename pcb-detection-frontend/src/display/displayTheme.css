@@ -1,0 +1,108 @@
+/* 7-inch Raspberry Pi Display Theme Styles */
+
+/* Touch screen optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Base Display Theme Variables */
+.display-theme-dark {
+  --bg-primary: #050816;
+  --bg-secondary: #07111e;
+  --bg-tertiary: #040a14;
+  --bg-card: rgba(7, 17, 30, 0.95);
+  --border-color: rgba(6, 182, 212, 0.25);
+  --border-active: rgba(6, 182, 212, 0.6);
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-cyan: #06b6d4;
+  --accent-blue: #3b82f6;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.display-theme-light {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e2e8f0;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --border-color: rgba(148, 163, 184, 0.35);
+  --border-active: rgba(14, 165, 233, 0.7);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-cyan: #0284c7;
+  --accent-blue: #2563eb;
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Conveyor animations */
+@keyframes conveyorBeltMove {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 40;
+  }
+}
+
+.conveyor-belt-animated {
+  animation: conveyorBeltMove 1.2s linear infinite;
+}
+
+@keyframes laserPulse {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.laser-scanner {
+  animation: laserPulse 1.4s ease-in-out infinite;
+}
+
+/* Touch friendly button press scale */
+.touch-btn {
+  touch-action: manipulation;
+  transition: transform 0.1s ease, filter 0.15s ease, background-color 0.15s ease;
+}
+
+.touch-btn:active {
+  transform: scale(0.96);
+}
+
+/* High-tech grid background */
+.display-grid-dark {
+  background-image: linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.display-grid-light {
+  background-image: linear-gradient(to right, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Smooth custom scrollbars for touch */
+.touch-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.touch-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.touch-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 9999px;
+}
+
+.touch-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}

@@ -1,0 +1,96 @@
+/* Factory Industrial Theme Styles */
+
+@keyframes conveyorMove {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(80px);
+  }
+}
+
+@keyframes scanLine {
+  0% {
+    top: 5%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 90%;
+    opacity: 0.3;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.4));
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.8));
+  }
+}
+
+.conveyor-belt-pattern {
+  background-image: repeating-linear-gradient(
+    90deg,
+    #1e293b 0px,
+    #1e293b 14px,
+    #0f172a 14px,
+    #0f172a 28px
+  );
+}
+
+.conveyor-animated {
+  animation: conveyorMove 1.5s linear infinite;
+}
+
+.scanline-effect {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  animation: scanLine 2.5s ease-in-out infinite;
+}
+
+/* Custom Range Slider Styling */
+input[type="range"].factory-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #1e3a5f;
+  border-radius: 9999px;
+  outline: none;
+}
+
+input[type="range"].factory-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+input[type="range"].factory-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"].factory-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+  cursor: pointer;
+}

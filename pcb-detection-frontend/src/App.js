@@ -17,12 +17,18 @@ import PCBCameraView from "./factoryPage/test_process.js";
 import DetailResult from "./factoryPage/detailResult.js";
 import ResultPage from "./factoryPage/resultPage.js";
 // import ShowResultPage from "./factoryPage/showResultPage.js";
+import DisplayApp from "./display/DisplayApp.js";
 
 function App() {
   return (
     <>
       <Router>
         <Routes>
+          {/* 7-inch Raspberry Pi Display Routes */}
+          <Route path="/display" caseSensitive={false} element={<DisplayApp />} />
+          <Route path="/display/:pcb_id" caseSensitive={false} element={<DisplayApp />} />
+          <Route path="/display/*" caseSensitive={false} element={<DisplayApp />} />
+
           {/* with NavBar */}
           <Route element={<LayoutWithNav />}>
             <Route path="/" element={<Home />} />

@@ -12,6 +12,7 @@ import {
   Factory,
   Redo2,
   Cctv,
+  Monitor,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -23,13 +24,8 @@ const navigation = [
     current: false,
     icon: Factory,
   },
-  // {
-  //   name: "Retrun",
-  //   href: -1,
-  //   current: false,
-  //   icon: Factory,
-  // },
   { name: "Test Camera", href: "/testcam", current: false, icon: Cctv },
+  { name: "7\" Display (Raspi)", href: "/display", current: false, icon: Monitor },
   { name: "Return to HomePage", href: "/", current: false, icon: Redo2 },
 ];
 
