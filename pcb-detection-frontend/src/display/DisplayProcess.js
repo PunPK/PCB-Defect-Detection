@@ -312,15 +312,16 @@ export default function DisplayProcess({ onNavigateTab }) {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Template PCB button */}
                 <button
-                  onClick={() => setIsTemplateModalOpen(true)}
+                  onClick={() => onNavigateTab ? onNavigateTab("home") : setIsTemplateModalOpen(true)}
                   className={`touch-btn px-2 py-0.5 rounded-lg border text-[10px] flex items-center gap-1 transition-all ${
                     isDark
                       ? "bg-cyan-950/60 hover:bg-cyan-900 border-cyan-500/40 text-cyan-300"
                       : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
                   }`}
+                  title="กลับสู่หน้าชุดต้นแบบ PCB"
                 >
                   <Layers className="w-3 h-3" />
-                  <span>ภาพต้นแบบ</span>
+                  <span>ชุดต้นแบบ PCB</span>
                 </button>
 
                 {/* Camera Status Pill */}

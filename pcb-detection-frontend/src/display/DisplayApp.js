@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Factory,
-  Home,
   Camera,
   BarChart3,
   Archive,
@@ -10,8 +9,10 @@ import {
   Maximize,
   Minimize,
   LogOut,
+  Layers,
 } from "lucide-react";
 import { DisplayProvider, useDisplay } from "./DisplayContext.js";
+import DisplayTemplates from "./DisplayTemplates.js";
 import DisplayProcess from "./DisplayProcess.js";
 import DisplayCamera from "./DisplayCamera.js";
 import DisplayPerformance from "./DisplayPerformance.js";
@@ -66,12 +67,17 @@ function DisplayLayout() {
     return () => clearInterval(interval);
   }, []);
 
-  // Navigation Items matching design.png
+  // Navigation Items matching 7-inch touch UI layout
   const navItems = [
     {
       id: "home",
-      label: "หน้าหลัก",
-      icon: Home,
+      label: "ชุดต้นแบบ PCB",
+      icon: Layers,
+    },
+    {
+      id: "process",
+      label: "สายพานตรวจจับ",
+      icon: Factory,
     },
     {
       id: "camera",
@@ -255,6 +261,9 @@ function DisplayLayout() {
         {/* Dynamic Content Viewport */}
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           {activeTab === "home" && (
+            <DisplayTemplates onNavigateTab={(tab) => setActiveTab(tab)} />
+          )}
+          {activeTab === "process" && (
             <DisplayProcess onNavigateTab={(tab) => setActiveTab(tab)} />
           )}
           {activeTab === "camera" && <DisplayCamera />}
