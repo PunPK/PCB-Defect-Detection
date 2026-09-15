@@ -295,13 +295,13 @@ export default function DisplayTemplates({ onNavigateTab }) {
     <div className="h-full min-h-0 flex flex-col gap-1.5 p-1.5 sm:p-2 overflow-hidden select-none">
       {/* ==================== 1. TOP STATS BAR ==================== */}
       <div
-        className={`rounded-xl border px-3 py-1.5 shadow-sm flex items-center justify-between shrink-0 ${
+        className={`rounded-xl border px-2.5 sm:px-3 py-1.5 shadow-sm flex items-center justify-between gap-2 shrink-0 overflow-hidden ${
           isDark
             ? "bg-[#07111e]/95 border-cyan-500/30 text-white"
             : "bg-white border-slate-200 text-slate-800"
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border shrink-0 ${
               isDark
@@ -309,19 +309,20 @@ export default function DisplayTemplates({ onNavigateTab }) {
                 : "bg-blue-50 border-blue-200 text-blue-600"
             }`}
           >
-            <Layers className="w-4 h-4" />
+            <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-1.5">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               <h2
-                className={`text-xs sm:text-sm font-bold ${
+                className={`text-xs sm:text-sm font-bold truncate ${
                   isDark ? "text-white" : "text-slate-900"
                 }`}
+                title="ชุดข้อมูลต้นแบบแผ่นวงจร (Master PCB Templates)"
               >
-                ชุดข้อมูลต้นแบบแผ่นวงจร (Master PCB Templates)
+                ชุดข้อมูลต้นแบบ PCB
               </h2>
               <span
-                className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full border ${
+                className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
                   isDark
                     ? "bg-cyan-950/80 border-cyan-500/40 text-cyan-300"
                     : "bg-blue-50 border-blue-200 text-blue-700"
@@ -329,9 +330,21 @@ export default function DisplayTemplates({ onNavigateTab }) {
               >
                 {totalSets} ชุด
               </span>
+              {activePcbId && (
+                <span
+                  className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full border shrink-0 flex items-center gap-1 ${
+                    isDark
+                      ? "bg-cyan-500/15 border-cyan-500/40 text-cyan-300"
+                      : "bg-blue-100 border-blue-300 text-blue-800"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse inline-block" />
+                  ใช้งานอยู่: #{activePcbId}
+                </span>
+              )}
             </div>
             <p
-              className={`text-[9px] sm:text-[10px] truncate ${
+              className={`text-[9px] sm:text-[10px] truncate hidden md:block ${
                 isDark ? "text-slate-400" : "text-slate-500 font-medium"
               }`}
             >
@@ -341,30 +354,36 @@ export default function DisplayTemplates({ onNavigateTab }) {
         </div>
 
         {/* Quick Stats Pills */}
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-2.5 text-xs font-mono font-semibold">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs font-mono font-semibold">
             <div
-              className={`flex items-center gap-1 ${
-                isDark ? "text-emerald-400" : "text-emerald-600"
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shrink-0 ${
+                isDark
+                  ? "bg-emerald-950/40 border-emerald-500/30 text-emerald-400"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-700"
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span>OK: {passSets}</span>
             </div>
             <div
-              className={`flex items-center gap-1 ${
-                isDark ? "text-rose-400" : "text-rose-600"
+              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border shrink-0 ${
+                isDark
+                  ? "bg-rose-950/40 border-rose-500/30 text-rose-400"
+                  : "bg-rose-50 border-rose-200 text-rose-700"
               }`}
             >
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span>NG: {failSets}</span>
             </div>
             <div
-              className={`flex items-center gap-1 ${
-                isDark ? "text-cyan-400" : "text-blue-600"
+              className={`hidden md:flex items-center gap-1 px-1.5 py-0.5 rounded-md border shrink-0 ${
+                isDark
+                  ? "bg-cyan-950/40 border-cyan-500/30 text-cyan-400"
+                  : "bg-blue-50 border-blue-200 text-blue-700"
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
+              <BarChart3 className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span>เฉลี่ย: {avgAccuracy}%</span>
             </div>
           </div>
@@ -372,7 +391,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
           <button
             onClick={fetchTemplates}
             disabled={isLoading}
-            className={`touch-btn px-2.5 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+            className={`touch-btn px-2 sm:px-2.5 py-1 rounded-lg border text-[10px] sm:text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer shrink-0 ${
               isDark
                 ? "bg-[#0b1e38] border-cyan-500/40 text-cyan-300 hover:bg-[#122e54]"
                 : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
@@ -396,18 +415,18 @@ export default function DisplayTemplates({ onNavigateTab }) {
         >
           {/* List Header */}
           <div
-            className={`flex items-center justify-between pb-1.5 border-b mb-1.5 shrink-0 ${
+            className={`flex items-center justify-between pb-1.5 border-b mb-1.5 shrink-0 min-w-0 ${
               isDark ? "border-slate-800" : "border-slate-200"
             }`}
           >
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 min-w-0">
               <Sparkles
-                className={`w-3.5 h-3.5 ${
+                className={`w-3.5 h-3.5 shrink-0 ${
                   isDark ? "text-cyan-400" : "text-blue-600"
                 }`}
               />
               <span
-                className={`text-xs font-bold ${
+                className={`text-xs font-bold truncate ${
                   isDark ? "text-white" : "text-slate-800"
                 }`}
               >
@@ -416,7 +435,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
             </div>
             {activePcbId && (
               <div
-                className={`text-[10px] font-mono flex items-center gap-1 ${
+                className={`text-[10px] font-mono flex items-center gap-1 shrink-0 ml-2 ${
                   isDark ? "text-cyan-400" : "text-blue-600"
                 }`}
               >
@@ -429,7 +448,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
           </div>
 
           {/* Cards Grid */}
-          <div className="flex-1 min-h-0 overflow-y-auto touch-scrollbar pr-0.5">
+          <div className="flex-1 min-h-0 overflow-y-auto touch-scrollbar pr-1.5 sm:pr-2">
             {templates.length === 0 ? (
               <div className="h-full min-h-[180px] flex flex-col items-center justify-center text-center p-4 text-slate-400">
                 <Layers
@@ -472,10 +491,10 @@ export default function DisplayTemplates({ onNavigateTab }) {
                       }`}
                     >
                       {/* Top Row: PCB ID & Status Badge */}
-                      <div className="flex items-center justify-between mb-1.5 leading-none">
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5 min-w-0">
+                        <div className="flex items-center gap-1 min-w-0 shrink-0">
                           <span
-                            className={`text-xs font-black font-mono ${
+                            className={`text-xs font-black font-mono shrink-0 ${
                               isDark ? "text-cyan-400" : "text-blue-700"
                             }`}
                           >
@@ -483,7 +502,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
                           </span>
                           {isActive && (
                             <span
-                              className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
+                              className={`text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.2 rounded border shrink-0 whitespace-nowrap ${
                                 isDark
                                   ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
                                   : "bg-blue-100 text-blue-800 border-blue-300"
@@ -494,9 +513,9 @@ export default function DisplayTemplates({ onNavigateTab }) {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 shrink-0 ml-auto">
                           <span
-                            className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
+                            className={`text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.2 rounded border shrink-0 ${
                               isPass
                                 ? isDark
                                   ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
@@ -509,7 +528,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
                             {isPass ? "PASS" : "FAIL"}
                           </span>
                           <span
-                            className={`text-[9px] font-mono font-bold ${
+                            className={`text-[9px] font-mono font-bold shrink-0 ${
                               isDark ? "text-slate-200" : "text-slate-700"
                             }`}
                           >
@@ -553,12 +572,12 @@ export default function DisplayTemplates({ onNavigateTab }) {
                       {/* Bottom Info & Action Buttons */}
                       <div className="mt-1.5 space-y-1">
                         <div
-                          className={`flex items-center justify-between text-[9px] ${
+                          className={`flex items-center justify-between text-[9px] gap-1 ${
                             isDark ? "text-slate-400" : "text-slate-600 font-medium"
                           }`}
                         >
-                          <span>ตรวจแล้ว: {pcb.result_ids?.length || 0} ชิ้น</span>
-                          <span className="truncate max-w-[100px] font-mono">
+                          <span className="shrink-0 truncate">ตรวจแล้ว: {pcb.result_ids?.length || 0} ชิ้น</span>
+                          <span className="truncate max-w-[90px] font-mono text-right" title={pcb.originalPcb?.filename}>
                             {pcb.originalPcb?.filename || "-"}
                           </span>
                         </div>
@@ -572,18 +591,18 @@ export default function DisplayTemplates({ onNavigateTab }) {
                                 onNavigateTab("process");
                               }
                             }}
-                            className={`touch-btn flex-1 min-h-[34px] py-1.5 px-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
+                            className={`touch-btn flex-1 min-h-[32px] sm:min-h-[34px] py-1 px-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1 shadow-sm transition-all cursor-pointer min-w-0 ${
                               isActive
                                 ? isDark
                                   ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-400/50 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                                   : "bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm"
                                 : isDark
-                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-500/30"
-                                : "bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-600 shadow-sm"
+                                ? "bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white"
+                                : "bg-slate-100 hover:bg-blue-600 text-slate-700 hover:text-white border border-slate-300 hover:border-blue-600 shadow-xs font-semibold"
                             }`}
                           >
-                            <Play className="w-3.5 h-3.5 fill-current shrink-0" />
-                            <span className="truncate">
+                            <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-current shrink-0" />
+                            <span className="truncate text-[11px] sm:text-xs">
                               {isActive ? "ตรวจจับต่อ" : "เลือกตรวจจับ"}
                             </span>
                           </button>
@@ -596,14 +615,14 @@ export default function DisplayTemplates({ onNavigateTab }) {
                                 name: `PCB #${pcb.pcb_id}`,
                               })
                             }
-                            className={`touch-btn min-h-[34px] min-w-[34px] p-1.5 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                            className={`touch-btn min-h-[32px] min-w-[32px] sm:min-h-[34px] sm:min-w-[34px] p-1.5 rounded-lg border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                               isDark
                                 ? "bg-rose-950/40 hover:bg-rose-900 border-rose-800/40 text-rose-400"
                                 : "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600"
                             }`}
                             title="ลบต้นแบบ PCB นี้"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
@@ -617,7 +636,7 @@ export default function DisplayTemplates({ onNavigateTab }) {
 
         {/* ==================== RIGHT AREA: ADD NEW TEMPLATE ==================== */}
         <div
-          className={`w-64 sm:w-72 md:w-80 shrink-0 rounded-xl border p-2 shadow-sm flex flex-col justify-between overflow-hidden ${
+          className={`w-60 sm:w-64 md:w-72 lg:w-80 shrink-0 rounded-xl border p-2 shadow-sm flex flex-col justify-between overflow-hidden ${
             isDark
               ? "bg-[#07111e]/95 border-cyan-500/30"
               : "bg-white border-slate-200"
@@ -829,7 +848,11 @@ export default function DisplayTemplates({ onNavigateTab }) {
                   <button
                     onClick={capturePhoto}
                     disabled={isCameraLoading}
-                    className="touch-btn flex-1 min-h-[36px] py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                    className={`touch-btn flex-1 min-h-[36px] py-1.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer ${
+                      isDark
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600"
+                    }`}
                   >
                     <Camera className="w-3.5 h-3.5" />
                     <span>ถ่ายภาพ (Capture)</span>

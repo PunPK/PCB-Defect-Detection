@@ -244,11 +244,11 @@ export default function DisplayCamera() {
               className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                 isStreaming
                   ? isDark
-                    ? "bg-emerald-950/40 border border-emerald-800/40 text-emerald-600 opacity-50 cursor-not-allowed"
+                    ? "bg-slate-800/50 border border-slate-700/50 text-slate-500 opacity-50 cursor-not-allowed"
                     : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
                   : isDark
-                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-400/40"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border border-emerald-600"
+                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.35)] border border-cyan-400/40"
+                  : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600"
               }`}
             >
               <Play className="w-3.5 h-3.5 fill-current" />
@@ -262,7 +262,7 @@ export default function DisplayCamera() {
               className={`touch-btn w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                 !isStreaming
                   ? isDark
-                    ? "bg-rose-950/30 border border-rose-900/30 text-rose-600 opacity-50 cursor-not-allowed"
+                    ? "bg-slate-800/50 border border-slate-700/50 text-slate-500 opacity-50 cursor-not-allowed"
                     : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
                   : isDark
                   ? "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] border border-rose-400/40"

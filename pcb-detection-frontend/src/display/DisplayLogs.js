@@ -126,13 +126,21 @@ export default function DisplayLogs() {
             <span>ประวัติทั้งหมด ({filteredLogs.length} รายการ)</span>
           </div>
 
-          <div className="flex items-center gap-1 bg-black/20 p-0.5 rounded-lg border border-slate-700/40 text-[11px]">
+          <div
+            className={`flex items-center gap-1 p-0.5 rounded-lg border text-[11px] ${
+              isDark
+                ? "bg-black/40 border-slate-700/60"
+                : "bg-slate-100 border-slate-300"
+            }`}
+          >
             <button
               onClick={() => setFilterMode("all")}
               className={`px-3 py-1 rounded-lg font-semibold transition-all ${
                 filterMode === "all"
                   ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : isDark
+                  ? "text-slate-400 hover:text-white"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               ทั้งหมด ({logs.length})
@@ -141,8 +149,12 @@ export default function DisplayLogs() {
               onClick={() => setFilterMode("ok")}
               className={`px-3 py-1 rounded-lg font-semibold transition-all ${
                 filterMode === "ok"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? isDark
+                    ? "bg-cyan-600 text-white shadow-sm"
+                    : "bg-blue-600 text-white shadow-sm"
+                  : isDark
+                  ? "text-slate-400 hover:text-white"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               OK ({okCount})
@@ -152,7 +164,9 @@ export default function DisplayLogs() {
               className={`px-3 py-1 rounded-lg font-semibold transition-all ${
                 filterMode === "ng"
                   ? "bg-rose-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  : isDark
+                  ? "text-slate-400 hover:text-white"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               NG ({ngCount})

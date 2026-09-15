@@ -101,21 +101,56 @@
   background-size: 24px 24px;
 }
 
-/* Smooth custom scrollbars for touch */
+/* Smooth custom scrollbars for touch & desktop */
+.touch-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.45) rgba(15, 23, 42, 0.25);
+}
+
 .touch-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 .touch-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(15, 23, 42, 0.25);
+  border-radius: 9999px;
+  margin: 2px 0;
 }
 
 .touch-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
+  background: rgba(6, 182, 212, 0.45);
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  min-height: 40px;
 }
 
-.touch-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
+.touch-scrollbar::-webkit-scrollbar-thumb:hover,
+.touch-scrollbar::-webkit-scrollbar-thumb:active {
+  background: rgba(6, 182, 212, 0.8);
 }
+
+/* Light mode scrollbar styles */
+.display-grid-light .touch-scrollbar,
+.display-theme-light .touch-scrollbar {
+  scrollbar-color: rgba(59, 130, 246, 0.5) rgba(226, 232, 240, 0.6);
+}
+
+.display-grid-light .touch-scrollbar::-webkit-scrollbar-track,
+.display-theme-light .touch-scrollbar::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.6);
+}
+
+.display-grid-light .touch-scrollbar::-webkit-scrollbar-thumb,
+.display-theme-light .touch-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+.display-grid-light .touch-scrollbar::-webkit-scrollbar-thumb:hover,
+.display-theme-light .touch-scrollbar::-webkit-scrollbar-thumb:hover,
+.display-grid-light .touch-scrollbar::-webkit-scrollbar-thumb:active,
+.display-theme-light .touch-scrollbar::-webkit-scrollbar-thumb:active {
+  background: rgba(37, 99, 235, 0.85);
+}
+

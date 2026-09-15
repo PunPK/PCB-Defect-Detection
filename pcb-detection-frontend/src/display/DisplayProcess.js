@@ -284,9 +284,9 @@ export default function DisplayProcess({ onNavigateTab }) {
       <div className="grid grid-cols-12 gap-1.5 sm:gap-2 flex-1 min-h-0">
         {/* ==================== LEFT AREA (8 COLUMNS) ==================== */}
         <div className="col-span-8 flex flex-col gap-1.5 min-h-0">
-          {/* 1. TOP CARD: "ภาพจากกล้อง (Live)" */}
+          {/* 1. TOP CARD: "ภาพจากกล้อง (Live)" - Enlarged Full Width */}
           <div
-            className={`flex-[1.15] min-h-0 rounded-xl border p-2 shadow-sm flex flex-col ${
+            className={`flex-[1.3] min-h-0 rounded-xl border p-2 shadow-sm flex flex-col ${
               isDark
                 ? "bg-[#07111e]/95 border-cyan-500/30"
                 : "bg-white border-slate-200"
@@ -346,166 +346,69 @@ export default function DisplayProcess({ onNavigateTab }) {
               </div>
             </div>
 
-            {/* Card Content: Live Viewport + Sample Thumbnails */}
-            <div className="flex-1 min-h-0 flex gap-1.5 sm:gap-2">
-              {/* Camera Stream Viewport */}
-              <div
-                className={`flex-1 min-h-0 relative rounded-lg overflow-hidden border flex items-center justify-center ${
-                  isDark
-                    ? "bg-[#02050b] border-cyan-500/30"
-                    : "bg-slate-900 border-slate-300"
-                }`}
-              >
-                {cameraFeed ? (
-                  <div className="relative w-full h-full flex items-center justify-center bg-black">
-                    <img
-                      src={cameraFeed}
-                      alt="Live Camera Feed"
-                      className="w-full h-full object-contain"
-                    />
+            {/* Card Content: Live Viewport (Enlarged to fill full width) */}
+            <div
+              className={`flex-1 min-h-0 w-full relative rounded-lg overflow-hidden border flex items-center justify-center ${
+                isDark
+                  ? "bg-[#02050b] border-cyan-500/30"
+                  : "bg-slate-900 border-slate-300"
+              }`}
+            >
+              {cameraFeed ? (
+                <div className="relative w-full h-full flex items-center justify-center bg-black">
+                  <img
+                    src={cameraFeed}
+                    alt="Live Camera Feed"
+                    className="w-full h-full object-contain"
+                  />
 
-                    {/* HUD Status Overlay */}
-                    <div className="absolute top-1.5 left-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-md border border-cyan-500/40 text-[9px] font-mono text-cyan-300 flex items-center gap-1.5 pointer-events-none">
-                      <Radio className="w-2.5 h-2.5 text-rose-500 animate-pulse" />
-                      <span>LIVE</span>
-                      <span>|</span>
-                      <span>{fps} FPS</span>
-                    </div>
-
-                    {/* Green Inspection Bounding Box on Detected PCB */}
-                    {sensorTriggered && (
-                      <div className="absolute inset-x-[25%] inset-y-[15%] border-2 border-emerald-400 rounded-lg pointer-events-none animate-pulse shadow-[0_0_12px_rgba(52,211,153,0.5)]">
-                        <span className="absolute -top-4 left-1 bg-emerald-500 text-black text-[8px] font-bold px-1 rounded">
-                          PCB DETECTED
-                        </span>
-                      </div>
-                    )}
+                  {/* HUD Status Overlay */}
+                  <div className="absolute top-1.5 left-1.5 bg-black/75 backdrop-blur-md px-2 py-0.5 rounded-md border border-cyan-500/40 text-[9px] font-mono text-cyan-300 flex items-center gap-1.5 pointer-events-none">
+                    <Radio className="w-2.5 h-2.5 text-rose-500 animate-pulse" />
+                    <span>LIVE</span>
+                    <span>|</span>
+                    <span>{fps} FPS</span>
                   </div>
-                ) : (
-                  /* Inactive Camera View */
-                  <div className="relative w-full h-full flex flex-col items-center justify-center p-2 text-center">
-                    <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center mb-1 ${
-                        isDark
-                          ? "bg-cyan-950/40 border-cyan-800/40 text-cyan-400"
-                          : "bg-slate-800 border-slate-700 text-cyan-300"
-                      }`}
-                    >
-                      <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-300">
-                      {isStreaming
-                        ? "กำลังรอสัญญาณภาพ..."
-                        : "กล้องยังไม่ได้เริ่มทำงาน"}
-                    </div>
-                    <p className="text-[9px] text-slate-400 max-w-xs mt-0.5">
-                      กดปุ่ม{" "}
-                      <span className="text-emerald-400 font-bold">
-                        "เริ่มการทำงาน"
-                      </span>{" "}
-                      ด้านล่างเพื่อเริ่มการตรวจจับ
-                    </p>
-                  </div>
-                )}
-              </div>
 
-              {/* Sample Previews Sidebar: "ภาพตัวอย่าง" */}
-              <div
-                className={`w-32 sm:w-36 md:w-40 shrink-0 flex flex-col justify-between rounded-lg border p-1.5 ${
-                  isDark
-                    ? "bg-[#040c18] border-cyan-500/20"
-                    : "bg-slate-50 border-slate-200"
-                }`}
-              >
-                <div className="flex items-center justify-between pb-1 border-b border-slate-700/30 shrink-0">
-                  <span
-                    className={`text-[10px] sm:text-[11px] font-bold ${
-                      isDark ? "text-slate-200" : "text-slate-700"
-                    }`}
-                  >
-                    ภาพตัวอย่าง
-                  </span>
-                  <span className="text-[8px] sm:text-[9px] text-emerald-400 font-mono">
-                    {isStreaming ? "Live" : (hasResults ? "ล่าสุด" : "-")}
-                  </span>
-                </div>
-
-                {/* Thumbnails Stack */}
-                <div className="flex-1 flex flex-col justify-between py-1 min-h-0 space-y-1">
-                  {!hasResults || recentSamples.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/60 p-1 text-center text-slate-400">
-                      <span className="text-[9px] font-mono">รอผลการตรวจ</span>
-                      <span className="text-[8px] text-slate-500 mt-0.5">
-                        แสดงที่นี่เมื่อตรวจเสร็จ
+                  {/* Inspection Bounding Box on Detected PCB */}
+                  {sensorTriggered && (
+                    <div className="absolute inset-x-[25%] inset-y-[15%] border-2 border-emerald-400 rounded-lg pointer-events-none animate-pulse shadow-[0_0_12px_rgba(52,211,153,0.5)]">
+                      <span className="absolute -top-4 left-1 bg-emerald-500 text-black text-[8px] font-bold px-1 rounded">
+                        PCB DETECTED
                       </span>
                     </div>
-                  ) : (
-                    recentSamples.slice(0, 3).map((sample, idx) => (
-                      <div
-                        key={sample.id || idx}
-                        onClick={() => setPreviewSample(sample)}
-                        className={`touch-btn p-1 rounded-md border cursor-pointer transition-all flex flex-col justify-between flex-1 min-h-0 ${
-                          isDark
-                            ? "bg-[#061122] hover:bg-[#0b1b34] border-cyan-500/30"
-                            : "bg-white hover:bg-slate-100 border-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between leading-none">
-                          <span
-                            className={`text-[7.5px] sm:text-[8px] font-bold px-1 rounded ${
-                              sample.status === "OK"
-                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                            }`}
-                          >
-                            {sample.status}
-                          </span>
-                          <span className="text-[8.5px] sm:text-[9px] font-mono font-bold text-cyan-400">
-                            {sample.accuracy ? `${sample.accuracy}%` : "-"}
-                          </span>
-                        </div>
-
-                        {/* Thumbnail */}
-                        <div className="w-full flex-1 min-h-0 my-0.5 bg-black/80 rounded flex items-center justify-center overflow-hidden">
-                          {sample.imageData ? (
-                            <img
-                              src={`data:image/jpeg;base64,${sample.imageData}`}
-                              alt={sample.name}
-                              className="w-full h-full object-contain"
-                            />
-                          ) : (
-                            <Cpu className="w-3.5 h-3.5 text-slate-600" />
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[7.5px] sm:text-[8px] text-slate-400 leading-none">
-                          <span className="truncate max-w-[55px]">
-                            {sample.name}
-                          </span>
-                          <span className="font-mono">{sample.time}</span>
-                        </div>
-                      </div>
-                    ))
                   )}
                 </div>
-
-                {/* "ดูเพิ่มเติม v" Button */}
-                <button
-                  onClick={() => setIsMoreSamplesOpen(true)}
-                  className={`touch-btn w-full py-0.5 sm:py-1 rounded-md border text-[9px] sm:text-[10px] font-semibold flex items-center justify-center gap-1 shrink-0 transition-colors ${
-                    isDark
-                      ? "bg-cyan-950/50 hover:bg-cyan-900 border-cyan-500/30 text-cyan-300"
-                      : "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-700"
-                  }`}
-                >
-                  <span>ดูเพิ่มเติม</span>
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </div>
+              ) : (
+                /* Inactive Camera View */
+                <div className="relative w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                  <div
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center mb-1 ${
+                      isDark
+                        ? "bg-cyan-950/40 border-cyan-800/40 text-cyan-400"
+                        : "bg-slate-800 border-slate-700 text-cyan-300"
+                    }`}
+                  >
+                    <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div className="text-[11px] sm:text-xs font-semibold text-slate-300">
+                    {isStreaming
+                      ? "กำลังรอสัญญาณภาพ..."
+                      : "กล้องยังไม่ได้เริ่มทำงาน"}
+                  </div>
+                  <p className="text-[9px] text-slate-400 max-w-xs mt-0.5">
+                    กดปุ่ม{" "}
+                    <span className="text-blue-400 font-bold">
+                      "เริ่มการทำงาน"
+                    </span>{" "}
+                    ด้านล่างเพื่อเริ่มการตรวจจับ
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 2. BOTTOM CARD: "ภาพรวมระบบ" (Conveyor Belt Simulation with 1 PCB detection) */}
+          {/* 2. BOTTOM CARD: "ภาพรวมระบบ" + "ภาพตัวอย่าง" */}
           <div
             className={`flex-1 min-h-0 rounded-xl border p-2 shadow-sm flex flex-col ${
               isDark
@@ -528,20 +431,22 @@ export default function DisplayProcess({ onNavigateTab }) {
                   ภาพรวมระบบ (Smart Conveyor Belt)
                 </h2>
               </div>
-              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-emerald-500 font-mono font-semibold">
+              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-blue-600 dark:text-cyan-400 font-mono font-semibold">
                 <span>ทิศทางการลำเลียง</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
             </div>
 
-            {/* Industrial Conveyor SVG with 1 Single PCB Detection */}
-            <div
-              className={`flex-1 min-h-0 w-full rounded-lg overflow-hidden border flex items-center justify-center ${
-                isDark
-                  ? "bg-gradient-to-b from-[#02050f] via-[#040c1c] to-[#01040a] border-cyan-500/20"
-                  : "bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-slate-300"
-              }`}
-            >
+            {/* Split Content: Industrial Conveyor on Left + Sample Previews on Right */}
+            <div className="flex-1 min-h-0 flex gap-1.5 sm:gap-2">
+              {/* Industrial Conveyor SVG */}
+              <div
+                className={`flex-1 min-h-0 min-w-0 rounded-lg overflow-hidden border flex items-center justify-center ${
+                  isDark
+                    ? "bg-gradient-to-b from-[#02050f] via-[#040c1c] to-[#01040a] border-cyan-500/20"
+                    : "bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 border-slate-300"
+                }`}
+              >
               <svg viewBox="0 0 900 200" className="w-full h-full object-contain">
                 <defs>
                   {/* Spotlight Gradient from Camera/Sensor */}
@@ -719,6 +624,105 @@ export default function DisplayProcess({ onNavigateTab }) {
                   </g>
                 )}
               </svg>
+              </div>
+
+              {/* Sample Previews Sidebar: "ภาพตัวอย่าง" */}
+              <div
+                className={`w-40 sm:w-48 md:w-52 shrink-0 flex flex-col justify-between rounded-lg border p-1 sm:p-1.5 ${
+                  isDark
+                    ? "bg-[#040c18] border-cyan-500/20"
+                    : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-1 border-b border-slate-700/30 shrink-0">
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-[10px] sm:text-[11px] font-bold ${
+                        isDark ? "text-slate-200" : "text-slate-700"
+                      }`}
+                    >
+                      ภาพตัวอย่าง
+                    </span>
+                    <span className="text-[8px] sm:text-[9px] text-blue-600 dark:text-cyan-400 font-mono">
+                      {isStreaming ? "Live" : (hasResults ? `(${recentSamples.length})` : "-")}
+                    </span>
+                  </div>
+
+                  {/* "ดูเพิ่มเติม" Button */}
+                  <button
+                    onClick={() => setIsMoreSamplesOpen(true)}
+                    className={`touch-btn px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-semibold border flex items-center gap-0.5 transition-colors cursor-pointer ${
+                      isDark
+                        ? "bg-cyan-950/60 hover:bg-cyan-900 border-cyan-500/30 text-cyan-300"
+                        : "bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-700"
+                    }`}
+                    title="ดูภาพตัวอย่างทั้งหมด"
+                  >
+                    <span>ดูเพิ่มเติม</span>
+                    <ChevronDown className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+
+                {/* Thumbnails Row */}
+                <div className="flex-1 min-h-0 flex gap-1 sm:gap-1.5 py-1 overflow-x-auto touch-scrollbar">
+                  {!hasResults || recentSamples.length === 0 ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-700/60 p-1 text-center text-slate-400">
+                      <span className="text-[9px] font-mono">รอผลการตรวจ</span>
+                      <span className="text-[8px] text-slate-500 mt-0.5">
+                        แสดงที่นี่เมื่อตรวจเสร็จ
+                      </span>
+                    </div>
+                  ) : (
+                    recentSamples.slice(0, 3).map((sample, idx) => (
+                      <div
+                        key={sample.id || idx}
+                        onClick={() => setPreviewSample(sample)}
+                        className={`touch-btn p-1 rounded-md border cursor-pointer transition-all flex flex-col justify-between flex-1 min-w-[65px] sm:min-w-[75px] ${
+                          isDark
+                            ? "bg-[#061122] hover:bg-[#0b1b34] border-cyan-500/30"
+                            : "bg-white hover:bg-slate-100 border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between leading-none">
+                          <span
+                            className={`text-[7.5px] sm:text-[8px] font-bold px-1 rounded ${
+                              sample.status === "OK"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
+                            }`}
+                          >
+                            {sample.status}
+                          </span>
+                          <span className="text-[8.5px] sm:text-[9px] font-mono font-bold text-cyan-400">
+                            {sample.accuracy ? `${sample.accuracy}%` : "-"}
+                          </span>
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div className="w-full flex-1 min-h-0 my-0.5 bg-black/80 rounded flex items-center justify-center overflow-hidden">
+                          {sample.imageData ? (
+                            <img
+                              src={`data:image/jpeg;base64,${sample.imageData}`}
+                              alt={sample.name}
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <Cpu className="w-3.5 h-3.5 text-slate-600" />
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[7.5px] sm:text-[8px] text-slate-400 leading-none">
+                          <span className="truncate max-w-[42px] sm:max-w-[50px]">
+                            {sample.name}
+                          </span>
+                          <span className="font-mono">{sample.time}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -731,32 +735,32 @@ export default function DisplayProcess({ onNavigateTab }) {
             }`}
           >
             <div className="flex items-center gap-2 flex-1 h-full py-0.5">
-              {/* Start Button - Green */}
+              {/* Start Button */}
               <button
                 onClick={startDetection}
                 disabled={isStreaming}
                 className={`touch-btn flex-1 h-full rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                   isStreaming
                     ? isDark
-                      ? "bg-emerald-950/40 border border-emerald-800/40 text-emerald-600 opacity-50 cursor-not-allowed"
+                      ? "bg-slate-800/50 border border-slate-700/50 text-slate-500 opacity-50 cursor-not-allowed"
                       : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
                     : isDark
-                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.35)] border border-emerald-400/40"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm border border-emerald-600"
+                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_12px_rgba(6,182,212,0.35)] border border-cyan-400/40"
+                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm border border-blue-600"
                 }`}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>เริ่มการทำงาน</span>
               </button>
 
-              {/* Stop Button - Red */}
+              {/* Stop Button */}
               <button
                 onClick={stopDetection}
                 disabled={!isStreaming}
                 className={`touch-btn flex-1 h-full rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
                   !isStreaming
                     ? isDark
-                      ? "bg-rose-950/30 border border-rose-900/30 text-rose-600 opacity-50 cursor-not-allowed"
+                      ? "bg-slate-800/50 border border-slate-700/50 text-slate-500 opacity-50 cursor-not-allowed"
                       : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
                     : isDark
                     ? "bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-500 hover:to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] border border-rose-400/40"

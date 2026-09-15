@@ -11,6 +11,15 @@ module.exports = withMT({
   theme: {
     extend: {
       colors: {
+        slate: colors.slate,
+        emerald: colors.emerald,
+        rose: colors.rose,
+        sky: colors.sky,
+        zinc: colors.zinc,
+        neutral: colors.neutral,
+        stone: colors.stone,
+        violet: colors.violet,
+        fuchsia: colors.fuchsia,
         teal: {
           100: "#d3eaeb",
           200: "#a7d5d6",

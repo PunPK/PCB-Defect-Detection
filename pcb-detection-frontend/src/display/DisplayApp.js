@@ -114,14 +114,14 @@ function DisplayLayout() {
     >
       {/* ==================== 1. TOP HEADER BAR ==================== */}
       <header
-        className={`relative z-20 h-10 sm:h-11 px-2.5 sm:px-4 flex items-center justify-between border-b shadow-sm transition-colors shrink-0 ${
+        className={`relative z-20 h-10 sm:h-11 px-2.5 sm:px-4 flex items-center justify-between gap-2 border-b shadow-sm transition-colors shrink-0 overflow-hidden ${
           isDark
             ? "bg-[#050c18]/95 border-cyan-500/25 text-white"
             : "bg-white/95 border-slate-200 text-slate-800"
         }`}
       >
         {/* Left: System Title matching design.png */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border shadow-sm shrink-0 ${
               isDark
@@ -131,10 +131,10 @@ function DisplayLayout() {
           >
             <Factory className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </div>
-          <div className="leading-tight">
-            <div className="flex items-center gap-1.5">
+          <div className="leading-tight min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
               <h1
-                className={`text-xs sm:text-sm font-bold tracking-tight ${
+                className={`text-xs sm:text-sm font-bold tracking-tight truncate ${
                   isDark
                     ? "bg-gradient-to-r from-white via-cyan-100 to-cyan-300 text-transparent bg-clip-text"
                     : "text-slate-900"
@@ -144,7 +144,7 @@ function DisplayLayout() {
               </h1>
               {activePcbId && (
                 <span
-                  className={`hidden md:inline-block text-[9px] font-mono px-1.5 py-0.2 rounded-full border ${
+                  className={`hidden sm:inline-block text-[9px] font-mono px-1.5 py-0.2 rounded-full border shrink-0 ${
                     isDark
                       ? "bg-cyan-950/80 border-cyan-500/40 text-cyan-300"
                       : "bg-slate-100 border-slate-300 text-slate-700"
@@ -161,7 +161,7 @@ function DisplayLayout() {
         </div>
 
         {/* Right: Date/Clock & Status Badge matching design.png */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Thai Date & Live Digital Clock */}
           <div className="text-right font-mono leading-none">
             <div className="text-[9px] sm:text-[10px] text-slate-400 tracking-wider">
@@ -181,13 +181,13 @@ function DisplayLayout() {
             }`}
           >
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>ระบบทำงานปกติ</span>
+            <span className="hidden xs:inline">ระบบทำงานปกติ</span>
           </div>
 
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className={`touch-btn p-1.5 rounded-lg border transition-colors ${
+            className={`touch-btn p-1.5 rounded-lg border transition-colors shrink-0 ${
               isDark
                 ? "bg-slate-800/80 hover:bg-slate-700 border-slate-700 text-slate-300"
                 : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
@@ -207,7 +207,7 @@ function DisplayLayout() {
       <div className="relative z-10 flex-1 flex min-h-0 overflow-hidden">
         {/* Left Touch-Friendly Navigation Sidebar */}
         <aside
-          className={`w-14 sm:w-32 md:w-36 border-r flex flex-col justify-between py-2 shrink-0 transition-colors ${
+          className={`w-14 sm:w-28 md:w-32 lg:w-36 border-r flex flex-col justify-between py-2 shrink-0 transition-colors ${
             isDark
               ? "bg-[#040a14]/90 backdrop-blur-md border-cyan-500/20"
               : "bg-white/95 border-slate-200"
