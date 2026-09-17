@@ -6,10 +6,12 @@ import {
   DatabaseZap,
   Trash2,
   ArchiveRestore,
+  Printer,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import Delete from "../components/Delete.js";
+import ExportPdfModal from "./ExportPdfModal.js";
 
 const ResultPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -18,6 +20,13 @@ const ResultPage = () => {
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState([]);
+  const [selectedPcbForExport, setSelectedPcbForExport] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const handleOpenExportModal = (pcbId) => {
+    setSelectedPcbForExport(pcbId);
+    setIsExportModalOpen(true);
+  };
 
   const handleRequestDelete = (
     itemName = "Item",
@@ -238,26 +247,36 @@ const ResultPage = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 justify-center">
-                  <div className="flex justify-center">
+                <div className="mt-4 flex flex-col gap-2.5">
+                  <button
+                    onClick={() => handleOpenExportModal(result.pcb_id)}
+                    type="button"
+                    className="relative w-full h-12 border border-cyan-500/50 hover:border-cyan-400 bg-cyan-950/30 hover:bg-cyan-900/40 transition-all duration-300 group rounded-md overflow-hidden"
+                  >
+                    <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
+                      <Printer className="h-5 w-5 mr-2 text-cyan-400 group-hover:scale-110 transition-transform" />
+                      <span className="text-sm font-semibold text-cyan-300 transition-colors">
+                        ส่งออกผลลัพธ์เป็นเอกสาร PDF
+                      </span>
+                    </div>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() =>
                         navigate(`/factoryWorkflow/${result.pcb_id}`)
                       }
                       type="button"
-                      className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-green-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                      className="relative w-full h-11 border border-gray-700 hover:border-green-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 to-purple-500/0 group-hover:from-green-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                      <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                        <ArchiveRestore className="h-9 w-9 mr-3 text-green-500 group-hover:text-green-400" />
-                        <span className="text-sm text-gray-300 group-hover:text-green-300 transition-colors">
-                          เพิ่ม/แก้ไข ข้อมูล
+                      <div className="relative z-10 flex items-center justify-center h-full px-2 text-center">
+                        <ArchiveRestore className="h-4 w-4 mr-1.5 text-green-500 group-hover:text-green-400" />
+                        <span className="text-xs text-gray-300 group-hover:text-green-300 transition-colors">
+                          ดู/แก้ไข
                         </span>
                       </div>
                     </button>
-                  </div>
 
-                  <div className="flex justify-center">
                     <button
                       onClick={() =>
                         handleRequestDelete(
@@ -267,16 +286,12 @@ const ResultPage = () => {
                         )
                       }
                       type="button"
-                      className="relative  max-w-md w-full h-14 border border-gray-700 hover:border-red-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
+                      className="relative w-full h-11 border border-gray-700 hover:border-red-500/70 hover:bg-gray-800/50 transition-all duration-300 group rounded-md overflow-hidden"
                     >
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-500/0 to-purple-500/0 group-hover:from-red-500/5 group-hover:to-purple-500/5 transition-all duration-700" />
-                      <div className="relative z-10 flex items-center justify-center h-full px-4 text-center">
-                        <Trash2 className="h-9 w-9 mr-3 text-red-500 group-hover:text-red-400" />
-                        <span className="text-sm text-gray-300 group-hover:text-red-300 transition-colors">
-                          ลบข้อมูลผลการทดสอบ{" "}
-                          <span className="text-red-500">
-                            ครั้งที่ {result.pcb_id}
-                          </span>
+                      <div className="relative z-10 flex items-center justify-center h-full px-2 text-center">
+                        <Trash2 className="h-4 w-4 mr-1.5 text-red-500 group-hover:text-red-400" />
+                        <span className="text-xs text-gray-300 group-hover:text-red-300 transition-colors">
+                          ลบข้อมูล
                         </span>
                       </div>
                     </button>
@@ -335,6 +350,17 @@ const ResultPage = () => {
         itemName={itemToDelete?.itemName || "Error"}
         confirmText={itemToDelete?.confirmText || "Error"}
       />
+
+      {selectedPcbForExport && (
+        <ExportPdfModal
+          isOpen={isExportModalOpen}
+          onClose={() => {
+            setIsExportModalOpen(false);
+            setSelectedPcbForExport(null);
+          }}
+          pcbId={selectedPcbForExport}
+        />
+      )}
     </div>
   );
 };

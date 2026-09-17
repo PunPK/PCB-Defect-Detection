@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowRight, IterationCcw } from "lucide-react";
+import { ArrowDown, ArrowRight, IterationCcw, Printer } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import "../page/HomePage.css";
+import "./exportPdf.css";
 
 export default function DetailResult() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function DetailResult() {
   function ImageCard({ title, src, alt, className = "" }) {
     return (
       <div
-        className={`bg-gray-800 rounded-xl overflow-hidden border-b-4 ${className} transition-all hover:scale-[1.02] hover:shadow-lg`}
+        className={`bg-gray-800 rounded-xl overflow-hidden border-b-4 ${className} transition-all hover:scale-[1.02] hover:shadow-lg print-avoid-break`}
       >
         <div className="p-4 bg-gradient-to-r from-gray-800 to-gray-700">
           <h3 className="text-lg font-medium text-gray-200 text-center truncate">
@@ -136,24 +137,27 @@ export default function DetailResult() {
                 </span>
               </p>
             </div>
-            <div className="flex flex-col w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/20"
+              >
+                <Printer className="w-5 h-5 mr-2" />
+                <p className="font-semibold text-base leading-relaxed">
+                  พิมพ์ / บันทึกเป็น PDF
+                </p>
+              </button>
+
               <button
                 onClick={() => {
                   navigate(-1);
                 }}
-                className="flex items-center justify-center px-6 py-3 lg:px-14 lg:py-8 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
+                className="flex items-center justify-center px-6 py-3 bg-red-600 hover:bg-red-500 rounded-lg text-white transition-all duration-300"
               >
-                <p className="font-light text-lg sm:text-2xl leading-relaxed">
+                <p className="font-light text-base leading-relaxed">
                   ย้อนกลับ
                 </p>
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 ml-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <IterationCcw />
-                </svg>
+                <IterationCcw className="w-4 h-4 ml-2" />
               </button>
             </div>
           </div>

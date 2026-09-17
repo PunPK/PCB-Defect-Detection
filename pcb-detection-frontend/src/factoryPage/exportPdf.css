@@ -1,0 +1,93 @@
+/* CSS for PCB Inspection PDF Export and Printing */
+
+/* Screen preview styles */
+.pdf-preview-page {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  background-color: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  margin: 0 auto;
+  border-radius: 6px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* On screen: hide the portal printable container completely */
+#printable-pdf-document {
+  display: none;
+}
+
+/* Base print media rules */
+@media print {
+  /* Standard page layout */
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 12pt;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 12mm 10mm;
+  }
+
+  /* When printing from modal, hide the app root (#root) */
+  body.is-printing-pdf #root {
+    display: none !important;
+  }
+
+  /* When printing from modal, show the printable document directly under body */
+  body.is-printing-pdf #printable-pdf-document {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    visibility: visible !important;
+    z-index: 999999 !important;
+  }
+
+  body.is-printing-pdf #printable-pdf-document * {
+    visibility: visible !important;
+  }
+
+  /* Page Break Controls */
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .print-page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Image preservation */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .no-print,
+  .print-hidden,
+  button,
+  nav {
+    display: none !important;
+  }
+}

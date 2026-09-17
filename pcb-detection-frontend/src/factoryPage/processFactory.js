@@ -10,11 +10,15 @@ import {
   Layers,
   ArchiveX,
   Trash2,
+  Printer,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router";
 import "../page/uploadPage.css";
 import Delete from "../components/Delete.js";
+import ExportPdfModal from "./ExportPdfModal.js";
 
 import { Button } from "../page/uploadPCBChecked.js";
 export default function ProcessFactoryWorkflow() {
@@ -37,6 +41,28 @@ export default function ProcessFactoryWorkflow() {
   const [resultData, setResultData] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState([]);
+  const [isExportPdfOpen, setIsExportPdfOpen] = useState(false);
+  const [selectedResultIds, setSelectedResultIds] = useState([]);
+
+  const handleToggleSelectResult = (resultId, e) => {
+    if (e) e.stopPropagation();
+    setSelectedResultIds((prev) =>
+      prev.includes(resultId) ? prev.filter((id) => id !== resultId) : [...prev, resultId]
+    );
+  };
+
+  const handleSelectAllResults = () => {
+    if (!resultData?.result_List) return;
+    setSelectedResultIds(resultData.result_List.map((r) => r.results_id));
+  };
+
+  const handleClearSelectedResults = () => {
+    setSelectedResultIds([]);
+  };
+
+  const handleOpenExportPdf = () => {
+    setIsExportPdfOpen(true);
+  };
 
   const handleRequestDelete = (
     itemName = "Item",
@@ -505,6 +531,46 @@ export default function ProcessFactoryWorkflow() {
                 </div>
               </div>
 
+              {/* Action Bar for Export and Selection */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-900/60 p-4 rounded-xl border border-cyan-500/20 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllResults}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs font-medium text-gray-300 transition-colors"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5 text-cyan-400" />
+                      เลือกทั้งหมด
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearSelectedResults}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-xs font-medium text-gray-400 transition-colors"
+                    >
+                      <Square className="w-3.5 h-3.5" />
+                      ยกเลิกการเลือก
+                    </button>
+                  </div>
+                  {selectedResultIds.length > 0 && (
+                    <span className="text-xs text-cyan-300 bg-cyan-950/60 px-2.5 py-1 rounded-full border border-cyan-800/60">
+                      เลือกแล้ว {selectedResultIds.length} รายการ
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenExportPdf}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold rounded-lg text-sm shadow-lg shadow-cyan-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Printer className="w-4 h-4 text-gray-950" />
+                  <span>
+                    ส่งออกเอกสาร PDF {selectedResultIds.length > 0 ? `(${selectedResultIds.length})` : ""}
+                  </span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {resultData?.result_List.map((result, index) => (
                   <motion.div
@@ -512,12 +578,39 @@ export default function ProcessFactoryWorkflow() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-gray-800/50 rounded-xl p-4 border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 group"
+                    className={`bg-gray-800/50 rounded-xl p-4 border transition-all duration-300 group relative ${
+                      selectedResultIds.includes(result.results_id)
+                        ? "border-cyan-400 shadow-[0_0_15px_rgba(0,200,255,0.25)] bg-cyan-950/20"
+                        : "border-gray-700 hover:border-cyan-500/50"
+                    }`}
                   >
                     <div className="relative mb-3">
                       <div className="absolute -top-6 -left-6 z-10 bg-cyan-500 text-gray-900 text-xl font-bold rounded-full w-12 h-12 flex items-center justify-center shadow-lg">
                         {index + 1}
                       </div>
+
+                      {/* Select checkbox button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleSelectResult(result.results_id, e)}
+                        className={`absolute top-2 left-8 z-10 p-1.5 rounded-md border text-xs font-semibold flex items-center gap-1 transition-all ${
+                          selectedResultIds.includes(result.results_id)
+                            ? "bg-cyan-500 text-gray-950 border-cyan-400 shadow"
+                            : "bg-gray-900/90 text-gray-400 border-gray-700 hover:border-cyan-500 hover:text-white"
+                        }`}
+                        title={
+                          selectedResultIds.includes(result.results_id)
+                            ? "คลิกเพื่อยกเลิกเลือก"
+                            : "คลิกเพื่อเลือกส่งออก PDF"
+                        }
+                      >
+                        {selectedResultIds.includes(result.results_id) ? (
+                          <CheckSquare className="w-4 h-4" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                        <span className="text-[11px]">เลือก</span>
+                      </button>
                       <button
                         className="absolute top-2 right-2 z-10 bg-red-700/90 hover:bg-red-800 focus:ring-4 focus:ring-red-500/50 text-white font-semibold px-3 py-1.5 rounded-md shadow-md flex items-center gap-1.5 text-sm transition-opacity duration-300 opacity-0 group-hover:opacity-100"
                         onClick={() => {
@@ -645,6 +738,15 @@ export default function ProcessFactoryWorkflow() {
           </div>
         </div>
       )}
+
+      {/* Export to PDF Modal */}
+      <ExportPdfModal
+        isOpen={isExportPdfOpen}
+        onClose={() => setIsExportPdfOpen(false)}
+        pcbId={pcb_id}
+        initialResultsList={resultData?.result_List}
+        preSelectedResultIds={selectedResultIds}
+      />
     </div>
   );
 }

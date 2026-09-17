@@ -387,6 +387,19 @@ def get_result(db: Session, result_id: int):
     }
 
 
+def get_results_batch(db: Session, result_ids: list):
+    results = []
+    for rid in result_ids:
+        try:
+            r = get_result(db, int(rid))
+            if r:
+                results.append(r)
+        except Exception as e:
+            print(f"Error fetching result {rid}: {e}")
+    return results
+
+
+
 def get_all_pcb_results(db: Session):
 
     pcb_data = db.query(model.PCB).all()
