@@ -1,0 +1,361 @@
+"""
+pcb_ai.py — โมดูล AI สำหรับตรวจจับ PCB, สกัดลายเส้นทองแดง (TinyUNet) และวิเคราะห์ตำหนิ (pcb_compare + RandomForest)
+"""
+
+import os
+import sys
+import glob
+import time
+import logging
+from pathlib import Path
+from typing import Optional, Tuple, Dict, Any, List
+
+import cv2
+import numpy as np
+import torch
+import torch.nn as nn
+
+# Add project root to sys.path to easily import pcb_compare
+ROOT_DIR = Path(__file__).resolve().parents[3]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+import pcb_compare as pc
+
+logger = logging.getLogger(__name__)
+
+# Model Paths
+MODEL_UNET_PATH = os.getenv("COPPER_UNET_PATH", str(ROOT_DIR / "models" / "copper_unet.pt"))
+if not os.path.exists(MODEL_UNET_PATH):
+    MODEL_UNET_PATH = str(ROOT_DIR / "train_ai_pcb" / "models" / "copper_unet.pt")
+
+MODEL_RF_PATH = os.getenv("DEFECT_RF_PATH", str(ROOT_DIR / "models" / "defect_rf.joblib"))
+if not os.path.exists(MODEL_RF_PATH):
+    MODEL_RF_PATH = str(ROOT_DIR / "train_ai_compare" / "models" / "defect_rf.joblib")
+
+DESIGN_DIR = str(ROOT_DIR / "designs")
+
+
+# ==============================================================================
+# TinyUNet Architecture (ตรงตาม train_unet.ipynb)
+# ==============================================================================
+class ConvBNReLU(nn.Sequential):
+    def __init__(self, cin: int, cout: int):
+        super().__init__(
+            nn.Conv2d(cin, cout, 3, padding=1, bias=False),
+            nn.BatchNorm2d(cout),
+            nn.ReLU(inplace=True),
+        )
+
+
+class DoubleConv(nn.Sequential):
+    def __init__(self, cin: int, cout: int):
+        super().__init__(
+            ConvBNReLU(cin, cout),
+            ConvBNReLU(cout, cout),
+        )
+
+
+class TinyUNet(nn.Module):
+    def __init__(self, in_channels: int = 3, out_channels: int = 1, base: int = 16, depth: int = 4):
+        super().__init__()
+        self.base = base
+        self.depth = depth
+        ch = [base * (2 ** i) for i in range(depth + 1)]
+
+        self.inc = DoubleConv(in_channels, ch[0])
+        self.pool = nn.MaxPool2d(2)
+        self.downs = nn.ModuleList([DoubleConv(ch[i], ch[i + 1]) for i in range(depth)])
+        self.ups = nn.ModuleList([
+            nn.ConvTranspose2d(ch[i + 1], ch[i], 2, stride=2)
+            for i in reversed(range(depth))
+        ])
+        self.decs = nn.ModuleList([
+            DoubleConv(ch[i] * 2, ch[i])
+            for i in reversed(range(depth))
+        ])
+        self.drop = nn.Dropout2d(0.1)
+        self.head = nn.Conv2d(ch[0], out_channels, 1)
+
+    def forward(self, x):
+        skips = [self.inc(x)]
+        for d in self.downs:
+            skips.append(d(self.pool(skips[-1])))
+        x = self.drop(skips.pop())
+        for up, dec in zip(self.ups, self.decs):
+            x = dec(torch.cat([up(x), skips.pop()], dim=1))
+        return self.head(x)
+
+
+# ==============================================================================
+# ตรวจจับแผ่น PCB และดึงขอบเขตบอร์ด (Board Extraction & Perspective Transform)
+# ==============================================================================
+def extract_pcb_board(frame: np.ndarray, target_size: Tuple[int, int] = (256, 256), min_area_ratio: float = 0.03):
+    """
+    ตรวจจับขอบเขตบอร์ด PCB จากภาพกล้อง ตัดพื้นหลังออก และทำ Perspective Warp
+    คืนค่า: (warped_pcb, ordered_quad, board_mask_orig)
+    """
+    h, w = frame.shape[:2]
+    b, g, r = cv2.split(frame)
+    diff_rb = r.astype(int) - b.astype(int)
+    diff_gb = g.astype(int) - b.astype(int)
+    hsv = cv2.cvtColor(cv2.GaussianBlur(frame, (5, 5), 0), cv2.COLOR_BGR2HSV)
+    H, S, V = cv2.split(hsv)
+
+    # 1. ตรวจจับเนื้อบอร์ด (รองรับทั้งไฟส่องทะลุ Backlit และไฟส่องตรง Frontlit)
+    is_sub_backlit = (H >= 17) & (H <= 43) & (S >= 35) & (V >= 70) & (diff_gb > 15) & (diff_rb > 20)
+    is_frontlit = ((H <= 45) | (H >= 165)) & (S >= 35) & (V >= 50) & (diff_rb > 20)
+    board_seed = (is_sub_backlit | is_frontlit).astype(np.uint8) * 255
+
+    board_seed = cv2.morphologyEx(board_seed, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+    k = max(21, int(round(min(h, w) * 0.08))) | 1
+    board_closed = cv2.morphologyEx(board_seed, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))
+
+    cnts, _ = cv2.findContours(board_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Fallback หากไม่พบลักษณะสี substrate ด้านบน ลองใช้ copper/general contour
+    if not cnts:
+        lower_copper = np.array([5, 30, 20])
+        upper_copper = np.array([45, 255, 255])
+        c_mask = cv2.inRange(hsv, lower_copper, upper_copper)
+        c_mask = cv2.morphologyEx(c_mask, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
+        cnts, _ = cv2.findContours(c_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if not cnts:
+        return None, None, None
+
+    largest = max(cnts, key=cv2.contourArea)
+    area = cv2.contourArea(largest)
+    if area < min_area_ratio * h * w:
+        return None, None, None
+
+    hull = cv2.convexHull(largest)
+    rect = cv2.minAreaRect(hull)
+    peri = cv2.arcLength(hull, True)
+    approx = cv2.approxPolyDP(hull, 0.03 * peri, True)
+
+    if len(approx) == 4:
+        quad = approx.reshape(4, 2).astype(np.float32)
+    else:
+        quad = cv2.boxPoints(rect).astype(np.float32)
+
+    s = quad.sum(axis=1)
+    diff = np.diff(quad, axis=1)
+    ordered = np.zeros((4, 2), dtype=np.float32)
+    ordered[0] = quad[np.argmin(s)]
+    ordered[2] = quad[np.argmax(s)]
+    ordered[1] = quad[np.argmin(diff)]
+    ordered[3] = quad[np.argmax(diff)]
+
+    tw, th = target_size
+    dst = np.array([[0, 0], [tw - 1, 0], [tw - 1, th - 1], [0, th - 1]], dtype=np.float32)
+    M = cv2.getPerspectiveTransform(ordered, dst)
+    warped = cv2.warpPerspective(frame, M, (tw, th), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+
+    board_mask_orig = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillPoly(board_mask_orig, [ordered.astype(np.int32)], 255)
+
+    return warped, ordered, board_mask_orig
+
+
+# ==============================================================================
+# ตัวสกัดลายเส้นทองแดง (Copper Trace Extractor)
+# ==============================================================================
+class CopperTraceExtractor:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self, model_path: str = MODEL_UNET_PATH):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = None
+
+        if os.path.exists(model_path):
+            try:
+                ckpt = torch.load(model_path, map_location=self.device)
+                base = ckpt.get("base", 16) if isinstance(ckpt, dict) else 16
+                self.model = TinyUNet(base=base).to(self.device)
+                state_dict = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+                self.model.load_state_dict(state_dict)
+                self.model.eval()
+                logger.info(f"✅ โหลดโมเดล TinyUNet สำเร็จจาก: {model_path} บน {self.device}")
+                print(f"[CopperTraceExtractor] โหลดโมเดล TinyUNet สำเร็จ ({self.device})")
+            except Exception as e:
+                logger.error(f"❌ โหลดโมเดล TinyUNet ไม่สำเร็จ: {e}")
+                self.model = None
+        else:
+            logger.warning(f"⚠️ ไม่พบไฟล์โมเดล TinyUNet ที่: {model_path}")
+
+    def predict(self, img_bgr: np.ndarray, conf_thresh: float = 0.5) -> np.ndarray:
+        """
+        ทำนาย Mask ลายทองแดง (255=ทองแดง, 0=พื้นหลัง)
+        """
+        orig_h, orig_w = img_bgr.shape[:2]
+
+        if self.model is None:
+            # Fallback หากไม่มีโมเดล: ใช้ Color Segmentation พื้นฐาน
+            hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+            mask = cv2.inRange(hsv, np.array([5, 30, 20]), np.array([45, 255, 255]))
+            return mask
+
+        # Preprocess
+        resized = cv2.resize(img_bgr, (256, 256))
+        rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+        norm = (rgb - 0.5) / 0.25
+        inp = torch.from_numpy(np.ascontiguousarray(norm.transpose(2, 0, 1)))[None].to(self.device)
+
+        with torch.no_grad():
+            logits = self.model(inp)
+            prob = torch.sigmoid(logits)[0, 0].cpu().numpy()
+
+        mask_small = (prob >= conf_thresh).astype(np.uint8) * 255
+        if (orig_w, orig_h) != (256, 256):
+            return cv2.resize(mask_small, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
+        return mask_small
+
+    def predict_overlay(
+        self, img_bgr: np.ndarray, conf_thresh: float = 0.5, color=(0, 255, 0), alpha: float = 0.5
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        ส่งคืน (mask, blended_overlay) สำหรับแสดงผล Real-Time
+        """
+        mask = self.predict(img_bgr, conf_thresh=conf_thresh)
+        overlay = img_bgr.copy()
+        overlay[mask > 127] = color
+        blended = cv2.addWeighted(img_bgr, 1.0 - alpha, overlay, alpha, 0)
+        return mask, blended
+
+
+# ==============================================================================
+# ตัววิเคราะห์ตำหนิ (PCB Defect Analyzer)
+# ==============================================================================
+class PCBDefectAnalyzer:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def __init__(self, model_path: str = MODEL_RF_PATH, designs_dir: str = DESIGN_DIR):
+        self.clf = None
+        if os.path.exists(model_path):
+            try:
+                self.clf = pc.DefectClassifier.load(model_path)
+                logger.info(f"✅ โหลดโมเดล DefectClassifier สำเร็จจาก {model_path}")
+                print(f"[PCBDefectAnalyzer] โหลดโมเดล DefectClassifier สำเร็จ (Classes: {self.clf.classes})")
+            except Exception as e:
+                logger.warning(f"⚠️ โหลด {model_path} ไม่สำเร็จ: {e}. ใช้ Rule-based classifier")
+                self.clf = pc.DefectClassifier()
+        else:
+            logger.warning(f"⚠️ ไม่พบโมเดล {model_path}. ใช้ Rule-based classifier")
+            self.clf = pc.DefectClassifier()
+
+        self.designs_dir = designs_dir
+        self.designs_cache = {}
+        self._load_reference_designs()
+
+    def _load_reference_designs(self):
+        """โหลดไฟล์ต้นแบบ CAD / Gerber จาก designs/ เข้า Cache"""
+        if os.path.exists(self.designs_dir):
+            for p in sorted(glob.glob(os.path.join(self.designs_dir, "*.png"))):
+                name = os.path.splitext(os.path.basename(p))[0]
+                try:
+                    self.designs_cache[name] = pc.load_design(p, copper="auto")
+                except Exception as e:
+                    logger.debug(f"Could not load design {p}: {e}")
+            print(f"[PCBDefectAnalyzer] โหลดต้นแบบอ้างอิง {len(self.designs_cache)} แบบ: {list(self.designs_cache.keys())}")
+
+    def analyze(
+        self,
+        copper_mask: np.ndarray,
+        template_bytes: Optional[bytes] = None,
+        photo_bgr: Optional[np.ndarray] = None,
+        allow_mirror: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        เปรียบเทียบลายทองแดง copper_mask กับไฟล์ต้นแบบ
+        template_bytes: ข้อมูลรูปภาพต้นแบบของ PCB ที่บันทึกไว้ในระบบ (ถ้ามี)
+        photo_bgr: ภาพถ่ายจริงของแผ่นบอร์ด สำหรับใช้วาดกรอบและ overlay
+        """
+        t0 = time.time()
+        design_to_compare = None
+
+        # 1. เตรียมต้นแบบที่ต้องการเปรียบเทียบ
+        if template_bytes:
+            try:
+                np_arr = np.frombuffer(template_bytes, np.uint8)
+                tpl_img = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+                if tpl_img is not None:
+                    # ตรวจสอบว่าภาพต้นแบบเป็น CAD ขาวดำ หรือเป็นภาพถ่ายบอร์ด
+                    if len(tpl_img.shape) == 3 and np.std(tpl_img) > 40:
+                        # เป็นภาพถ่ายบอร์ด -> สกัดลายทองแดงด้วย TinyUNet ก่อนทำเป็นต้นแบบ
+                        extractor = CopperTraceExtractor.get_instance()
+                        tpl_mask = extractor.predict(tpl_img)
+                        design_to_compare = pc.load_design(tpl_mask, copper="white")
+                    else:
+                        design_to_compare = pc.load_design(tpl_img, copper="auto")
+            except Exception as e:
+                logger.error(f"Error parsing user template: {e}")
+
+        # ถ้าไม่มี template เฉพาะ หรือ parse ไม่สำเร็จ ให้ใช้ชุด reference designs
+        if design_to_compare is None:
+            if self.designs_cache:
+                design_to_compare = self.designs_cache
+            else:
+                raise ValueError("ไม่พบไฟล์ต้นแบบ (Design Template) สำหรับเปรียบเทียบ")
+
+        # 2. รันฟังก์ชัน inspect จาก pcb_compare
+        align_kw = dict(allow_mirror=allow_mirror)
+        res, ctx = pc.inspect(
+            copper_mask,
+            design_to_compare,
+            classifier=self.clf,
+            photo=photo_bgr,
+            align_kw=align_kw,
+            copper="auto",
+        )
+
+        # 3. สร้างภาพ Visualizations
+        vis_on_board = pc.draw_on_mask(res, ctx, show_normal=False)
+        vis_canon = pc.draw_canon(res, ctx, show_normal=False)
+
+        # 4. คำนวณเปอร์เซ็นต์ความถูกต้อง (Quality / Accuracy %)
+        align_score = float(res["align"]["score"])
+        counts = res["counts"]
+        n_open = counts.get("open", 0)
+        n_short = counts.get("short", 0)
+        n_minor = counts.get("minor", 0)
+        verdict = res["verdict"]
+
+        if verdict == "PASS":
+            accuracy = round(min(100.0, 95.0 + align_score * 5.0), 2)
+        elif verdict == "WARN":
+            accuracy = round(max(80.0, 90.0 - n_minor * 2.0), 2)
+        elif verdict == "FAIL":
+            deduction = n_open * 5.0 + n_short * 5.0 + n_minor * 1.0
+            accuracy = round(max(10.0, min(79.0, 75.0 - deduction)), 2)
+        else:  # NO_MATCH
+            accuracy = round(max(0.0, align_score * 50.0), 2)
+
+        description = f"Verdict: {verdict} | Open: {n_open}, Short: {n_short}, Minor: {n_minor} (Align: {align_score:.2f})"
+
+        return {
+            "verdict": verdict,
+            "accuracy": accuracy,
+            "description": description,
+            "counts": counts,
+            "defects": res.get("defects", []),
+            "matched_design": res.get("matched_design", "Template"),
+            "align_score": align_score,
+            "time_s": round(time.time() - t0, 3),
+            "vis_on_board": vis_on_board,
+            "vis_canon": vis_canon,
+            "res": res,
+            "ctx": ctx,
+        }

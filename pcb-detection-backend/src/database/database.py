@@ -113,10 +113,13 @@ async def create_pcb_result(
 
     image_ids = {}
     for key in ["template", "defective", "aligned", "diff", "cleaned", "result"]:
-        image_info = images_data[key]
-        image_ids[key] = add_image_and_get_id(
-            db, image_info["filepath"], image_info["filename"]
-        )
+        image_info = images_data.get(key)
+        if image_info:
+            image_ids[key] = add_image_and_get_id(
+                db, image_info["filepath"], image_info["filename"]
+            )
+        else:
+            image_ids[key] = None
 
     db_result = model.Result(
         accuracy=float(prepare_result["accuracy"]),
@@ -247,18 +250,19 @@ def get_pcb_result(db: Session, pcb_id: int):
 
     for key in imageList.keys():
         image_id = getattr(resultData, key, None)
-        image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
-        if image and os.path.exists(image.filepath):
-            with open(image.filepath, "rb") as f:
-                imageList[key] = {
-                    "image_id": image.image_id,
-                    "filename": image.filename,
-                    "filepath": image.filepath,
-                    "uploaded_at": (
-                        image.uploaded_at.isoformat() if image.uploaded_at else None
-                    ),
-                    "image_data": base64.b64encode(f.read()).decode("utf-8"),
-                }
+        if image_id:
+            image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+            if image and os.path.exists(image.filepath):
+                with open(image.filepath, "rb") as f:
+                    imageList[key] = {
+                        "image_id": image.image_id,
+                        "filename": image.filename,
+                        "filepath": image.filepath,
+                        "uploaded_at": (
+                            image.uploaded_at.isoformat() if image.uploaded_at else None
+                        ),
+                        "image_data": base64.b64encode(f.read()).decode("utf-8"),
+                    }
 
     return {
         "results_id": resultData.results_id,
@@ -365,18 +369,19 @@ def get_result(db: Session, result_id: int):
 
     for key in imageList.keys():
         image_id = getattr(resultData, key, None)
-        image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
-        if image and os.path.exists(image.filepath):
-            with open(image.filepath, "rb") as f:
-                imageList[key] = {
-                    "image_id": image.image_id,
-                    "filename": image.filename,
-                    "filepath": image.filepath,
-                    "uploaded_at": (
-                        image.uploaded_at.isoformat() if image.uploaded_at else None
-                    ),
-                    "image_data": base64.b64encode(f.read()).decode("utf-8"),
-                }
+        if image_id:
+            image = db.query(model.ImagePCB).filter_by(image_id=image_id).first()
+            if image and os.path.exists(image.filepath):
+                with open(image.filepath, "rb") as f:
+                    imageList[key] = {
+                        "image_id": image.image_id,
+                        "filename": image.filename,
+                        "filepath": image.filepath,
+                        "uploaded_at": (
+                            image.uploaded_at.isoformat() if image.uploaded_at else None
+                        ),
+                        "image_data": base64.b64encode(f.read()).decode("utf-8"),
+                    }
 
     return {
         "results_id": resultData.results_id,

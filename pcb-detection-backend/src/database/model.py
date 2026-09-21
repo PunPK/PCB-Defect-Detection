@@ -12,8 +12,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
+import os
+
+DB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "database.db"))
+os.makedirs(DB_DIR, exist_ok=True)
+DB_PATH = os.path.join(DB_DIR, "images.db")
+
 engine = create_engine(
-    "sqlite:///database.db/images.db", echo=True
+    f"sqlite:///{DB_PATH}", echo=False
 )
 Base = declarative_base()
 
