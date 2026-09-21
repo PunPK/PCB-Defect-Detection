@@ -3,6 +3,7 @@ const withMT = require("@material-tailwind/react/utils/withMT");
 const colors = require('tailwindcss/colors')
 
 module.exports = withMT({
+  darkMode: "class",
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
     "./src/**/**/*.{js,jsx,ts,tsx}"
@@ -20,6 +21,9 @@ module.exports = withMT({
         stone: colors.stone,
         violet: colors.violet,
         fuchsia: colors.fuchsia,
+        // Factory UI palette (full Tailwind scales, unaffected by Material Tailwind overrides)
+        brand: colors.blue,
+        warn: colors.amber,
         teal: {
           100: "#d3eaeb",
           200: "#a7d5d6",
