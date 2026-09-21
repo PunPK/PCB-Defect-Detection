@@ -1,13 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 const withMT = require("@material-tailwind/react/utils/withMT");
-const colors = require('tailwindcss/colors')
+const colors = require("tailwindcss/colors");
 
 module.exports = withMT({
   darkMode: "class",
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./src/**/**/*.{js,jsx,ts,tsx}"
-
+    "./src/**/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
@@ -21,6 +20,7 @@ module.exports = withMT({
         stone: colors.stone,
         violet: colors.violet,
         fuchsia: colors.fuchsia,
+        cyan: colors.cyan,
         // Factory UI palette (full Tailwind scales, unaffected by Material Tailwind overrides)
         brand: colors.blue,
         warn: colors.amber,
@@ -33,7 +33,7 @@ module.exports = withMT({
           600: "#1b797a",
           700: "#145b5c",
           800: "#0e3c3d",
-          900: "#071e1f"
+          900: "#071e1f",
         },
         indigo: {
           100: "#d9e1ec",
@@ -44,10 +44,10 @@ module.exports = withMT({
           600: "#33527e",
           700: "#263e5f",
           800: "#1a293f",
-          900: "#0d1520"
+          900: "#0d1520",
         },
       },
     },
   },
-  plugins: [require('tailwind-scrollbar-hide')],
+  plugins: [require("tailwind-scrollbar-hide")],
 });

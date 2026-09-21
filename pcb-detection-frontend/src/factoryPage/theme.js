@@ -2,11 +2,18 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 
 const STORAGE_KEY = "factory-theme";
-const ThemeContext = createContext({ theme: "dark", toggleTheme: () => {} });
+const ThemeContext = createContext({
+  theme: "dark",
+  isDark: true,
+  setTheme: () => {},
+  toggleTheme: () => {},
+  effective: "dark",
+});
 
 function getInitialTheme() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved =
+      localStorage.getItem(STORAGE_KEY) || localStorage.getItem("factory_theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch (e) {
     // storage unavailable – fall through to system preference
@@ -21,8 +28,9 @@ export function FactoryThemeProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, theme);
+      localStorage.setItem("factory_theme", theme);
     } catch (e) {
-      // ignore
+      // ignore storage errors
     }
   }, [theme]);
 
@@ -41,11 +49,24 @@ export function FactoryThemeProvider({ children }) {
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const effective = isPrinting ? "light" : theme;
+  const isDark = effective === "dark";
+
+  // Keep document.documentElement (.dark/.light class) synchronized for portals, modals, and full-page styling
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    } else {
+      root.classList.add("light");
+      root.classList.remove("dark");
+    }
+  }, [isDark]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, isDark, effective }}>
       <div
-        className={effective === "dark" ? "dark" : ""}
+        className={isDark ? "dark" : ""}
         style={{ colorScheme: effective }}
       >
         <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
