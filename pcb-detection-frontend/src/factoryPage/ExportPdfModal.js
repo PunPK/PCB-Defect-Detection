@@ -56,8 +56,6 @@ function PrintableReportContent({ items, pcbId, totalCount, avgAccuracy }) {
         const templateData = item?.imageList?.template_image?.image_data;
         const defectiveData = item?.imageList?.defective_image?.image_data;
         const alignedData = item?.imageList?.aligned_image?.image_data;
-        const diffData = item?.imageList?.diff_image?.image_data;
-        const cleanedData = item?.imageList?.cleaned_image?.image_data;
         const resultData =
           item?.imageList?.result_image?.image_data || item?.imageList?.image_data;
 
@@ -138,20 +136,20 @@ function PrintableReportContent({ items, pcbId, totalCount, avgAccuracy }) {
 
             {/* Pipeline Steps 3, 4, 5, 6 */}
             <div className="space-y-4 max-w-md mx-auto">
-              {/* 3. Aligned */}
+              {/* 1. Extracted Copper Trace */}
               <div className="print-avoid-break">
                 <div className="flex justify-center mb-1">
                   <ArrowDown className="w-5 h-5 text-gray-400" />
                 </div>
-                <div className="border border-red-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-red-600">
+                <div className="border border-cyan-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-cyan-600">
                   <div className="p-2 text-center bg-gray-100 text-xs font-semibold text-gray-700">
-                    รูปภาพที่ได้จากการจัดรูปภาพทั้ง 2 รูป ให้อยู่ในตำแหน่งเดียวกัน
+                    ขั้นตอนที่ 1 : ขั้นตอนการดึงลายทองแดง (Copper Trace Extraction)
                   </div>
                   <div className="p-2 h-44 flex items-center justify-center bg-white">
                     {alignedData ? (
                       <img
                         src={`data:image/jpeg;base64,${alignedData}`}
-                        alt="Aligned PCB"
+                        alt="Extracted Copper Trace"
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : (
@@ -161,66 +159,20 @@ function PrintableReportContent({ items, pcbId, totalCount, avgAccuracy }) {
                 </div>
               </div>
 
-              {/* 4. Diff */}
+              {/* 2. Defect Analysis Result */}
               <div className="print-avoid-break">
                 <div className="flex justify-center mb-1">
                   <ArrowDown className="w-5 h-5 text-gray-400" />
                 </div>
-                <div className="border border-red-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-red-600">
+                <div className="border border-rose-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-rose-600">
                   <div className="p-2 text-center bg-gray-100 text-xs font-semibold text-gray-700">
-                    ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพ
-                  </div>
-                  <div className="p-2 h-44 flex items-center justify-center bg-white">
-                    {diffData ? (
-                      <img
-                        src={`data:image/jpeg;base64,${diffData}`}
-                        alt="Diff PCB"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-xs text-gray-400">กำลังเตรียมรูปภาพ...</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 5. Cleaned */}
-              <div className="print-avoid-break">
-                <div className="flex justify-center mb-1">
-                  <ArrowDown className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="border border-red-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-red-600">
-                  <div className="p-2 text-center bg-gray-100 text-xs font-semibold text-gray-700">
-                    แยกจุดที่ตรวจจับจุดที่แตกต่างกันของทั้ง 2 รูปภาพเจอ
-                  </div>
-                  <div className="p-2 h-44 flex items-center justify-center bg-white">
-                    {cleanedData ? (
-                      <img
-                        src={`data:image/jpeg;base64,${cleanedData}`}
-                        alt="Cleaned PCB"
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    ) : (
-                      <div className="text-xs text-gray-400">กำลังเตรียมรูปภาพ...</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 6. Result */}
-              <div className="print-avoid-break">
-                <div className="flex justify-center mb-1">
-                  <ArrowDown className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="border border-red-300 rounded-lg overflow-hidden bg-gray-50 border-b-4 border-b-red-600">
-                  <div className="p-2 text-center bg-gray-100 text-xs font-semibold text-gray-700">
-                    ผลลัพธ์ของการตรวจจับจุดแตกต่าง
+                    ขั้นตอนที่ 2 : ผลลัพธ์การวิเคราะห์ลาย (Defect Analysis Result)
                   </div>
                   <div className="p-2 h-44 flex items-center justify-center bg-white">
                     {resultData ? (
                       <img
                         src={`data:image/jpeg;base64,${resultData}`}
-                        alt="Result PCB"
+                        alt="Defect Analysis Result"
                         className="max-h-full max-w-full object-contain"
                       />
                     ) : (
