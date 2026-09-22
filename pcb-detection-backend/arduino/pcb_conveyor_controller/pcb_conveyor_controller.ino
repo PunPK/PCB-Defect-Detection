@@ -48,7 +48,7 @@ bool isBeltRunning = false;
 // ระบบข้ามการตรวจจับชั่วคราว
 bool ignoreSensor = false; 
 unsigned long ignoreTimer = 0;
-const unsigned long IGNORE_DURATION = 2000; 
+const unsigned long IGNORE_DURATION = 1500; 
 
 // ประกาศฟังก์ชันล่วงหน้า
 void stopBelt();
@@ -57,6 +57,7 @@ void processCommand(String cmd);
 
 void setup() {
   Serial.begin(115200);
+  Serial.setTimeout(50); // ป้องกันไม่ให้ Serial.readStringUntil ค้างบล็อกการทำงาน
 
   // เริ่มการทำงานจอ LCD
   lcd.begin();
@@ -67,7 +68,7 @@ void setup() {
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
   pinMode(EN1, OUTPUT);
-  stopBelt(); // ปิดสายพาน และ relay 13 ตั้งแต่เริ่มต้น
+  stopBelt(); // เริ่มต้นด้วยการหยุดสายพาน
 
   // ตั้งค่าขา Relay ไฟ Pilot Lamp
   pinMode(relayGreen, OUTPUT);
@@ -99,19 +100,19 @@ void loop() {
     }
   }
 
-  // 2. ตรวจสอบการชนจาก Sensor E18-D80NK
+  // 2. ตรวจสอบการชนจาก Sensor E18-D80NK (เมื่อสายพานกำลังทำงาน)
   if (isBeltRunning && !ignoreSensor) {
     int sensorState = digitalRead(irSensorPin);
     
     if (sensorState == LOW) {
-      stopBelt(); // หยุดสายพานและปิด relay 13
-      Serial.println("SENSOR_DETECTED");
+      stopBelt(); // 🛑 หยุดสายพานและเบรกทันที
+      Serial.println("SENSOR_DETECTED"); // ส่งแจ้งเตือนไปยัง Raspberry Pi
       updateLCD("PCB DETECTED!", "Waiting AI..."); // อัปเดตจอเมื่อเจอชิ้นงาน
     }
   }
 
-  // 3. ปลดล็อกเซนเซอร์หลังจากสั่งเดินสายพานไปแล้วระยะหนึ่ง
-  if (ignoreSensor && (millis() - ignoreTimer >= IGNORE_DURATION)) {
+  // 3. ปลดล็อกเซนเซอร์: เมื่อชิ้นงานพ้นเซนเซอร์ไปแล้ว (HIGH) หรือครบเวลากันตรวจจับซ้ำ
+  if (ignoreSensor && (digitalRead(irSensorPin) == HIGH || (millis() - ignoreTimer >= IGNORE_DURATION))) {
     ignoreSensor = false;
   }
 
@@ -128,7 +129,7 @@ void loop() {
   }
 }
 
-// ฟังก์ชันสำหรับจัดการข้อความบนจอ LCD ให้พอดี 16 ตัวอักษรต่อบรรทัด
+// ฟังก์ชันสำหรับจัดการข้อความบนจอ LCD
 void updateLCD(String line1, String line2) {
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -164,9 +165,16 @@ void processCommand(String cmd) {
       digitalWrite(IN2, LOW);
       analogWrite(EN1, speed);
       isBeltRunning = true;
-      ignoreSensor = true; 
-      ignoreTimer = millis();
-      // relay 13 เปิดไฟเมื่อสายพานเริ่มงาน
+
+      // ถ้าชิ้นงานยังคงคาอยู่ที่เซนเซอร์ ให้กันการตรวจจับซ้ำจนกว่าจะเคลื่อนที่พ้นไป
+      if (digitalRead(irSensorPin) == LOW) {
+        ignoreSensor = true; 
+        ignoreTimer = millis();
+      } else {
+        ignoreSensor = false;
+      }
+
+      // เปิดไฟ Relay 13 เมื่อสายพานเริ่มทำงาน
       digitalWrite(relayRed, RELAY_ON);
       isRedDelaying = false;
       updateLCD("Belt Status:", "RUNNING ->");
@@ -176,7 +184,6 @@ void processCommand(String cmd) {
       digitalWrite(IN2, HIGH);
       analogWrite(EN1, speed);
       isBeltRunning = true;
-      // relay 13 เปิดไฟเมื่อสายพานเริ่มงาน
       digitalWrite(relayRed, RELAY_ON);
       isRedDelaying = false;
       updateLCD("Belt Status:", "<- REVERSE");
@@ -236,12 +243,19 @@ void processCommand(String cmd) {
 }
 
 void stopBelt() {
+  // 1. สั่ง Active Brake ล็อคมอเตอร์ทันที เพื่อไม่ให้สายพานไหลตามแรงเฉื่อย
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, HIGH);
+  analogWrite(EN1, 255);
+  delay(80); // ล็อคเบรก 80ms ให้สายพานหยุดสนิททันที
+
+  // 2. ตัดไฟออกจากมอเตอร์
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   analogWrite(EN1, 0);
   isBeltRunning = false;
-  // relay 13 ปิดเมื่อหยุดการทำงานสายพาน
+
+  // 3. ปิดไฟ Relay 13 เมื่อสายพานหยุดทำงาน
   digitalWrite(relayRed, RELAY_OFF);
   isRedDelaying = false;
 }
-

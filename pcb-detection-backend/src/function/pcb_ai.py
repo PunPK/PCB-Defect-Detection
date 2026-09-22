@@ -212,6 +212,9 @@ class CopperTraceExtractor:
         รองรับทั้งบอร์ดที่ใช้ไฟส่องทะลุ (Backlit) และไฟส่องตรง (Frontlit / Reflective Copper)
         พร้อมการตรวจสอบขั้วสี (Auto-Polarity Validation) ป้องกันการสลับร่องกับลายทองแดง
         """
+        if img_bgr is None or not hasattr(img_bgr, "shape") or img_bgr.size == 0:
+            return np.zeros((256, 256), dtype=np.uint8)
+
         orig_h, orig_w = img_bgr.shape[:2]
         gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
