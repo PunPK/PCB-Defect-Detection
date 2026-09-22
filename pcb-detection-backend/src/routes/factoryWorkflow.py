@@ -213,11 +213,6 @@ def save_initial_pcb_result(
     db.commit()
     db.refresh(db_result)
 
-    pcb = db.query(model.PCB).filter(model.PCB.id == pcb_id).first()
-    if pcb:
-        pcb.result_id = db_result.results_id
-        db.commit()
-
     return {
         "result_id": db_result.results_id,
         "copper_mask": copper_mask,
@@ -252,14 +247,24 @@ async def run_background_defect_analysis(
         )
 
         vis_result = defect_data["vis_result"]
+        aligned_img = defect_data.get("aligned_trace_view")
+        if aligned_img is None:
+            aligned_img = defect_data.get("aligned_photo")
         accuracy = defect_data["accuracy"]
         verdict = defect_data["verdict"]
         description = defect_data["description"]
         counts = defect_data["counts"]
 
-        # บันทึกรูปภาพผลลัพธ์จริง (รูปที่ 4) ลงดิสก์
+        # บันทึกรูปภาพผลลัพธ์จริง (รูปที่ 4 - Defect Analysis ในทิศทางเดียวกับ Template)
         res_fn = generate_filename("result")
         res_path = save_image_bytes(cv2.imencode(".jpg", vis_result)[1].tobytes(), res_fn)
+
+        # บันทึกรูปภาพชิ้นงานที่หมุน/เลื่อนตรงกับ Template (รูปที่ 3 - Aligned Trace View)
+        al_fn = None
+        al_path = None
+        if aligned_img is not None:
+            al_fn = generate_filename("aligned_final")
+            al_path = save_image_bytes(cv2.imencode(".jpg", aligned_img)[1].tobytes(), al_fn)
 
         # อัปเดตข้อมูลผลลัพธ์ในฐานข้อมูล SQLite
         db_gen = model.get_db()
@@ -274,6 +279,17 @@ async def run_background_defect_analysis(
             db_session.commit()
             db_session.refresh(img_rec)
 
+            al_img_rec = None
+            if al_path is not None:
+                al_img_rec = model.ImagePCB(
+                    filepath=al_path,
+                    filename=al_fn,
+                    uploaded_at=datetime.utcnow(),
+                )
+                db_session.add(al_img_rec)
+                db_session.commit()
+                db_session.refresh(al_img_rec)
+
             res_rec = (
                 db_session.query(model.Result)
                 .filter(model.Result.results_id == result_id)
@@ -281,6 +297,8 @@ async def run_background_defect_analysis(
             )
             if res_rec:
                 res_rec.result_image = img_rec.image_id
+                if al_img_rec is not None:
+                    res_rec.aligned_image = al_img_rec.image_id
                 res_rec.accuracy = float(accuracy)
                 res_rec.description = description
                 db_session.commit()

@@ -215,6 +215,13 @@ class CopperTraceExtractor:
         if img_bgr is None or not hasattr(img_bgr, "shape") or img_bgr.size == 0:
             return np.zeros((256, 256), dtype=np.uint8)
 
+        # แปลงภาพ 4 channels (RGBA) หรือ Grayscale ให้เป็น 3 channels BGR มาตรฐาน
+        if img_bgr.ndim == 3 and img_bgr.shape[2] == 4:
+            a = img_bgr[..., 3:4].astype(np.float32) / 255.0
+            img_bgr = (img_bgr[..., :3] * a + 255.0 * (1.0 - a)).astype(np.uint8)
+        elif img_bgr.ndim == 2:
+            img_bgr = cv2.cvtColor(img_bgr, cv2.COLOR_GRAY2BGR)
+
         orig_h, orig_w = img_bgr.shape[:2]
         gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
         hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
@@ -354,14 +361,24 @@ class PCBDefectAnalyzer:
                 np_arr = np.frombuffer(template_bytes, np.uint8)
                 tpl_img = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
                 if tpl_img is not None:
+                    # แปลงภาพ 4 channels (RGBA) หรือ Grayscale ให้เป็น BGR มาตรฐาน
+                    if tpl_img.ndim == 3 and tpl_img.shape[2] == 4:
+                        a = tpl_img[..., 3:4].astype(np.float32) / 255.0
+                        tpl_img = (tpl_img[..., :3] * a + 255.0 * (1.0 - a)).astype(np.uint8)
+                    elif tpl_img.ndim == 2:
+                        tpl_img = cv2.cvtColor(tpl_img, cv2.COLOR_GRAY2BGR)
+
                     # ตรวจสอบว่าภาพต้นแบบเป็น CAD ขาวดำ หรือเป็นภาพถ่ายบอร์ด
-                    if len(tpl_img.shape) == 3 and np.std(tpl_img) > 40:
-                        # เป็นภาพถ่ายบอร์ด -> สกัดลายทองแดงด้วย TinyUNet ก่อนทำเป็นต้นแบบ
+                    b, g, r = cv2.split(tpl_img)
+                    color_diff = float(np.mean(np.abs(b.astype(int) - g.astype(int))) + np.mean(np.abs(g.astype(int) - r.astype(int))))
+                    if color_diff < 18.0:
+                        # เป็นไฟล์ CAD / Gerber ขาวดำ -> ส่งเข้า load_design ตรงๆ (ตรวจจับ polarity auto)
+                        design_to_compare = pc.load_design(tpl_img, copper="auto")
+                    else:
+                        # เป็นภาพถ่ายบอร์ดจริง -> สกัดลายทองแดงด้วย TinyUNet ก่อนทำเป็นต้นแบบ
                         extractor = CopperTraceExtractor.get_instance()
                         tpl_mask = extractor.predict(tpl_img)
                         design_to_compare = pc.load_design(tpl_mask, copper="white")
-                    else:
-                        design_to_compare = pc.load_design(tpl_img, copper="auto")
             except Exception as e:
                 logger.error(f"Error parsing user template: {e}")
 
@@ -375,7 +392,7 @@ class PCBDefectAnalyzer:
                 design_to_compare = copper_mask
 
         # 2. รันฟังก์ชัน inspect จาก pcb_compare
-        align_kw = dict(allow_mirror=allow_mirror)
+        align_kw = dict(allow_mirror=allow_mirror, angle_step=4.0)
         res, ctx = pc.inspect(
             copper_mask,
             design_to_compare,
@@ -386,10 +403,23 @@ class PCBDefectAnalyzer:
         )
 
         # 3. สร้างภาพ Visualizations (ทั้งมุมมองเดิมของกล้อง และมุมมองที่หมุน/เลื่อนตรงกับ Template)
+        al = ctx.get("align", {})
         vis_on_board = pc.draw_on_mask(res, ctx, show_normal=False)
         vis_canon = pc.draw_canon(res, ctx, show_normal=False)
         vis_aligned = pc.draw_aligned(res, ctx, show_normal=False) if hasattr(pc, "draw_aligned") else vis_on_board
         aligned_photo = pc.get_aligned_photo(ctx) if hasattr(pc, "get_aligned_photo") else None
+
+        # สกัดภาพ Aligned Trace View (ชิ้นงานที่หมุน/เลื่อนตรงกับ Template พร้อมไฮไลท์ลายทองแดง)
+        aligned_trace_view = None
+        if aligned_photo is not None and "Tc" in al and al["Tc"] is not None:
+            aligned_trace_view = aligned_photo.copy()
+            tc_mask = (al["Tc"] > 0)
+            if np.any(tc_mask):
+                overlay = aligned_trace_view.copy()
+                overlay[tc_mask] = (0, 255, 200)
+                cv2.addWeighted(overlay, 0.55, aligned_trace_view, 0.45, 0, aligned_trace_view)
+        elif aligned_photo is not None:
+            aligned_trace_view = aligned_photo.copy()
 
         # 4. คำนวณเปอร์เซ็นต์ความถูกต้อง (Quality / Accuracy %)
         align_score = float(res["align"]["score"])
@@ -425,6 +455,7 @@ class PCBDefectAnalyzer:
             "vis_aligned": vis_aligned,
             "vis_result": vis_aligned if vis_aligned is not None else vis_canon,
             "aligned_photo": aligned_photo,
+            "aligned_trace_view": aligned_trace_view if aligned_trace_view is not None else aligned_photo,
             "res": res,
             "ctx": ctx,
         }
