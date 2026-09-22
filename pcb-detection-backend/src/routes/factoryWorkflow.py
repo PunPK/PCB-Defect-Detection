@@ -144,8 +144,8 @@ async def websocket_endpoint(
             # วาดเส้นกึ่งกลางสายพาน
             cv2.line(display_frame, (center_x, 0), (center_x, h), (0, 0, 255), 2)
 
-            # ตรวจจับตำแหน่งตัวบอร์ด PCB จากภาพ
-            warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(256, 256))
+            # ตรวจจับตำแหน่งตัวบอร์ด PCB จากภาพ (รักษาอัตราส่วนภาพตามธรรมชาติของบอร์ด)
+            warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=None)
 
             copper_mask = None
             trace_view = None
@@ -267,14 +267,17 @@ async def websocket_endpoint(
                     def_path = save_image_bytes(cv2.imencode(".jpg", warped_pcb)[1].tobytes(), def_fn)
                     images["defective"] = {"filename": def_fn, "filepath": def_path}
 
-                    # 3. ดึงลาย (ภาพสกัดลายทองแดง)
-                    trace_fn = generate_filename("trace")
-                    trace_path = save_image_bytes(cv2.imencode(".jpg", trace_view)[1].tobytes(), trace_fn)
-                    images["aligned"] = {"filename": trace_fn, "filepath": trace_path}
+                    # 3. ภาพที่หมุนและจัดตำแหน่งตรงกับต้นแบบ (Aligned PCB: หมุน/เลื่อน/ดัด perspective ตรงกับ Template)
+                    aligned_fn = generate_filename("aligned")
+                    aligned_img = analysis_res.get("aligned_photo")
+                    if aligned_img is None:
+                        aligned_img = trace_view
+                    aligned_path = save_image_bytes(cv2.imencode(".jpg", aligned_img)[1].tobytes(), aligned_fn)
+                    images["aligned"] = {"filename": aligned_fn, "filepath": aligned_path}
 
-                    # 4. วิเคราะห์ลาย (ภาพผลลัพธ์พร้อมกล่องตำหนิและสีไฮไลท์)
+                    # 4. วิเคราะห์ลาย (ภาพผลลัพธ์พร้อมกล่องตำหนิในทิศทางของ Template ที่หมุน/เลื่อนตรงแล้ว)
                     res_fn = generate_filename("result")
-                    res_img = analysis_res["vis_on_board"]
+                    res_img = analysis_res.get("vis_aligned", analysis_res["vis_on_board"])
                     res_path = save_image_bytes(cv2.imencode(".jpg", res_img)[1].tobytes(), res_fn)
                     images["result"] = {"filename": res_fn, "filepath": res_path}
 

@@ -93,9 +93,10 @@ class TinyUNet(nn.Module):
 # ==============================================================================
 # ตรวจจับแผ่น PCB และดึงขอบเขตบอร์ด (Board Extraction & Perspective Transform)
 # ==============================================================================
-def extract_pcb_board(frame: np.ndarray, target_size: Tuple[int, int] = (256, 256), min_area_ratio: float = 0.03):
+def extract_pcb_board(frame: np.ndarray, target_size: Optional[Tuple[int, int]] = None, min_area_ratio: float = 0.03):
     """
     ตรวจจับขอบเขตบอร์ด PCB จากภาพกล้อง ตัดพื้นหลังออก และทำ Perspective Warp
+    รักษาอัตราส่วนภาพ (Aspect Ratio) ของบอร์ดจริงตามธรรมชาติเพื่อความแม่นยำในการซ้อนทับ (Alignment)
     คืนค่า: (warped_pcb, ordered_quad, board_mask_orig)
     """
     h, w = frame.shape[:2]
@@ -150,7 +151,19 @@ def extract_pcb_board(frame: np.ndarray, target_size: Tuple[int, int] = (256, 25
     ordered[1] = quad[np.argmin(diff)]
     ordered[3] = quad[np.argmax(diff)]
 
-    tw, th = target_size
+    if target_size is not None:
+        tw, th = target_size
+    else:
+        w_top = np.linalg.norm(ordered[1] - ordered[0])
+        w_bot = np.linalg.norm(ordered[2] - ordered[3])
+        h_left = np.linalg.norm(ordered[3] - ordered[0])
+        h_right = np.linalg.norm(ordered[2] - ordered[1])
+        bw = max(32, int(round(max(w_top, w_bot))))
+        bh = max(32, int(round(max(h_left, h_right))))
+        scale_factor = 512.0 / max(bw, bh)
+        tw = int(round(bw * scale_factor))
+        th = int(round(bh * scale_factor))
+
     dst = np.array([[0, 0], [tw - 1, 0], [tw - 1, th - 1], [0, th - 1]], dtype=np.float32)
     M = cv2.getPerspectiveTransform(ordered, dst)
     warped = cv2.warpPerspective(frame, M, (tw, th), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
@@ -196,29 +209,60 @@ class CopperTraceExtractor:
     def predict(self, img_bgr: np.ndarray, conf_thresh: float = 0.5) -> np.ndarray:
         """
         ทำนาย Mask ลายทองแดง (255=ทองแดง, 0=พื้นหลัง)
+        รองรับทั้งบอร์ดที่ใช้ไฟส่องทะลุ (Backlit) และไฟส่องตรง (Frontlit / Reflective Copper)
+        พร้อมการตรวจสอบขั้วสี (Auto-Polarity Validation) ป้องกันการสลับร่องกับลายทองแดง
         """
         orig_h, orig_w = img_bgr.shape[:2]
+        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+        H, S, V = cv2.split(hsv)
 
-        if self.model is None:
-            # Fallback หากไม่มีโมเดล: ใช้ Color Segmentation พื้นฐาน
-            hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-            mask = cv2.inRange(hsv, np.array([5, 30, 20]), np.array([45, 255, 255]))
-            return mask
+        # 1. รันการทำนายด้วย Tiny U-Net
+        unet_mask = None
+        if self.model is not None:
+            resized = cv2.resize(img_bgr, (256, 256))
+            rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+            norm = (rgb - 0.5) / 0.25
+            inp = torch.from_numpy(np.ascontiguousarray(norm.transpose(2, 0, 1)))[None].to(self.device)
 
-        # Preprocess
-        resized = cv2.resize(img_bgr, (256, 256))
-        rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
-        norm = (rgb - 0.5) / 0.25
-        inp = torch.from_numpy(np.ascontiguousarray(norm.transpose(2, 0, 1)))[None].to(self.device)
+            with torch.no_grad():
+                logits = self.model(inp)
+                prob = torch.sigmoid(logits)[0, 0].cpu().numpy()
 
-        with torch.no_grad():
-            logits = self.model(inp)
-            prob = torch.sigmoid(logits)[0, 0].cpu().numpy()
+            mask_small = (prob >= conf_thresh).astype(np.uint8) * 255
+            unet_mask = cv2.resize(mask_small, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
 
-        mask_small = (prob >= conf_thresh).astype(np.uint8) * 255
-        if (orig_w, orig_h) != (256, 256):
-            return cv2.resize(mask_small, (orig_w, orig_h), interpolation=cv2.INTER_NEAREST)
-        return mask_small
+        # 2. ตรวจสอบลักษณะแสง (Dual-Mode Polarity Check: Backlit vs Frontlit)
+        # ตรวจสอบสัดส่วนพื้นที่มืดมาก (V < 50):
+        # - Backlit: ทั้งแผ่นบอร์ดจะสว่างด้วยไฟส่องทะลุ พื้นที่มืด (V < 50) น้อยมาก (< 15%)
+        # - Frontlit: พื้นบอร์ด FR4 จะมืดเข้ม (V < 50 เกิน 35%) และลายทองแดงจะสว่างสะท้อนแสงชัดเจน
+        dark_frac = float((V < 50).mean())
+        is_frontlit = dark_frac > 0.35
+
+        if is_frontlit:
+            # กรณีไฟส่องตรง: ลายทองแดงคือส่วนที่สว่างสะท้อนแสง
+            t_otsu, thresh_v = cv2.threshold(V, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            thresh_v = cv2.morphologyEx(thresh_v, cv2.MORPH_OPEN, kernel)
+            thresh_v = cv2.morphologyEx(thresh_v, cv2.MORPH_CLOSE, kernel)
+
+            if unet_mask is not None:
+                # ตรวจสอบว่า U-Net ให้ผลลัพธ์กลับขั้วหรือไม่
+                fg_bright = float(V[unet_mask == 255].mean()) if (unet_mask == 255).any() else 0
+                bg_bright = float(V[unet_mask == 0].mean()) if (unet_mask == 0).any() else 0
+                # ถ้า U-Net พลาดไปเลือกส่วนมืดเป็นทองแดง
+                if fg_bright < bg_bright:
+                    return thresh_v
+                return unet_mask
+            return thresh_v
+
+        # กรณีไฟส่องทะลุ (Backlit)
+        if unet_mask is not None:
+            return unet_mask
+
+        # Fallback หากไม่มีโมเดลบน Backlit
+        t_otsu, thresh_inv = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        return thresh_inv
 
     def predict_overlay(
         self, img_bgr: np.ndarray, conf_thresh: float = 0.5, color=(0, 255, 0), alpha: float = 0.5
@@ -327,9 +371,11 @@ class PCBDefectAnalyzer:
             copper="auto",
         )
 
-        # 3. สร้างภาพ Visualizations
+        # 3. สร้างภาพ Visualizations (ทั้งมุมมองเดิมของกล้อง และมุมมองที่หมุน/เลื่อนตรงกับ Template)
         vis_on_board = pc.draw_on_mask(res, ctx, show_normal=False)
         vis_canon = pc.draw_canon(res, ctx, show_normal=False)
+        vis_aligned = pc.draw_aligned(res, ctx, show_normal=False) if hasattr(pc, "draw_aligned") else vis_on_board
+        aligned_photo = pc.get_aligned_photo(ctx) if hasattr(pc, "get_aligned_photo") else None
 
         # 4. คำนวณเปอร์เซ็นต์ความถูกต้อง (Quality / Accuracy %)
         align_score = float(res["align"]["score"])
@@ -362,6 +408,8 @@ class PCBDefectAnalyzer:
             "time_s": round(time.time() - t0, 3),
             "vis_on_board": vis_on_board,
             "vis_canon": vis_canon,
+            "vis_aligned": vis_aligned,
+            "aligned_photo": aligned_photo,
             "res": res,
             "ctx": ctx,
         }
