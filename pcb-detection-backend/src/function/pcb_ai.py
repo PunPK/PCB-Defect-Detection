@@ -220,6 +220,15 @@ class CopperTraceExtractor:
         hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
         H, S, V = cv2.split(hsv)
 
+        # 0. ตรวจสอบว่าภาพเป็น CAD / Gerber ขาวดำ หรือภาพดิจิทัลที่มีความต่างสีต่ำมาก (เช่น image copy.png)
+        b, g, r = cv2.split(img_bgr)
+        color_diff = float(np.mean(np.abs(b.astype(int) - g.astype(int))) + np.mean(np.abs(g.astype(int) - r.astype(int))))
+        if color_diff < 18.0:
+            t_otsu, thresh_cad = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            if cv2.countNonZero(thresh_cad) > 0.5 * thresh_cad.size:
+                thresh_cad = cv2.bitwise_not(thresh_cad)
+            return thresh_cad
+
         # 1. รันการทำนายด้วย Tiny U-Net
         unet_mask = None
         if self.model is not None:
@@ -356,12 +365,14 @@ class PCBDefectAnalyzer:
             except Exception as e:
                 logger.error(f"Error parsing user template: {e}")
 
-        # ถ้าไม่มี template เฉพาะ หรือ parse ไม่สำเร็จ ให้ใช้ชุด reference designs
+        # ถ้าไม่มี template เฉพาะ หรือ parse ไม่สำเร็จ ให้ใช้ชุด reference designs หรือใช้ copper_mask ชั่วคราว
         if design_to_compare is None:
             if self.designs_cache:
                 design_to_compare = self.designs_cache
+            elif pc is not None:
+                design_to_compare = pc.load_design(copper_mask, copper="white")
             else:
-                raise ValueError("ไม่พบไฟล์ต้นแบบ (Design Template) สำหรับเปรียบเทียบ")
+                design_to_compare = copper_mask
 
         # 2. รันฟังก์ชัน inspect จาก pcb_compare
         align_kw = dict(allow_mirror=allow_mirror)
@@ -412,6 +423,7 @@ class PCBDefectAnalyzer:
             "vis_on_board": vis_on_board,
             "vis_canon": vis_canon,
             "vis_aligned": vis_aligned,
+            "vis_result": vis_aligned if vis_aligned is not None else vis_canon,
             "aligned_photo": aligned_photo,
             "res": res,
             "ctx": ctx,

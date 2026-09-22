@@ -28,27 +28,40 @@ class NanoController:
         self.running = True
         self.is_sensor_triggered = False
         self.ser = None
+        self.baudrate = baudrate
+        self.lock = threading.Lock()
         self.port = port or self._detect_port()
 
         if not HAS_SERIAL:
             logger.warning("[NanoController] pyserial is not installed. Running in simulation mode.")
             return
 
-        if self.port:
-            try:
-                self.ser = serial.Serial(self.port, baudrate, timeout=0.1)
-                time.sleep(2)  # รอ Arduino Reset
-                logger.info(f"[NanoController] เชื่อมต่อ Arduino Nano สำเร็จที่พอร์ต {self.port}")
-                print(f"[System] เชื่อมต่อ Arduino Nano สำเร็จที่พอร์ต {self.port}")
+        self._connect()
 
-                self.listener_thread = threading.Thread(target=self._listen_serial, daemon=True)
-                self.listener_thread.start()
-            except Exception as e:
-                logger.warning(f"[NanoController] เชื่อมต่อพอร์ต {self.port} ไม่สำเร็จ: {e}. ใช้โหมดจำลอง")
-                print(f"[Warning] ไม่สามารถเปิดการเชื่อมต่อ Arduino Nano: {e}")
-                self.ser = None
-        else:
-            logger.info("[NanoController] ไม่พบพอร์ต USB/ACM ของ Arduino Nano. รันในโหมดจำลอง (Simulation Mode)")
+    def _connect(self):
+        with self.lock:
+            if not self.port:
+                self.port = self._detect_port()
+            if self.port:
+                try:
+                    self.ser = serial.Serial(
+                        self.port,
+                        self.baudrate,
+                        timeout=0.1,
+                        write_timeout=0.5,  # ป้องกันไม่ให้ ser.write / flush ค้าง
+                    )
+                    time.sleep(1.5)  # รอ Arduino Reset
+                    logger.info(f"[NanoController] เชื่อมต่อ Arduino Nano สำเร็จที่พอร์ต {self.port}")
+                    print(f"[System] เชื่อมต่อ Arduino Nano สำเร็จที่พอร์ต {self.port}")
+
+                    self.listener_thread = threading.Thread(target=self._listen_serial, daemon=True)
+                    self.listener_thread.start()
+                except Exception as e:
+                    logger.warning(f"[NanoController] เชื่อมต่อพอร์ต {self.port} ไม่สำเร็จ: {e}. ใช้โหมดจำลอง")
+                    print(f"[Warning] ไม่สามารถเปิดการเชื่อมต่อ Arduino Nano: {e}")
+                    self.ser = None
+            else:
+                logger.info("[NanoController] ไม่พบพอร์ต USB/ACM ของ Arduino Nano. รันในโหมดจำลอง (Simulation Mode)")
 
     def _detect_port(self) -> Optional[str]:
         candidate_ports = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyACM0", "/dev/ttyACM1"]
@@ -61,28 +74,32 @@ class NanoController:
         """ทำงานเบื้องหลัง คอยดักฟังข้อความจาก Arduino Nano"""
         while self.running and self.ser:
             try:
-                if self.ser.in_waiting > 0:
-                    line = self.ser.readline().decode("utf-8", errors="ignore").strip()
-                    if line:
-                        logger.debug(f"[Arduino] {line}")
-                        print(f"[Arduino] {line}")
-                        if "SENSOR_DETECTED" in line:
-                            self.is_sensor_triggered = True
-                            print("[NanoController] เซนเซอร์ตรวจพบชิ้นงาน! SENSOR_DETECTED")
+                line = None
+                with self.lock:
+                    if self.ser and self.ser.in_waiting > 0:
+                        line = self.ser.readline().decode("utf-8", errors="ignore").strip()
+                if line:
+                    logger.debug(f"[Arduino] {line}")
+                    print(f"[Arduino] {line}")
+                    if "SENSOR_DETECTED" in line:
+                        self.is_sensor_triggered = True
+                        print("[NanoController] เซนเซอร์ตรวจพบชิ้นงาน! SENSOR_DETECTED")
             except Exception as e:
                 logger.debug(f"[NanoController] Serial read error: {e}")
+                time.sleep(0.1)
             time.sleep(0.01)
 
     def _send_command(self, cmd: str):
-        """ส่งคำสั่งพร้อมขึ้นบรรทัดใหม่ไปยัง Arduino Nano"""
-        if self.ser:
-            try:
-                self.ser.write(f"{cmd}\n".encode("utf-8"))
-                self.ser.flush()
-            except Exception as e:
-                logger.error(f"[NanoController] ส่งคำสั่ง '{cmd}' ล้มเหลว: {e}")
-        else:
-            logger.debug(f"[NanoController-Sim] Command: {cmd}")
+        """ส่งคำสั่งพร้อมขึ้นบรรทัดใหม่ไปยัง Arduino Nano แบบ thread-safe และ non-blocking"""
+        with self.lock:
+            if self.ser:
+                try:
+                    self.ser.write(f"{cmd}\n".encode("utf-8"))
+                    self.ser.flush()
+                except Exception as e:
+                    logger.error(f"[NanoController] ส่งคำสั่ง '{cmd}' ล้มเหลว: {e}")
+            else:
+                logger.debug(f"[NanoController-Sim] Command: {cmd}")
 
     # ====== หมวด Servo ======
     def servo_mid(self):
@@ -168,20 +185,19 @@ class NanoController:
 
     def close(self):
         self.running = False
-        if self.ser:
-            try:
-                self.belt_stop()
-                time.sleep(0.05)
-                self.light_off(1)
-                self.light_off(2)
-                self.light_off(3)
-                self.lcd_print("System Stopped", "Waiting for Pi")
-                time.sleep(0.05)
-                self.ser.close()
-                print("[System] ปิดการเชื่อมต่อ Arduino Nano เรียบร้อย")
-            except Exception:
-                pass
-            self.ser = None
+        with self.lock:
+            if self.ser:
+                try:
+                    self.ser.write(b"B S\nL 1 0\nL 2 0\nL 3 0\nP System Stopped|Waiting for Pi\n")
+                    self.ser.flush()
+                except Exception:
+                    pass
+                try:
+                    self.ser.close()
+                    print("[System] ปิดการเชื่อมต่อ Arduino Nano เรียบร้อย")
+                except Exception:
+                    pass
+                self.ser = None
 
 
 # Wrapper classes เพื่อรองรับ interface เดิม หากมีการ import

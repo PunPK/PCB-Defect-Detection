@@ -13,7 +13,22 @@ import time
 import math
 import cv2
 import numpy as np
-from skimage.morphology import skeletonize
+try:
+    from skimage.morphology import skeletonize
+except ImportError:
+    def skeletonize(image):
+        img = (image > 0).astype(np.uint8) * 255
+        skel = np.zeros(img.shape, np.uint8)
+        element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+        while True:
+            eroded = cv2.erode(img, element)
+            temp = cv2.dilate(eroded, element)
+            temp = cv2.subtract(img, temp)
+            skel = cv2.bitwise_or(skel, temp)
+            img = eroded.copy()
+            if cv2.countNonZero(img) == 0:
+                break
+        return skel > 0
 
 CLASSES = ["open", "short", "minor", "normal"]          # normal = ไม่ใช่ตำหนิ (false alarm)
 CLASS_COLORS = {"open": (0, 0, 255), "short": (255, 0, 255), "minor": (0, 200, 255), "normal": (160, 160, 160)}

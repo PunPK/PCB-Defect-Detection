@@ -10,4 +10,5 @@ if __name__ == "__main__":
         workers=1,
         ws_ping_interval=30,
         ws_ping_timeout=30,
+        timeout_graceful_shutdown=3,
     )

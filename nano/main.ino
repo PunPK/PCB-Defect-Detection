@@ -18,7 +18,7 @@ const int angleRight = 130;
 // ตัวแปรสำหรับปลด Servo แบบไม่ใช้ delay()
 unsigned long servoTimer = 0;
 bool isServoAttached = false;
-const unsigned long SERVO_TIMEOUT = 1000;
+const unsigned long SERVO_TIMEOUT = 500; // ปลดแรงบิดเร็วขึ้นเพื่อประหยัดไฟและกันไฟกระชาก
 
 // ขาควบคุมมอเตอร์สายพาน (L298N)
 const int IN1 = 4;
@@ -243,19 +243,13 @@ void processCommand(String cmd) {
 }
 
 void stopBelt() {
-  // 1. สั่ง Active Brake ล็อคมอเตอร์ทันที เพื่อไม่ให้สายพานไหลตามแรงเฉื่อย
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, HIGH);
-  analogWrite(EN1, 255);
-  delay(80); // ล็อคเบรก 80ms ให้สายพานหยุดสนิททันที
-
-  // 2. ตัดไฟออกจากมอเตอร์
+  // ตัดไฟออกจากมอเตอร์อย่างนุ่มนวล ป้องกันไฟกระชากตัดระบบ USB (USB Over-Current Surge)
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   analogWrite(EN1, 0);
   isBeltRunning = false;
 
-  // 3. ปิดไฟ Relay 13 เมื่อสายพานหยุดทำงาน
+  // ปิดไฟ Relay 13 เมื่อสายพานหยุดทำงาน
   digitalWrite(relayRed, RELAY_OFF);
   isRedDelaying = false;
 }

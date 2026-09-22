@@ -140,43 +140,65 @@ async def detect_pcb_from_image(file: UploadFile = File(...)):
         if frame is None:
             return {"error": "Could not decode image"}
 
-        # Process the image
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        lower_copper = np.array([3, 0, 0])
-        upper_copper = np.array([45, 255, 255])
-        mask = cv2.inRange(hsv, lower_copper, upper_copper)
-
-        kernel = np.ones((5, 5), np.uint8)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
+        h, w = frame.shape[:2]
+        total_area = h * w
         display_frame = frame.copy()
         pcb_frame = None
         result = {"detected": False}
 
-        if contours:
-            largest_contour = max(contours, key=cv2.contourArea)
-            hull = cv2.convexHull(largest_contour)
-            cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
+        # 1. ลองวิธีสกัดสีทองแดง / Substrate (สำหรับภาพถ่ายจากกล้องจริง)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask_copper = cv2.inRange(hsv, np.array([3, 10, 10]), np.array([45, 255, 255]))
 
-            epsilon = 0.02 * cv2.arcLength(hull, True)
-            approx = cv2.approxPolyDP(hull, epsilon, True)
+        # 2. ลองวิธี Thresholding แบบ High-Contrast / Grayscale (สำหรับภาพ CAD ขาวดำ / Gerber แบบใน image copy.png)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        _, mask_otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if cv2.countNonZero(mask_otsu) > 0.6 * total_area:
+            mask_contrast = cv2.bitwise_not(mask_otsu)
+        else:
+            mask_contrast = mask_otsu
+
+        # ค้นหาขอบเขตของบอร์ดจาก Mask ทั้งสองแบบ
+        for mask_candidate in [mask_copper, mask_contrast]:
+            kernel = np.ones((5, 5), np.uint8)
+            cleaned_m = cv2.morphologyEx(mask_candidate, cv2.MORPH_CLOSE, kernel)
+            cleaned_m = cv2.morphologyEx(cleaned_m, cv2.MORPH_OPEN, kernel)
+            contours, _ = cv2.findContours(cleaned_m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            if not contours:
+                continue
+
+            valid_contours = [c for c in contours if cv2.contourArea(c) > 0.05 * total_area]
+            if not valid_contours:
+                continue
+
+            largest = max(valid_contours, key=cv2.contourArea)
+            hull = cv2.convexHull(largest)
+            peri = cv2.arcLength(hull, True)
+            approx = cv2.approxPolyDP(hull, 0.03 * peri, True)
 
             if len(approx) == 4:
-                approx = order_points(approx.reshape(4, 2))
-                pcb_frame = four_point_transform(frame, approx)
+                pts = order_points(approx.reshape(4, 2))
+                pcb_frame = four_point_transform(frame, pts)
+                cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
                 result["detected"] = True
+                break
+            else:
+                rect = cv2.minAreaRect(hull)
+                box = cv2.boxPoints(rect)
+                pts = order_points(box.astype(np.float32))
+                pcb_frame = four_point_transform(frame, pts)
+                cv2.drawContours(display_frame, [hull], -1, (0, 255, 0), 3)
+                result["detected"] = True
+                break
+
+        # 3. Fallback หากรูปที่อัปโหลดคือรูปตัวบอร์ด PCB อยู่แล้วทั้งรูป (เช่น รูปดีไซน์ CAD ที่ครอบมาพอดี)
+        if not result["detected"] or pcb_frame is None:
+            cv2.rectangle(display_frame, (4, 4), (w - 5, h - 5), (0, 255, 0), 3)
+            pcb_frame = frame.copy()
+            result["detected"] = True
 
         result["display_image"] = image_to_base64(display_frame)
-
-        if pcb_frame is not None:
-            result["pcb_image"] = image_to_base64(pcb_frame)
-        else:
-            # Create empty black image if no PCB detected
-            empty_frame = np.zeros((100, 100, 3), dtype=np.uint8)
-            result["pcb_image"] = image_to_base64(empty_frame)
+        result["pcb_image"] = image_to_base64(pcb_frame)
 
         return JSONResponse(content=result)
 
