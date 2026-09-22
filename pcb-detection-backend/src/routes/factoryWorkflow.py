@@ -363,7 +363,7 @@ async def websocket_endpoint(
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
         nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(50)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
+        nano.belt_forward(53)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
         # 2. เตรียมโมเดล AI
@@ -464,12 +464,9 @@ async def websocket_endpoint(
             # --- จัดการ State Machine ---
             if state == "SEARCHING":
                 if is_centered:
-                    if center_detect_start is None:
-                        center_detect_start = now
-                    elif (now - center_detect_start) >= 0.2:
-                        # บอร์ดอยู่กึ่งกลางภาพต่อเนื่องอย่างน้อย 0.2 วินาที -> เริ่มเข้าสู่โหมดวิเคราะห์
-                        state = "INSPECTING"
-                        center_detect_start = None
+                    # ตรวจพบแผ่น PCB อยู่กึ่งกลาง -> เข้าสู่โหมด INSPECTING ทันที ไม่รอหน่วงเวลา เพื่อให้เบรกตรงกลางพอดี
+                    state = "INSPECTING"
+                    center_detect_start = None
                 else:
                     center_detect_start = None
 
@@ -489,36 +486,37 @@ async def websocket_endpoint(
             if state == "INSPECTING":
                 if nano:
                     nano.is_sensor_triggered = False
-                    nano.belt_stop()  # สั่งหยุดสายพานทันที (relay 13 ดับลงอย่างนุ่มนวล)
+                    nano.belt_stop()  # สั่งหยุดสายพานและล็อคเบรกทันที
                     nano.light_off(1)  # ปิดไฟเขียวขณะกำลังวิเคราะห์
                     nano.lcd_processing()  # จอ LCD แสดงสถานะ Processing........
 
-                print("=====> ตรวจพบ PCB อยู่กึ่งกลางกล้อง! หยุดสายพานและสกัดลายทองแดง...")
+                print("=====> ตรวจพบ PCB อยู่กึ่งกลางกล้อง! หยุดสายพานและรอให้นิ่งสนิท...")
 
                 # ส่งสถานะกำลังประมวลผลไปยัง Frontend
                 await websocket.send_json({
                     "type": "analyzing",
-                    "message": "PCB อยู่กึ่งกลางกล้อง! กำลังหยุดสายพานและสกัดลายทองแดง...",
+                    "message": "PCB อยู่กึ่งกลางกล้อง! กำลังหยุดสายพานและรอให้นิ่งสนิท...",
                 })
 
-                # หน่วงเวลาสั้นๆ เพื่อให้สายพานหยุดนิ่งสนิทและภาพไม่สั่นไหว
-                await asyncio.sleep(0.15)
+                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.6 วินาที)
+                await asyncio.sleep(0.6)
 
-                # ดึงภาพเฟรมใหม่หลังจากสายพานหยุดนิ่ง
-                for _ in range(3):
-                    ret_stop, frame_stop = camera.read()
-                    if ret_stop and frame_stop is not None:
-                        frame = frame_stop
+                # ล้างภาพเก่าที่ตกค้างใน Hardware Buffer ของกล้องออกทั้งหมด แล้วดึงภาพใหม่ที่คมชัดที่สุด
+                for _ in range(5):
+                    camera.grab()
+                ret_stop, frame_stop = camera.read()
+                if ret_stop and frame_stop is not None:
+                    frame = frame_stop
 
-                # สกัดภาพบอร์ด PCB จากภาพนิ่ง
-                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(256, 256))
+                # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 6% เพื่อไม่ให้ตัดลายทองแดง และคงสัดส่วน Aspect Ratio)
+                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=None, margin=0.06)
                 if warped_pcb is None:
-                    crop_size = min(h, w) // 2
+                    crop_w = int(w * 0.7)
+                    crop_h = int(h * 0.7)
                     warped_pcb = frame[
-                        h // 2 - crop_size // 2 : h // 2 + crop_size // 2,
-                        w // 2 - crop_size // 2 : w // 2 + crop_size // 2,
+                        max(0, h // 2 - crop_h // 2) : min(h, h // 2 + crop_h // 2),
+                        max(0, w // 2 - crop_w // 2) : min(w, w // 2 + crop_w // 2),
                     ]
-                    warped_pcb = cv2.resize(warped_pcb, (256, 256))
 
                 try:
                     # 🛠️ สกัดลายทองแดงและบันทึกผลเบื้องต้นลงฐานข้อมูลใน Worker Thread อย่างรวดเร็ว (~40ms)
@@ -565,7 +563,7 @@ async def websocket_endpoint(
                 finally:
                     # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 50 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
                     if nano:
-                        nano.belt_forward(50)
+                        nano.belt_forward(60)
                         nano.light_on(1)
                         nano.lcd_running()
                     # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่

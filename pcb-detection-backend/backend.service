@@ -1,0 +1,16 @@
+[Unit]
+Description=Backend API Service
+After=network.target
+
+[Service]
+User=sahapong
+WorkingDirectory=/home/sahapong/Desktop/NSC2025/PCB-Defect-Detection/pcb-detection-backend
+ExecStart=/home/sahapong/Desktop/NSC2025/PCB-Defect-Detection/pcb-env/bin/python server.py
+Restart=always
+RestartSec=2
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
+

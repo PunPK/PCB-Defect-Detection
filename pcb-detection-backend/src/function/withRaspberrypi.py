@@ -207,7 +207,7 @@ class Belt:
 
     def on(self):
         if self.nano:
-            self.nano.belt_forward(50)
+            self.nano.belt_forward(150)
 
     def off(self):
         if self.nano:

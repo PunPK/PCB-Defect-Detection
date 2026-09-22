@@ -243,13 +243,19 @@ void processCommand(String cmd) {
 }
 
 void stopBelt() {
-  // ตัดไฟออกจากมอเตอร์อย่างนุ่มนวล ป้องกันไฟกระชากตัดระบบ USB (USB Over-Current Surge)
+  // 1. สั่ง Active Brake ล็อคมอเตอร์ชั่วขณะ (60ms) เพื่อให้สายพานหยุดสนิททันที ไม่ไหลตามแรงเฉื่อย
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, HIGH);
+  analogWrite(EN1, 255);
+  delay(60); // เบรคสั้นๆ 60ms ให้หยุดทันที
+
+  // 2. ปลดการจ่ายไฟออกจากมอเตอร์
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
   analogWrite(EN1, 0);
   isBeltRunning = false;
 
-  // ปิดไฟ Relay 13 เมื่อสายพานหยุดทำงาน
+  // 3. ปิดไฟ Relay 13 เมื่อสายพานหยุดทำงาน
   digitalWrite(relayRed, RELAY_OFF);
   isRedDelaying = false;
 }

@@ -93,10 +93,16 @@ class TinyUNet(nn.Module):
 # ==============================================================================
 # ตรวจจับแผ่น PCB และดึงขอบเขตบอร์ด (Board Extraction & Perspective Transform)
 # ==============================================================================
-def extract_pcb_board(frame: np.ndarray, target_size: Optional[Tuple[int, int]] = None, min_area_ratio: float = 0.03):
+def extract_pcb_board(
+    frame: np.ndarray,
+    target_size: Optional[Tuple[int, int]] = None,
+    min_area_ratio: float = 0.03,
+    margin: float = 0.05,
+):
     """
     ตรวจจับขอบเขตบอร์ด PCB จากภาพกล้อง ตัดพื้นหลังออก และทำ Perspective Warp
     รักษาอัตราส่วนภาพ (Aspect Ratio) ของบอร์ดจริงตามธรรมชาติเพื่อความแม่นยำในการซ้อนทับ (Alignment)
+    margin: เผื่อระยะขอบรอบแผ่นบอร์ด (เช่น 0.05 = เผื่อ 5%) ป้องกันการตัดลายทองแดงหรือรูเจาะริมบอร์ด
     คืนค่า: (warped_pcb, ordered_quad, board_mask_orig)
     """
     h, w = frame.shape[:2]
@@ -150,6 +156,13 @@ def extract_pcb_board(frame: np.ndarray, target_size: Optional[Tuple[int, int]] 
     ordered[2] = quad[np.argmax(s)]
     ordered[1] = quad[np.argmin(diff)]
     ordered[3] = quad[np.argmax(diff)]
+
+    # ขยายกรอบออกตาม margin เพื่อให้เก็บครบทั้งแผ่น ไม่ตัดโดนขอบลายทองแดง
+    if margin > 0:
+        center = ordered.mean(axis=0)
+        ordered = center + (ordered - center) * (1.0 + margin)
+        ordered[:, 0] = np.clip(ordered[:, 0], 0, w - 1)
+        ordered[:, 1] = np.clip(ordered[:, 1], 0, h - 1)
 
     if target_size is not None:
         tw, th = target_size
