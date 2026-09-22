@@ -95,10 +95,10 @@ class NanoController:
         self._send_command("S R")
 
     # ====== หมวด สายพาน (Belt) ======
-    def belt_forward(self, speed: int = 200):
+    def belt_forward(self, speed: int = 100):
         self._send_command(f"B F {speed}")
 
-    def belt_backward(self, speed: int = 200):
+    def belt_backward(self, speed: int = 100):
         self._send_command(f"B B {speed}")
 
     def belt_stop(self):
@@ -191,7 +191,7 @@ class Belt:
 
     def on(self):
         if self.nano:
-            self.nano.belt_forward(200)
+            self.nano.belt_forward(50)
 
     def off(self):
         if self.nano:

@@ -197,6 +197,9 @@ class CopperTraceExtractor:
         """
         ทำนาย Mask ลายทองแดง (255=ทองแดง, 0=พื้นหลัง)
         """
+        if img_bgr is None or not hasattr(img_bgr, "shape") or img_bgr.size == 0:
+            return np.zeros((256, 256), dtype=np.uint8)
+
         orig_h, orig_w = img_bgr.shape[:2]
 
         if self.model is None:
