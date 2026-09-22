@@ -9,3 +9,7 @@ train
 runs
 /YOLO_Detect_PCB
 /YOLOv8_model
+train_ai_pcb
+train_ai_pcb copy
+train_ai_compare
+*.png
