@@ -20,7 +20,8 @@ class NanoController:
     - รับสัญญาณเซนเซอร์ SENSOR_DETECTED จาก Arduino
     - สั่งการเซอร์โว (S M, S L, S R)
     - สั่งการสายพาน (B F <speed>, B B <speed>, B S)
-    - สั่งการไฟสถานะ (L 1 1/0 = เขียว, L 2 1/0 = แดง)
+    - สั่งการไฟสถานะและ Relay 13 (L 1 1/0 = เขียว, L 2 1/0 = Relay 13/แดง, L 3 1/0 = สำรอง, L 2 2 <ms> = หน่วงเวลา)
+    - สั่งการแสดงผลจอ LCD I2C ผ่าน Arduino (P <Line1>|<Line2> หรือ P <Message>)
     """
 
     def __init__(self, port: Optional[str] = None, baudrate: int = 115200):
@@ -103,13 +104,64 @@ class NanoController:
     def belt_stop(self):
         self._send_command("B S")
 
-    # ====== หมวด ไฟสถานะ (Pilot Lamp) ======
-    # 1=เขียว (Green), 2=แดง (Red), 3=สำรอง
+    # ====== หมวด ไฟสถานะ (Pilot Lamp) & Relay 13 ======
+    # 1=เขียว (Green, pin 10), 2=แดง/Relay 13 (pin 13), 3=สำรอง (pin 12)
     def light_on(self, num: int):
         self._send_command(f"L {num} 1")
 
     def light_off(self, num: int):
         self._send_command(f"L {num} 0")
+
+    def relay13_on(self):
+        """เปิด Relay 13 (ไฟสายพานเริ่มงาน)"""
+        self.light_on(2)
+
+    def relay13_off(self):
+        """ปิด Relay 13"""
+        self.light_off(2)
+
+    def relay13_delay(self, delay_ms: int = 1000):
+        """สั่งเปิด Relay 13 แบบมี Delay (ms)"""
+        self._send_command(f"L 2 2 {delay_ms}")
+
+    # ====== หมวด จอ LCD (LiquidCrystal I2C ผ่าน Arduino) ======
+    def lcd_print(self, line1: str, line2: str = ""):
+        """ส่งข้อความขึ้นจอ LCD (บรรทัดที่ 1 และ 2)"""
+        if line2:
+            self._send_command(f"P {line1}|{line2}")
+        else:
+            self._send_command(f"P {line1}")
+
+    def lcd_running(self):
+        """แสดงสถานะสายพานกำลังทำงานบนจอ LCD"""
+        self.lcd_print("Running........", "Conveyor Active")
+
+    def lcd_processing(self):
+        """แสดงสถานะกำลังวิเคราะห์บนจอ LCD"""
+        self.lcd_print("Processing......", "AI Analyzing...")
+
+    def lcd_stop_runnung(self):
+        """แสดงสถานะรอเริ่มงาน (คงชื่อฟังก์ชันเดิมเพื่อ backward compatibility)"""
+        self.lcd_print("Waitting start..", "System Ready")
+
+    def lcd_stop_running(self):
+        self.lcd_stop_runnung()
+
+    def lcd_show_result(self, message):
+        """แสดงผลลัพธ์คุณภาพเปอร์เซ็นต์บนจอ LCD"""
+        if isinstance(message, (int, float)):
+            message_str = f"{message:.2f}"
+        else:
+            message_str = str(message)
+        self.lcd_print("Inspection PASS", f"Quality = {message_str}%")
+
+    def lcd_show_log(self, log, message):
+        """แสดง Log ข้อผิดพลาดและคะแนนบนจอ LCD"""
+        if isinstance(message, (int, float)):
+            message_str = f"{message:.2f}"
+        else:
+            message_str = str(message)
+        self.lcd_print(f"Error {str(log)[:8]}", f"Quality = {message_str}%")
 
     def is_connected(self) -> bool:
         return self.ser is not None
@@ -122,6 +174,9 @@ class NanoController:
                 time.sleep(0.05)
                 self.light_off(1)
                 self.light_off(2)
+                self.light_off(3)
+                self.lcd_print("System Stopped", "Waiting for Pi")
+                time.sleep(0.05)
                 self.ser.close()
                 print("[System] ปิดการเชื่อมต่อ Arduino Nano เรียบร้อย")
             except Exception:
@@ -156,18 +211,21 @@ class Pilotlamp:
 
     def running(self):
         if self.nano:
-            self.nano.light_on(1)
-            self.nano.light_off(2)
+            self.nano.light_on(3)   # เปิด relayExtra (ไฟดวงที่ 3) พร้อมกันทันที
+            self.nano.light_on(1)   # เปิด relayGreen (ไฟดวงที่ 1)
+            self.nano.light_on(2)  # ปิด relayRed
 
     def error(self):
         if self.nano:
-            self.nano.light_on(2)
-            self.nano.light_off(1)
+            self.nano.light_on(2)   # เปิด relayRed
+            self.nano.light_on(1)  # ปิด relayGreen
+            self.nano.light_on(3)  # ปิด relayExtra ด้วย (เพื่อให้เหลือแค่ไฟแดงตอน Error)
 
     def close(self):
         if self.nano:
-            self.nano.light_off(1)
-            self.nano.light_off(2)
+            self.nano.light_on(1)  # ปิด relayGreen
+            self.nano.light_on(2)  # ปิด relayRed
+            self.nano.light_on(3)  # ปิด relayExtra ตอนปิดระบบ
 
 
 class ServoController:
@@ -188,23 +246,87 @@ class ServoController:
 
 
 class Lcd:
-    def __init__(self):
-        pass
+    def __init__(self, nano: Optional[NanoController] = None):
+        self.nano = nano
+        self.rplcd = None
+        if not self.nano:
+            try:
+                from RPLCD.i2c import CharLCD
+                self.rplcd = CharLCD('PCF8574', 0x27, cols=16, rows=2, charmap='A02')
+            except Exception:
+                self.rplcd = None
 
     def lcd_running(self):
-        pass
+        if self.nano:
+            self.nano.lcd_running()
+        elif self.rplcd:
+            try:
+                self.rplcd.clear()
+                self.rplcd.write_string('Running........')
+                self.rplcd.cursor_pos = (1, 0)
+            except Exception:
+                pass
 
     def lcd_processing(self):
-        pass
+        if self.nano:
+            self.nano.lcd_processing()
+        elif self.rplcd:
+            try:
+                self.rplcd.clear()
+                self.rplcd.write_string('Processing........')
+                self.rplcd.cursor_pos = (1, 0)
+            except Exception:
+                pass
 
     def lcd_stop_runnung(self):
-        pass
+        if self.nano:
+            self.nano.lcd_stop_runnung()
+        elif self.rplcd:
+            try:
+                self.rplcd.clear()
+                self.rplcd.write_string('Waitting for start........')
+                self.rplcd.cursor_pos = (1, 0)
+            except Exception:
+                pass
+
+    def lcd_stop_running(self):
+        self.lcd_stop_runnung()
 
     def lcd_show_result(self, message):
-        pass
+        if self.nano:
+            self.nano.lcd_show_result(message)
+        elif self.rplcd:
+            try:
+                if isinstance(message, (int, float)):
+                    message_str = f"{message:.2f}"
+                else:
+                    message_str = str(message)
+                self.rplcd.clear()
+                self.rplcd.write_string(f"Quality = {message_str}%")
+                self.rplcd.cursor_pos = (1, 0)
+            except Exception:
+                pass
 
     def lcd_show_log(self, log, message):
-        pass
+        if self.nano:
+            self.nano.lcd_show_log(log, message)
+        elif self.rplcd:
+            try:
+                if isinstance(message, (int, float)):
+                    message_str = f"{message:.2f}"
+                else:
+                    message_str = str(message)
+                self.rplcd.clear()
+                self.rplcd.write_string(f"Error {str(log)[:7]} : {message_str}%")
+                self.rplcd.cursor_pos = (1, 0)
+            except Exception:
+                pass
 
     def close(self):
-        pass
+        if self.nano:
+            self.nano.lcd_print("System Stopped", "")
+        if self.rplcd:
+            try:
+                self.rplcd.close()
+            except Exception:
+                pass

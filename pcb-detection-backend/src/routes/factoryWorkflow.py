@@ -105,9 +105,10 @@ async def websocket_endpoint(
         # 1. เริ่มต้นการเชื่อมต่อ Arduino Nano
         nano = NanoController()
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
-        nano.light_off(2)
+        nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(200)  # เริ่มเดินสายพาน
+        nano.belt_forward(200)  # เริ่มเดินสายพาน (relay 13 จะเปิดไฟทำงาน)
+        nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
         # 2. เตรียมโมเดล AI
         copper_extractor = CopperTraceExtractor.get_instance()
@@ -214,9 +215,9 @@ async def websocket_endpoint(
                 last_inspect_time = current_time
                 if nano:
                     nano.is_sensor_triggered = False
-                    nano.belt_stop()  # สั่งหยุดสายพาน
-                    nano.light_on(2)  # เปิดไฟแดงแสดงสถานะกำลังวิเคราะห์
-                    nano.light_off(1)
+                    nano.belt_stop()  # สั่งหยุดสายพาน (relay 13 ดับลงเมื่อหยุดการทำงานสายพาน)
+                    nano.light_off(1)  # ปิดไฟเขียวชั่วคราวขณะวิเคราะห์
+                    nano.lcd_processing()  # จอ LCD แสดงสถานะ Processing........
 
                 print("=====> เริ่มต้นการสกัดลายทองแดงและวิเคราะห์ตำหนิด้วย AI...")
 
@@ -306,18 +307,20 @@ async def websocket_endpoint(
                             "counts": analysis_res["counts"],
                         })
 
-                    # สั่งการ Servo คัดแยกและ Pilot Lamp ผ่าน Arduino Nano
+                    # สั่งการ Servo คัดแยก, แสดงผล LCD และ Pilot Lamp ผ่าน Arduino Nano
                     verdict = analysis_res["verdict"]
+                    accuracy = analysis_res["accuracy"]
                     if nano:
-                        if verdict == "PASS" or analysis_res["accuracy"] >= 80:
-                            nano.light_on(1)
-                            nano.light_off(2)
+                        if verdict == "PASS" or accuracy >= 80:
+                            nano.lcd_show_result(accuracy)  # จอ LCD แสดงผลลัพธ์ผ่าน
+                            nano.light_on(1)  # ไฟเขียว
                             nano.servo_left()  # ชิ้นงานผ่าน คัดแยกไปทางซ้าย
                             await asyncio.sleep(0.8)
                             nano.servo_mid()
                         else:
-                            nano.light_on(2)
-                            nano.light_off(1)
+                            defect_desc = analysis_res.get("result", "DEFECT")
+                            nano.lcd_show_log(defect_desc, accuracy)  # จอ LCD แสดง Error
+                            nano.light_off(1)  # ปิดไฟเขียว
                             nano.servo_right()  # ชิ้นงานชำรุด คัดแยกไปทางขวา
                             await asyncio.sleep(0.8)
                             nano.servo_mid()
@@ -327,9 +330,9 @@ async def websocket_endpoint(
                 finally:
                     # สั่งสายพานเดินหน้าต่อเพื่อรอรับชิ้นงานถัดไป
                     if nano:
-                        nano.belt_forward(200)
-                        nano.light_on(1)
-                        nano.light_off(2)
+                        nano.belt_forward(200)  # เริ่มเดินสายพาน (relay 13 เปิดไฟทำงาน)
+                        nano.light_on(1)  # ไฟเขียวแสดงว่าสายพานพร้อมรับชิ้นงาน
+                        nano.lcd_running()  # จอ LCD แสดง Running........
                     center_line_start_time = None
 
             # ส่งเฟรมภาพ 2 ภาพผ่าน WebSocket แบบ Binary
@@ -352,7 +355,8 @@ async def websocket_endpoint(
         logger.error(f"WebSocket error in factory workflow: {e}")
     finally:
         if nano:
-            nano.belt_stop()
+            nano.belt_stop()  # สั่งหยุดสายพาน (relay 13 ดับ)
+            nano.lcd_stop_runnung()  # จอ LCD แสดงสถานะรอเริ่มงาน
             nano.close()
 
         camera_manager.active_connections -= 1

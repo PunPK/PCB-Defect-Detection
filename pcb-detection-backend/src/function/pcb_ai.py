@@ -20,7 +20,10 @@ ROOT_DIR = Path(__file__).resolve().parents[3]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-import pcb_compare as pc
+try:
+    import pcb_compare as pc
+except ImportError:
+    pc = None
 
 logger = logging.getLogger(__name__)
 
@@ -244,17 +247,20 @@ class PCBDefectAnalyzer:
 
     def __init__(self, model_path: str = MODEL_RF_PATH, designs_dir: str = DESIGN_DIR):
         self.clf = None
-        if os.path.exists(model_path):
-            try:
-                self.clf = pc.DefectClassifier.load(model_path)
-                logger.info(f"✅ โหลดโมเดล DefectClassifier สำเร็จจาก {model_path}")
-                print(f"[PCBDefectAnalyzer] โหลดโมเดล DefectClassifier สำเร็จ (Classes: {self.clf.classes})")
-            except Exception as e:
-                logger.warning(f"⚠️ โหลด {model_path} ไม่สำเร็จ: {e}. ใช้ Rule-based classifier")
-                self.clf = pc.DefectClassifier()
+        if pc is not None:
+            if os.path.exists(model_path):
+                try:
+                    self.clf = pc.DefectClassifier.load(model_path)
+                    logger.info(f"✅ โหลดโมเดล DefectClassifier สำเร็จจาก {model_path}")
+                    print(f"[PCBDefectAnalyzer] โหลดโมเดล DefectClassifier สำเร็จ (Classes: {getattr(self.clf, 'classes', [])})")
+                except Exception as e:
+                    logger.warning(f"⚠️ โหลด {model_path} ไม่สำเร็จ: {e}. ใช้ Rule-based classifier")
+                    self.clf = getattr(pc, "DefectClassifier", lambda: None)()
+            else:
+                logger.warning(f"⚠️ ไม่พบโมเดล {model_path}. ใช้ Rule-based classifier")
+                self.clf = getattr(pc, "DefectClassifier", lambda: None)()
         else:
-            logger.warning(f"⚠️ ไม่พบโมเดล {model_path}. ใช้ Rule-based classifier")
-            self.clf = pc.DefectClassifier()
+            logger.info("ℹ️ pcb_compare ไม่ได้ถูกติดตั้ง. DefectClassifier ทำงานในโหมดพื้นฐาน")
 
         self.designs_dir = designs_dir
         self.designs_cache = {}
@@ -262,7 +268,7 @@ class PCBDefectAnalyzer:
 
     def _load_reference_designs(self):
         """โหลดไฟล์ต้นแบบ CAD / Gerber จาก designs/ เข้า Cache"""
-        if os.path.exists(self.designs_dir):
+        if pc is not None and os.path.exists(self.designs_dir):
             for p in sorted(glob.glob(os.path.join(self.designs_dir, "*.png"))):
                 name = os.path.splitext(os.path.basename(p))[0]
                 try:
