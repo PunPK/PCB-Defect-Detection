@@ -97,7 +97,7 @@ def extract_pcb_board(
     frame: np.ndarray,
     target_size: Optional[Tuple[int, int]] = None,
     min_area_ratio: float = 0.03,
-    margin: float = 0.05,
+    margin: float = 0.06,
 ):
     """
     ตรวจจับขอบเขตบอร์ด PCB จากภาพกล้อง ตัดพื้นหลังออก และทำ Perspective Warp
@@ -136,10 +136,16 @@ def extract_pcb_board(
 
     largest = max(cnts, key=cv2.contourArea)
     area = cv2.contourArea(largest)
-    if area < min_area_ratio * h * w:
+    total_area = h * w
+    # กรองขนาดแผ่นบอร์ด: ต้องไม่เล็กเกินไป (< 4%) และต้องไม่กินพื้นที่ทั้งเฟรมภาพ (> 85% เช่น แสงสว่างจ้าคลุมทั้งสายพาน)
+    if area < 0.04 * total_area or area > 0.85 * total_area:
         return None, None, None
 
     hull = cv2.convexHull(largest)
+    hull_area = cv2.contourArea(hull)
+    if hull_area <= 0 or (area / hull_area) < 0.70:
+        return None, None, None
+
     rect = cv2.minAreaRect(hull)
     peri = cv2.arcLength(hull, True)
     approx = cv2.approxPolyDP(hull, 0.03 * peri, True)
@@ -180,6 +186,16 @@ def extract_pcb_board(
     dst = np.array([[0, 0], [tw - 1, 0], [tw - 1, th - 1], [0, th - 1]], dtype=np.float32)
     M = cv2.getPerspectiveTransform(ordered, dst)
     warped = cv2.warpPerspective(frame, M, (tw, th), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+
+    # กรองกรณีแสงสว่างจ้าบนสายพานเปล่า (Empty Overexposed Light / Glare):
+    # แผ่น PCB จริงจะต้องมีเส้นลายทองแดง รูเจาะ หรือมาร์กิ้งที่มี contrast และ edge_density
+    # ขณะที่แสงสว่างเปล่าจะเรียบเนียนเกือบไร้เส้นขอบ (edge_density < 0.010)
+    gray_warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+    contrast = float(np.std(gray_warped))
+    edges = cv2.Canny(gray_warped, 40, 120)
+    edge_density = float(np.count_nonzero(edges) / edges.size)
+    if contrast < 16.0 or edge_density < 0.010:
+        return None, None, None
 
     board_mask_orig = np.zeros((h, w), dtype=np.uint8)
     cv2.fillPoly(board_mask_orig, [ordered.astype(np.int32)], 255)

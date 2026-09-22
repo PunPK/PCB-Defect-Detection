@@ -323,20 +323,20 @@ async def run_background_defect_analysis(
             pass
 
         # สั่งการ Servo คัดแยก, แสดงผล LCD และ Pilot Lamp ตามผลวิเคราะห์
+        # กฎ: แผ่นสมบูรณ์ -> ลง CENTER (nano.servo_mid)
+        #     แผ่นมีตำหนิ -> ไปทางขวา (nano.servo_right) แล้วหมุนกลับ center
         if nano:
             try:
                 if verdict == "PASS" or verdict == "WARN" or accuracy >= 70.0:
                     nano.lcd_show_result(accuracy)
                     nano.light_on(1)
-                    nano.servo_left()
-                    await asyncio.sleep(0.5)
-                    nano.servo_mid()
+                    nano.servo_mid()  # ชิ้นงานสมบูรณ์ -> อยู่/ลงกึ่งกลาง
                 else:
                     nano.lcd_show_log("Defect", accuracy)
                     nano.light_off(1)
-                    nano.servo_right()
-                    await asyncio.sleep(0.5)
-                    nano.servo_mid()
+                    nano.servo_right()  # ชิ้นงานมีตำหนิ -> ปัดไปทางขวา
+                    await asyncio.sleep(1.2)
+                    nano.servo_mid()  # หมุนกลับมารอกึ่งกลางสำหรับชิ้นถัดไป
             except Exception as e:
                 logger.warning(f"Error actuating sorting hardware: {e}")
 
@@ -363,7 +363,7 @@ async def websocket_endpoint(
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
         nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(53)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
+        nano.belt_forward(50)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
         # 2. เตรียมโมเดล AI
@@ -472,14 +472,12 @@ async def websocket_endpoint(
 
             elif state == "WAIT_EXIT":
                 # อยู่ในระยะที่ชิ้นงานที่ตรวจเสร็จแล้วกำลังเคลื่อนที่ออกจากจุดตรวจ
-                if not is_centered:
-                    if exit_detect_start is None:
-                        exit_detect_start = now
-                    elif (now - exit_detect_start) >= 0.3:
-                        # ชิ้นงานเดิมพ้นกึ่งกลางไปแล้วเรียบร้อย -> กลับสู่โหมด SEARCHING สำหรับชิ้นงานถัดไป
-                        state = "SEARCHING"
-                        exit_detect_start = None
-                else:
+                # ต้องรอให้เวลาผ่านไปอย่างน้อย 2.5 วินาที เพื่อให้แผ่นเดิมเคลื่อนที่พ้นขอบเขตกล้อง
+                # และตรวจสอบว่าไม่ได้อยู่กึ่งกลางแล้ว (not is_centered) เพื่อป้องกันการตรวจจับซ้ำชิ้นเดิม
+                time_since_exit = now - exit_detect_start if exit_detect_start else 0
+                if time_since_exit >= 2.5 and not is_centered:
+                    # ชิ้นงานเดิมพ้นขอบเขตกล้องไปแล้วเรียบร้อย -> กลับสู่โหมด SEARCHING สำหรับชิ้นงานถัดไป
+                    state = "SEARCHING"
                     exit_detect_start = None
 
             # --- เมื่อเข้าสู่โหมด INSPECTING ---
@@ -563,7 +561,7 @@ async def websocket_endpoint(
                 finally:
                     # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 50 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
                     if nano:
-                        nano.belt_forward(60)
+                        nano.belt_forward(50)
                         nano.light_on(1)
                         nano.lcd_running()
                     # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่
