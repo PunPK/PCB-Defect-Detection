@@ -671,30 +671,40 @@ async def websocket_endpoint(
             warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(256, 256))
 
             is_centered = False
+            touches_border = False
             if quad is not None and warped_pcb is not None:
                 pts = quad.astype(np.int32).reshape((-1, 1, 2))
                 cv2.polylines(display_frame, [pts], True, (0, 255, 0), 2)
-                cv2.putText(
-                    display_frame,
-                    "PCB DETECTED",
-                    (int(quad[0][0]), max(25, int(quad[0][1]) - 10)),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 0),
-                    2,
-                )
 
-                # ตรวจสอบว่าแผ่น PCB เคลื่อนที่มาถึงกึ่งกลางสายพานหรือยัง
+                x_min = int(np.min(quad[:, 0]))
+                x_max = int(np.max(quad[:, 0]))
+                y_min = int(np.min(quad[:, 1]))
+                y_max = int(np.max(quad[:, 1]))
+                touches_border = bool(x_min <= 8 or x_max >= w - 8 or y_min <= 8 or y_max >= h - 8)
+
+                # ตรวจสอบว่าแผ่น PCB เคลื่อนที่มาถึงบริเวณกึ่งกลางสายพานหรือยัง
                 cx = int(quad[:, 0].mean())
-                if abs(cx - center_x) < 45:
+                dx = cx - center_x
+
+                if not touches_border and abs(dx) <= 35:
                     is_centered = True
                     cv2.putText(
                         display_frame,
-                        "CENTERED",
-                        (center_x - 50, 35),
+                        f"CENTERED (dx: {dx:+d}px)",
+                        (center_x - 80, 35),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.7,
                         (0, 0, 255),
+                        2,
+                    )
+                else:
+                    cv2.putText(
+                        display_frame,
+                        f"PCB APPROACHING ({dx:+d}px)",
+                        (max(20, int(quad[0][0])), max(25, int(quad[0][1]) - 10)),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6,
+                        (0, 255, 255),
                         2,
                     )
 
@@ -720,8 +730,8 @@ async def websocket_endpoint(
             # --- จัดการ State Machine ---
             if state == "SEARCHING":
                 sensor_hit = bool(nano and getattr(nano, "is_sensor_triggered", False))
-                # หากตรวจพบบอร์ด PCB ในกล้อง หรือเซนเซอร์ตรวจจับได้ ให้เข้าสู่โหมด INSPECTING เพื่อเริ่มกระบวนการจัดตำแหน่งกึ่งกลางและโฟกัส
-                if (quad is not None and warped_pcb is not None) or sensor_hit:
+                # ชิ้นงานต้องเคลื่อนที่เข้าสู่บริเวณใกล้กึ่งกลางจริง (is_centered) หรือเซนเซอร์ตรวจจับได้
+                if is_centered or sensor_hit:
                     state = "INSPECTING"
                     center_detect_start = None
                 else:
@@ -748,58 +758,86 @@ async def websocket_endpoint(
                     nano.light_off(1)  # ปิดไฟเขียวขณะกำลังจัดตำแหน่งและวิเคราะห์
                     nano.lcd_processing()  # จอ LCD แสดงสถานะ Processing........
 
-                print("=====> ตรวจพบ PCB! สั่งหยุดสายพานและเริ่มกระบวนการจัดตำแหน่งกึ่งกลาง...")
+                print("=====> บอร์ด PCB ถึงบริเวณกึ่งกลาง! สั่งหยุดสายพานและเริ่มกระบวนการจัดตำแหน่งกึ่งกลางละเอียด...")
+                await asyncio.sleep(0.2)  # รอแรงเฉื่อยจากการหยุดนิ่งลง
 
-                # --- ขั้นตอนที่ 1: Micro-Jogging จัดตำแหน่งให้กึ่งกลางเป๊ะๆ (Fine-Centering) ---
-                TIGHT_TOLERANCE = 15  # ความคลาดเคลื่อนยอมรับได้ไม่เกิน +-15 พิกเซล
-                max_jogs = 8
+                # --- ขั้นตอนที่ 1: Precision Micro-Centering ("ใจเย็น ทำนานๆได้ จัดให้อยู่กึ่งกลางจริงๆ") ---
+                TIGHT_TOLERANCE = 10  # ความคลาดเคลื่อนยอมรับได้ไม่เกิน +-10 พิกเซล
+                max_jogs = 20  # อนุญาตให้ปรับได้สูงสุด 20 ครั้งอย่างใจเย็น
 
                 current_quad = quad
-                if current_quad is not None:
+                for jog_i in range(max_jogs):
+                    # ล้าง Buffer สั้นๆ และอ่านเฟรมใหม่ที่นิ่งแล้ว
+                    for _ in range(3):
+                        camera.grab()
+                    ret_j, frame_j = camera.read()
+                    if not ret_j or frame_j is None:
+                        await asyncio.sleep(0.05)
+                        continue
+
+                    _, quad_j, _ = extract_pcb_board(frame_j, target_size=(256, 256))
+                    if quad_j is None:
+                        await asyncio.sleep(0.08)
+                        continue
+
+                    current_quad = quad_j
                     cx = int(current_quad[:, 0].mean())
                     dx = cx - center_x
-                else:
-                    dx = 0
 
-                if abs(dx) > TIGHT_TOLERANCE and nano:
-                    print(f"=====> PCB ยังไม่ตรงกึ่งกลาง (เยื้อง {dx:+d}px) — เริ่มขยับสายพานทีละนิด...")
+                    # ส่งภาพสดขณะจัดตำแหน่งไปยัง Frontend แบบ Real-time
                     if websocket.client_state == WebSocketState.CONNECTED:
                         try:
+                            disp_j = frame_j.copy()
+                            cv2.line(disp_j, (center_x, 0), (center_x, h), (0, 0, 255), 2)
+                            pts_j = current_quad.astype(np.int32).reshape((-1, 1, 2))
+                            cv2.polylines(disp_j, [pts_j], True, (0, 255, 255), 2)
+                            cv2.putText(
+                                disp_j,
+                                f"PRECISION CENTERING: {dx:+d}px (#{jog_i+1})",
+                                (center_x - 140, 35),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.65,
+                                (0, 255, 255),
+                                2,
+                            )
+                            _, b_disp_j = cv2.imencode(".jpg", disp_j, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                            await websocket.send_bytes(b_disp_j.tobytes())
+                            if latest_trace_view is not None:
+                                _, b_tr = cv2.imencode(".jpg", latest_trace_view, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                                await websocket.send_bytes(b_tr.tobytes())
+                            else:
+                                emp = np.zeros((100, 100, 3), dtype=np.uint8)
+                                _, b_emp = cv2.imencode(".jpg", emp)
+                                await websocket.send_bytes(b_emp.tobytes())
                             await websocket.send_json({
                                 "type": "centering",
-                                "message": f"กำลังขยับสายพานปรับตำแหน่งกึ่งกลาง (คลาดเคลื่อน {dx:+d}px)...",
+                                "message": f"กำลังปรับตำแหน่งกึ่งกลางละเอียด (คลาดเคลื่อน {dx:+d}px, ครั้งที่ {jog_i+1})...",
                             })
                         except Exception:
                             pass
 
-                    for jog_i in range(max_jogs):
-                        if dx < -TIGHT_TOLERANCE:
-                            # แผ่นอยู่ทางซ้าย (ยังไม่ถึงกึ่งกลาง) -> กระตุกเดินหน้าสั้นๆ 65ms
-                            nano.belt_forward(60)
-                            await asyncio.sleep(0.065)
-                            nano.belt_stop()
-                        elif dx > TIGHT_TOLERANCE:
-                            # แผ่นเลยไปทางขวา -> กระตุกถอยหลังสั้นๆ 65ms
-                            nano.belt_backward(60)
-                            await asyncio.sleep(0.065)
-                            nano.belt_stop()
-                        else:
-                            break
+                    # ตรวจสอบว่าถึงกึ่งกลางเป๊ะหรือยัง
+                    if abs(dx) <= TIGHT_TOLERANCE:
+                        print(f"=====> จัดตำแหน่งกึ่งกลางสำเร็จ! (คลาดเคลื่อน {dx:+d}px) ในการปรับ {jog_i+1} ครั้ง")
+                        break
 
-                        # รอแรงสั่นสะเทือนนิ่งแล้วอ่านเฟรมใหม่
-                        await asyncio.sleep(0.12)
-                        for _ in range(3):
-                            camera.grab()
-                        ret_j, frame_j = camera.read()
-                        if ret_j and frame_j is not None:
-                            _, quad_j, _ = extract_pcb_board(frame_j, target_size=(256, 256))
-                            if quad_j is not None:
-                                current_quad = quad_j
-                                cx = int(current_quad[:, 0].mean())
-                                dx = cx - center_x
-                                if abs(dx) <= TIGHT_TOLERANCE:
-                                    print(f"=====> จัดตำแหน่งกึ่งกลางสำเร็จ! (คลาดเคลื่อน {dx:+d}px) ในการกระตุก {jog_i+1} ครั้ง")
-                                    break
+                    if nano:
+                        pulse_time = 0.065 if abs(dx) > 30 else 0.040
+                        speed = 60 if abs(dx) > 30 else 55
+
+                        # ในมุมมองกล้อง: ทางเข้าบอร์ดอยู่ฝั่งขวา, ทางออก (ไป Servo) อยู่ฝั่งซ้าย
+                        # หาก dx > TIGHT_TOLERANCE (บอร์ดอยู่ทางขวา) -> เดินหน้า (belt_forward) เพื่อนำบอร์ดมาทางซ้ายเข้าสู่กึ่งกลาง
+                        if dx > TIGHT_TOLERANCE:
+                            nano.belt_forward(speed)
+                            await asyncio.sleep(pulse_time)
+                            nano.belt_stop()
+                        # หาก dx < -TIGHT_TOLERANCE (บอร์ดเลยไปทางซ้าย) -> ถอยหลัง (belt_backward) เพื่อนำบอร์ดกลับมาทางขวาสู่กึ่งกลาง
+                        elif dx < -TIGHT_TOLERANCE:
+                            nano.belt_backward(speed)
+                            await asyncio.sleep(pulse_time)
+                            nano.belt_stop()
+
+                        await asyncio.sleep(0.15)  # รอแรงสั่นสะเทือนนิ่งสนิท
 
                 # --- ขั้นตอนที่ 2: Auto-Focus Optimization (ปรับ Focus ให้คมชัดสูงสุดบนแผ่น PCB) ---
                 print("=====> ปรับ Focus เลนส์กล้องให้คมชัดสูงสุดบนลายทองแดง PCB...")
@@ -807,7 +845,7 @@ async def websocket_endpoint(
                     try:
                         await websocket.send_json({
                             "type": "focusing",
-                            "message": "กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุดบนผิว PCB...",
+                            "message": "PCB อยู่กึ่งกลางแล้ว! กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุด...",
                         })
                     except Exception:
                         pass
@@ -819,7 +857,7 @@ async def websocket_endpoint(
                 )
 
                 # --- ขั้นตอนที่ 3: Stabilization & Buffer Flush (รอให้นิ่งสนิทและล้าง Buffer ก่อนบันทึก) ---
-                print("=====> รอให้นิ่งสนิทและล้างภาพเก่าใน Buffer ก่อนบันทึกภาพ...")
+                print("=====> นิ่งสนิทและล้างภาพเก่าใน Buffer ก่อนบันทึกภาพ...")
                 if websocket.client_state == WebSocketState.CONNECTED:
                     try:
                         await websocket.send_json({
@@ -829,8 +867,8 @@ async def websocket_endpoint(
                     except Exception:
                         pass
 
-                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.5 วินาที)
-                await asyncio.sleep(0.5)
+                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.6 วินาที)
+                await asyncio.sleep(0.6)
 
                 # ล้างภาพเก่าที่ตกค้างใน Hardware Buffer ของกล้องออกทั้งหมด แล้วดึงภาพใหม่ที่คมชัดที่สุด
                 for _ in range(8):
@@ -844,6 +882,19 @@ async def websocket_endpoint(
                 if warped_pcb is None:
                     logger.warning("⚠️ ไม่พบแผ่น PCB จริงหลังหยุดสายพาน (สายพานเปล่าหรือแสงจ้า) — ยกเลิกและเดินสายพานต่อ")
                     print("=====> ไม่พบแผ่น PCB จริงหลังหยุดสายพาน — กลับสู่โหมด SEARCHING และเดินสายพานต่อทันที...")
+                    state = "SEARCHING"
+                    if nano:
+                        nano.belt_forward(60)
+                        nano.light_on(1)
+                        nano.lcd_running()
+                    continue
+
+                # ตรวจสอบความสมบูรณ์ของแผ่น PCB: ต้องไม่ใช่บอร์ดที่โดนตัดขาดที่ขอบจอ (Aspect Ratio ปกติ ~1.0)
+                h_w, w_w = warped_pcb.shape[:2]
+                aspect_ratio = max(h_w, w_w) / max(1, min(h_w, w_w))
+                if aspect_ratio > 1.65 or min(h_w, w_w) < 160:
+                    logger.warning(f"⚠️ ภาพ PCB ได้มาไม่สมบูรณ์ (Aspect ratio {aspect_ratio:.2f}, ขนาด {w_w}x{h_w}) — ข้ามและเดินสายพานต่อ")
+                    print(f"=====> ภาพ PCB ไม่สมบูรณ์ (Aspect ratio {aspect_ratio:.2f}) — กลับสู่โหมด SEARCHING...")
                     state = "SEARCHING"
                     if nano:
                         nano.belt_forward(60)
