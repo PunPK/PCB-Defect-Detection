@@ -551,12 +551,12 @@ async def websocket_endpoint(
 
         # State Machine สำหรับการทำงานแบบต่อเนื่อง (Continuous Operation)
         # "SEARCHING": สายพานวิ่ง 60 กำลังสแกนหาชิ้นงาน PCB ที่เข้ามา
-        # "INSPECTING": จัดตำแหน่งกึ่งกลาง (Micro-jog) + ปรับโฟกัส (Auto-focus) + สกัดลายทองแดง + ขยับเซอร์โว
-        # "WAIT_EXIT": เดินสายพานต่อที่ 60 รอให้ชิ้นงานเดิมพ้นกึ่งกลางก่อนตรวจชิ้นถัดไป
+        # "INSPECTING": จอดสายพาน + จัดกึ่งกลาง (Adaptive Jog) + ปรับโฟกัส + ถ่ายภาพ + สกัดลายทองแดง + คัดแยก Servo
+        # "COOLDOWN": เดินสายพานต่อที่ 60 พักไม่ตรวจ 5 วินาที เพื่อให้แผ่นเดิมพ้นกล้อง แล้วกลับมา SEARCHING
         # "RECHECKING": ย้อนสายพานถอยหลังเพื่อตรวจจับซ้ำ
         state = "SEARCHING"
         center_detect_start = None
-        exit_detect_start = None
+        cooldown_start = None
         latest_trace_view = None
         consecutive_read_failures = 0
         session_cached_focus = None
@@ -636,7 +636,7 @@ async def websocket_endpoint(
 
                 state = "SEARCHING"
                 center_detect_start = None
-                exit_detect_start = None
+                cooldown_start = None
 
                 if websocket.client_state == WebSocketState.CONNECTED:
                     try:
@@ -649,12 +649,22 @@ async def websocket_endpoint(
 
                 continue
 
-            ret, frame = camera.read()
+            if camera is None:
+                await asyncio.sleep(0.1)
+                continue
+
+            try:
+                ret, frame = camera.read()
+            except Exception:
+                ret, frame = False, None
+
             if not ret or frame is None:
                 consecutive_read_failures += 1
-                if consecutive_read_failures >= 15:
+                if consecutive_read_failures >= 40:
                     logger.warning("Camera read failed repeatedly. Attempting reconnect...")
-                    camera = await camera_manager.reconnect_camera()
+                    new_cam = await camera_manager.reconnect_camera()
+                    if new_cam is not None:
+                        camera = new_cam
                     consecutive_read_failures = 0
                 await asyncio.sleep(0.05)
                 continue
@@ -715,17 +725,46 @@ async def websocket_endpoint(
                 else:
                     center_detect_start = None
 
-            elif state == "WAIT_EXIT":
-                # อยู่ในระยะที่ชิ้นงานที่ตรวจเสร็จแล้วกำลังเคลื่อนที่ออกจากจุดตรวจ
-                # หลังผ่านไป 1.5 วินาที หากแผ่นเดิมพ้นขอบเขตกล้อง หรือครบเวลาความปลอดภัยสูงสุด 3.0 วินาที
-                # ให้กลับสู่โหมด SEARCHING ทันทีเพื่อพร้อมตรวจจับชิ้นงานถัดไปแบบอัตโนมัติ 100%
-                time_since_exit = now - exit_detect_start if exit_detect_start else 0
-                if time_since_exit >= 1.5:
-                    if (quad is None) or time_since_exit >= 3.0:
-                        state = "SEARCHING"
-                        exit_detect_start = None
-                        if nano:
-                            nano.servo_mid()  # เตรียมพร้อมที่ตำแหน่งกึ่งกลางเสมอสำหรับชิ้นงานถัดไป
+            elif state == "COOLDOWN":
+                # ผู้ใช้กำหนด: พักไม่ตรวจเป็นเวลา 5 วินาที แต่ระบบสายพานยังหมุนปกติที่ความเร็ว 60 แล้วจึงกลับมาตรวจเหมือนเดิม
+                elapsed_cd = now - cooldown_start if cooldown_start else 0.0
+                remaining_cd = max(0.0, 5.0 - elapsed_cd)
+
+                # วาดแถบข้อความนับถอยหลังบน display_frame
+                cv2.putText(
+                    display_frame,
+                    f"COOLDOWN: CLEARING PCB ({remaining_cd:.1f}s)",
+                    (center_x - 170, 35),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.65,
+                    (0, 200, 255),
+                    2,
+                )
+
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_json({
+                            "type": "cooldown",
+                            "remaining": round(remaining_cd, 1),
+                            "message": f"กำลังส่งชิ้นงานออกและพักการตรวจ ({round(remaining_cd, 1)}s)...",
+                        })
+                    except Exception:
+                        pass
+
+                if elapsed_cd >= 5.0:
+                    print("=====> พักการตรวจครบ 5 วินาทีแล้ว! ชิ้นงานเดิมพ้นกล้องเรียบร้อย -> กลับสู่โหมด SEARCHING พร้อมตรวจชิ้นถัดไป")
+                    state = "SEARCHING"
+                    cooldown_start = None
+                    if nano:
+                        nano.servo_mid()  # เซอร์โวกลับมากึ่งกลางเสมอพร้อมรับชิ้นงานถัดไป
+                    if websocket.client_state == WebSocketState.CONNECTED:
+                        try:
+                            await websocket.send_json({
+                                "type": "searching",
+                                "message": "พร้อมตรวจจับแผ่นถัดไป...",
+                            })
+                        except Exception:
+                            pass
 
             # --- เมื่อเข้าสู่โหมด INSPECTING (Fine-Centering + Auto-Focus + High-Clarity Inspection) ---
             if state == "INSPECTING":
@@ -802,19 +841,16 @@ async def websocket_endpoint(
                         break
 
                     if nano:
-                        # คำนวณความเร็วและระยะเวลา pulse ตามระยะทางจริง
+                        # ความเร็วสายพานขั้นต่ำคือ 60 เสมอตามข้อกำหนดฮาร์ดแวร์
+                        speed = 60
                         if dist > 150:
-                            pulse_time = 0.18
-                            speed = 60
+                            pulse_time = 0.20
                         elif dist > 70:
-                            pulse_time = 0.10
-                            speed = 60
+                            pulse_time = 0.12
                         elif dist > 25:
-                            pulse_time = 0.055
-                            speed = 60
+                            pulse_time = 0.065
                         else:
-                            pulse_time = 0.038
-                            speed = 55
+                            pulse_time = 0.045
 
                         # ตัดสินใจทิศทางตาม dir_sign
                         move_forward = (dx > 0 and dir_sign == 1) or (dx < 0 and dir_sign == -1)
@@ -880,8 +916,8 @@ async def websocket_endpoint(
                 if ret_stop and frame_stop is not None:
                     frame = frame_stop
 
-                # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 6% เพื่อไม่ให้ตัดลายทองแดง และคงสัดส่วน Aspect Ratio)
-                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=None, margin=0.06)
+                # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 12% เพื่อให้เก็บครบทั้งแผ่น รูเจาะมุม และขอบลายทองแดงไม่ถูกตัด)
+                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(512, 512), margin=0.12)
                 if warped_pcb is None:
                     logger.warning("⚠️ ไม่พบแผ่น PCB จริงหลังหยุดสายพาน (สายพานเปล่าหรือแสงจ้า) — ยกเลิกและเดินสายพานต่อ")
                     print("=====> ไม่พบแผ่น PCB จริงหลังหยุดสายพาน — กลับสู่โหมด SEARCHING และเดินสายพานต่อทันที...")
@@ -996,9 +1032,9 @@ async def websocket_endpoint(
                         nano.belt_forward(60)
                         nano.light_on(1)
                         nano.lcd_running()
-                    # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่
-                    state = "WAIT_EXIT"
-                    exit_detect_start = time.time()
+                    # เปลี่ยนสถานะเป็น COOLDOWN เพื่อพักไม่ตรวจ 5 วินาที ตามที่ผู้ใช้กำหนด (สายพานยังวิ่ง 60 ปกติ)
+                    state = "COOLDOWN"
+                    cooldown_start = time.time()
 
             # ส่งเฟรมภาพ 2 ภาพผ่าน WebSocket แบบ Binary
             if websocket.client_state == WebSocketState.CONNECTED:

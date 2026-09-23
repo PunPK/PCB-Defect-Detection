@@ -197,6 +197,10 @@ export default function ProcessFactoryWorkflow() {
             setAnalyzingStatus(message.message || "กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุด...");
           } else if (message.type === "stabilizing") {
             setAnalyzingStatus(message.message || "รอนิ่งสนิทและบันทึกภาพคุณภาพสูงสุด...");
+          } else if (message.type === "cooldown") {
+            setAnalyzingStatus(message.message || `กำลังส่งชิ้นงานออก (${message.remaining}s)...`);
+          } else if (message.type === "searching") {
+            setAnalyzingStatus(null);
           } else if (message.type === "new_result") {
             setIsRechecking(false);
             setAnalyzingStatus(null);

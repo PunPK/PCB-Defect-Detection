@@ -184,6 +184,12 @@ export default function DisplayProcess({ onNavigateTab }) {
           } else if (message.type === "analyzing") {
             setConveyorPcbState("inspecting");
             setRecheckStatus(message.message || "กำลังวิเคราะห์...");
+          } else if (message.type === "cooldown") {
+            setConveyorPcbState("ejecting");
+            setRecheckStatus(message.message || `กำลังส่งชิ้นงานออก (${message.remaining}s)...`);
+          } else if (message.type === "searching") {
+            setConveyorPcbState("approaching");
+            setRecheckStatus(null);
           } else if (message.type === "new_result") {
             setIsRechecking(false);
             setRecheckStatus(null);
