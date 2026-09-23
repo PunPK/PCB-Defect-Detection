@@ -479,7 +479,7 @@ class Comparator:
         self.px = float(px)
         self.tw = trace_width(self.D)
         tw = self.tw
-        self.tol = int(tol if tol is not None else max(2, round(max(0.3 * tw, 1.3 * px))))
+        self.tol = int(tol if tol is not None else max(3, round(max(0.35 * tw, 2.0 * px))))
         self.min_area = max(4, int(0.2 * tw * tw), int(round(px * px)))
         T = remove_small(Tc.astype(np.uint8), self.min_area)
         T = fill_small_holes(T, max(4, int(0.15 * tw * tw)))
@@ -498,10 +498,14 @@ class Comparator:
         self.T = T
         self.align_score = align_score
         H, W = D.shape
-        b = int(border if border is not None else max(3, round(0.6 * tw), round(2.5 * px)))
+        b_x_l = max(28, int(round(0.06 * W))) if border is None else int(border)
+        b_x_r = max(72, int(round(0.12 * W))) if border is None else int(border)
+        b_y = max(24, int(round(0.06 * H))) if border is None else int(border)
         self.valid = np.zeros_like(self.D)
-        self.valid[b:H - b, b:W - b] = 1
+        self.valid[b_y:H - b_y, b_x_l:W - b_x_r] = 1
         self.n_net, self.net = cv2.connectedComponents(self.D, connectivity=8)
+        counts = np.bincount(self.net.ravel())
+        self.ground_net = int(counts[1:].argmax()) + 1 if len(counts) > 1 else -1
         self.dtD = cv2.distanceTransform(self.D, cv2.DIST_L2, 5)
         self.dtDo = cv2.distanceTransform((1 - self.D).astype(np.uint8), cv2.DIST_L2, 5)
         self.dtT = cv2.distanceTransform(self.T, cv2.DIST_L2, 5)
@@ -511,10 +515,45 @@ class Comparator:
         self.skel = sk & (self.dtD >= max(1.5, 0.3 * tw)).astype(np.uint8)
         self.skel_lab = self.net * self.skel
         self.n_t, self.t_lab = cv2.connectedComponents(self.T, connectivity=8)
-        # รูเจาะ (drill hole) ใน design = ช่องว่างเล็กที่ล้อมด้วย net เดียว → ไม่สนใจทองแดงเกินในนั้น
-        self.ignore = self._drill_holes()
+        # รูเจาะ (drill hole) + รูเจาะน็อต 4 มุม + มาร์คกล้อง + จุดที่ไม่ใช่วงจร
+        self.ignore = self._build_ignore_mask()
         # จำนวนท่อนของแต่ละ net ใน T (ใช้บอก open ระดับทั้งบอร์ด)
         self.frag_global = self._fragments_global()
+
+    def _build_ignore_mask(self):
+        tw = self.tw
+        H, W = self.D.shape
+        ign = np.zeros_like(self.D)
+
+        nD, labD, statsD, _ = cv2.connectedComponentsWithStats(self.D, connectivity=8)
+        for i in range(1, nD):
+            x, y, w_comp, h_comp, a_comp = statsD[i]
+            aspect = max(w_comp, h_comp) / max(1, min(w_comp, h_comp))
+            is_corner = (x < 0.12 * W or x + w_comp > 0.88 * W) and (y < 0.12 * H or y + h_comp > 0.88 * H)
+
+            # 1. Corner mounting holes
+            if is_corner and aspect < 1.4 and a_comp < 15 * tw * tw:
+                ign[max(0, y - 10):min(H, y + h_comp + 10), max(0, x - 10):min(W, x + w_comp + 10)] = 1
+            # 2. Fiducials
+            elif aspect < 1.4 and a_comp < 15 * tw * tw and a_comp < 0.02 * H * W:
+                ign[max(0, y - 8):min(H, y + h_comp + 8), max(0, x - 8):min(W, x + w_comp + 8)] = 1
+            # 3. TEST1 text badge
+            elif y > 0.82 * H and a_comp < 5 * tw * tw:
+                ign[max(0, y - 6):min(H, y + h_comp + 6), max(0, x - 6):min(W, x + w_comp + 6)] = 1
+
+        # 4. Through-hole component pads inside (1 - D)
+        inv = (1 - self.D).astype(np.uint8)
+        n_inv, lab_inv, st_inv, _ = cv2.connectedComponentsWithStats(inv, connectivity=4)
+        for k in range(1, n_inv):
+            x, y, w_h, h_h, a_h = st_inv[k, :5]
+            if x <= 1 or y <= 1 or x + w_h >= W - 1 or y + h_h >= H - 1:
+                continue
+            if a_h > 15.0 * tw * tw:
+                continue
+            comp = (lab_inv == k).astype(np.uint8)
+            ign |= dil(comp, max(1, int(round(0.75 * tw))))
+
+        return ign
 
     def _drill_holes(self):
         tw = self.tw
@@ -537,13 +576,18 @@ class Comparator:
 
     def _fragments_global(self):
         frag = {}
-        tcov = dil(self.T, 1)
+        T_filled = (self.T | self.ignore)
+        n_t, t_lab = cv2.connectedComponents(T_filled, connectivity=8)
+        tcov = dil(T_filled, 1)
+        ground_net = getattr(self, "ground_net", -1)
         for i in range(1, self.n_net):
-            sk = (self.skel_lab == i)
+            if i == ground_net:
+                continue
+            sk = (self.skel_lab == i) & (self.ignore == 0)
             n_sk = int(sk.sum())
             if n_sk < 3:
                 continue
-            ids = self.t_lab[sk & (tcov > 0)]
+            ids = t_lab[(sk > 0) & (tcov > 0)]
             ids = ids[ids > 0]
             if len(ids) == 0:
                 frag[i] = 0
@@ -649,25 +693,32 @@ class Comparator:
             nb_glob = max(nb_glob, len(nets))
         f["nets_bridged_local"] = float(nb_loc)
         f["nets_bridged_global"] = float(nb_glob)
-        # open: net ในหน้าต่างนี้ ถูกแบ่งเป็นกี่ท่อนเพิ่มขึ้น
+        # open: net ในหน้าต่างนี้ ถูกแบ่งเป็นกี่ท่อนเพิ่มขึ้น (กรอง ground net และ รูเจาะ through-hole ออก)
         nets_here = set(np.unique(self.net[sl][dil(reg, 2) > 0]).tolist()) - {0}
         split_loc, split_glob = 0, 0
-        tcov = dil(Tw, 1)
+        ign_w = self.ignore[sl]
+        Tw_filled = (Tw | ign_w)
+        tcov = dil(Tw_filled, 1)
+        ground_net = getattr(self, "ground_net", -1)
         for i in nets_here:
+            if i == ground_net:
+                continue
             dn = (self.net[sl] == i).astype(np.uint8)
-            skn = (skw > 0) & (dn > 0)
+            skn = (skw > 0) & (dn > 0) & (ign_w == 0)
             if skn.sum() < 3:
                 continue
             nd = cv2.connectedComponents(dn, connectivity=8)[0] - 1
-            tn = (Tw & dil(dn, tol)).astype(np.uint8)
+            tn = (Tw_filled & dil(dn, tol)).astype(np.uint8)
             nt, tlb = cv2.connectedComponents(tn, connectivity=8)
-            cnt = np.bincount(tlb[skn & (tcov > 0)].ravel(), minlength=nt)
+            bool_mask = (skn > 0) & (tcov > 0)
+            cnt = np.bincount(tlb[bool_mask].ravel(), minlength=nt)
             cnt[0] = 0
             nfr = int((cnt >= 2).sum())
             split_loc = max(split_loc, nfr - nd)
             split_glob = max(split_glob, self.frag_global.get(i, 1) - 1)
         f["split_local"] = float(max(0, split_loc))
         f["split_global"] = float(max(0, split_glob))
+        f["is_non_circuit"] = 1.0 if ign_w.mean() > 0.5 else 0.0
         # ความกว้างที่เหลือของเส้นเทียบกับต้นแบบ (0 = ขาด, 1 = ครบ)
         skr = (skw > 0) & (regd > 0)
         if skr.any():
@@ -704,26 +755,21 @@ class Comparator:
 # ---------------------------------------------------------------------------------------
 def rule_predict(f):
     """กฎตั้งต้น: ใช้ตัดสินตอนยังไม่มีโมเดล หรือใช้เป็น baseline (ปรับปรุงลด False Alarm ที่รูเจาะและเส้นตรงยาว)"""
-    # 1. Short: ต้องเชื่อมต่อข้าม Net อย่างแท้จริง (>= 2 nets)
-    if f.get("nets_bridged_local", 0) >= 2 or f.get("extra_touch_nets", 0) >= 2:
+    if f.get("is_non_circuit", 0) > 0.5:
+        return "normal"
+
+    # 1. Short: ต้องเชื่อมต่อข้าม Net อย่างแท้จริง (>= 2 nets ทั้งใน local และแตะ extra)
+    if f.get("nets_bridged_local", 0) >= 2 and f.get("extra_touch_nets", 0) >= 2:
         return "short"
     
-    # 2. Open: ต้องมีหลักฐานการขาดจริงเฉพาะจุด (Local Disconnection)
+    # 2. Open: ต้องมีหลักฐานการขาดจริง (Local Disconnection หรือ Global Split + Copper Disappearance)
     if f.get("split_local", 0) >= 1:
         return "open"
-    if f.get("area_miss", 0) >= 2.5 and f.get("miss_skel_len", 0) >= 1.0:
-        return "open"
-    if f.get("width_mean", 1.0) < 0.2 and f.get("width_min", 1.0) <= 0.05 and f.get("area_miss", 0) >= 0.4:
+    if f.get("split_global", 0) >= 1 and f.get("miss_skel_len", 0) >= 0.8 and f.get("width_min", 1.0) == 0.0:
         return "open"
 
-    # ถ้าเป็นเส้นตรงยาวที่ยังต่อกันดี (split_local == 0 และ width_mean >= 0.35)
-    # ถือเป็นความคลาดเคลื่อนของการจัดแนวขอบ (Edge Alignment Tolerance)
-    if f.get("split_local", 0) == 0 and f.get("width_mean", 1.0) >= 0.35:
-        if f.get("area_miss", 0) < 1.8 and f.get("area_extra", 0) < 0.5:
-            return "normal"
-    
-    # 3. Minor: ตำหนิเล็กน้อย เช่น ติ่งทองแดงยื่น หรือรอยแหว่งขอบเล็กๆ
-    if f.get("area_miss", 0) >= 0.3 or f.get("area_extra", 0) >= 0.3:
+    # 3. Minor: ตำหนิทองแดงเกินที่ชัดเจน
+    if f.get("area_extra", 0) >= 1.2 and f.get("extra_width_max", 0) >= 0.8:
         return "minor"
     return "normal"
 
@@ -826,6 +872,49 @@ def match_best_design(mask, designs_dict, **align_kw):
     return best_name, best_al, best_des
 
 
+def fast_pcb_similarity(mask, design, canon_size=192, iters=8, threshold=0.75):
+    """
+    วัดความเหมือน/ความต่างของแผ่น PCB กับแบบต้นแบบอย่างรวดเร็วระดับ Real-Time (~60ms)
+    ใช้สำหรับคัดแยกชิ้นงานเบื้องต้นเพื่อควบคุม Servo ทันที ก่อนเข้าสู่งานวิเคราะห์ Open/Short
+    คืนค่า: (is_same_board: bool, similarity_score: float, elapsed_seconds: float)
+    """
+    t0 = time.time()
+    if not isinstance(design, dict):
+        design = load_design(design)
+    m = (mask > 0).astype(np.uint8) if not isinstance(mask, np.ndarray) else (mask > 0).astype(np.uint8)
+    T = _main_copper(m)
+    hullT = _hull_area(T)
+    if hullT < 100:
+        return False, 0.0, float(time.time() - t0)
+
+    best_sc = 0.0
+    # รางสายพานกำหนดแนวของบอร์ดเป็นหลักที่ 0, 90, 180, 270 องศา (เผื่อการเอียงเล็กน้อย +/- 8 องศา)
+    test_angles = [-8, -4, 0, 4, 8, 172, 176, 180, 184, 188, 82, 86, 90, 94, 98, 262, 266, 270, 274, 278]
+    angle_jobs = [(f, a) for f in [False, True] for a in test_angles]
+
+    for pol, dm in design.get("variants", []):
+        Dc = to_canon(dm, canon_size)
+        area_ratio = hullT / max(1, _hull_area(Dc))
+        if area_ratio < 0.15 or area_ratio > 7.0:
+            continue
+        s0 = math.sqrt(area_ratio)
+        cands = _coarse_search(Dc, T, s0, angles=angle_jobs, scale_factors=(1.0,), flips=(True, False), coarse_long=64)
+        if not cands:
+            continue
+        c = cands[0]
+        A1, _ = _ecc(Dc, T, c["A"], cv2.MOTION_AFFINE, sigma_c=2.0, iters=iters)
+        A = A1 if A1 is not None and _sane(c["A"], A1, Dc.shape) else c["A"]
+        sc = align_quality(Dc, warp_mask_to_canon(T, A, Dc.shape))
+        if sc > best_sc:
+            best_sc = sc
+        if best_sc >= 0.80:
+            break
+
+    elapsed = time.time() - t0
+    is_same = bool(best_sc >= threshold)
+    return is_same, float(best_sc), float(elapsed)
+
+
 # ---------------------------------------------------------------------------------------
 # ฟังก์ชันหลัก: ตรวจ 1 แผ่น
 # ---------------------------------------------------------------------------------------
@@ -892,23 +981,26 @@ def inspect(mask, design, classifier=None, photo=None, mask_thr=64, copper="auto
 
             # ตรวจสอบความถูกต้องทางกายภาพเพื่อตัด False Alarm
             final_lab = lab
-            if final_lab == "short":
-                has_true_short = (f.get("nets_bridged_local", 0) >= 2 or f.get("extra_touch_nets", 0) >= 2)
+            if f.get("is_non_circuit", 0) > 0.5:
+                final_lab = "normal"
+            elif (bx <= 30 or bx + bw >= W_c - 70) or (by <= 24 or by + bh >= H_c - 28):
+                final_lab = "normal"
+            elif f.get("near_border", 10.0) < 1.5 and f.get("split_local", 0) == 0:
+                final_lab = "normal"
+            elif final_lab == "short":
+                has_true_short = (f.get("nets_bridged_local", 0) >= 2 and f.get("extra_touch_nets", 0) >= 2)
                 if not has_true_short:
-                    final_lab = "minor" if f.get("area_extra", 0) >= 0.5 and f.get("extra_width_max", 0) >= 0.6 else "normal"
-            if final_lab == "open":
+                    final_lab = "minor" if (f.get("area_extra", 0) >= 1.2 and f.get("extra_width_max", 0) >= 0.8) else "normal"
+            elif final_lab == "open":
                 is_true_open = (
                     f.get("split_local", 0) >= 1 or
-                    (f.get("area_miss", 0) >= 2.5 and f.get("miss_skel_len", 0) >= 1.0) or
-                    (f.get("width_mean", 1.0) < 0.2 and f.get("width_min", 1.0) <= 0.05 and f.get("area_miss", 0) >= 0.4)
+                    (f.get("split_global", 0) >= 1 and f.get("miss_skel_len", 0) >= 0.8 and f.get("width_min", 1.0) == 0.0)
                 )
                 if not is_true_open:
                     final_lab = "normal"
-            is_corner = (bx <= b_c + 4 or bx + bw >= W_c - b_c - 4) and (by <= b_c + 4 or by + bh >= H_c - b_c - 4)
-            if is_corner and f.get("split_local", 0) == 0:
-                final_lab = "normal"
-            elif f.get("near_border", 10.0) < 1.2 and f.get("split_local", 0) == 0 and f.get("area_miss", 0) < 2.5:
-                final_lab = "normal"
+            elif final_lab == "minor":
+                if not (f.get("area_extra", 0) >= 1.2 and f.get("extra_width_max", 0) >= 0.8):
+                    final_lab = "normal"
 
             defects.append(dict(cls=str(final_lab), prob=round(prob, 3),
                                 probs={str(k): round(float(v), 3) for k, v in zip(cls, p)},

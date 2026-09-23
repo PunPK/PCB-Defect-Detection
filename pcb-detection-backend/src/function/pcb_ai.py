@@ -356,6 +356,8 @@ class PCBDefectAnalyzer:
 
         self.designs_dir = designs_dir
         self.designs_cache = {}
+        self._cached_template_bytes = None
+        self._cached_design = None
         self._load_reference_designs()
 
     def _load_reference_designs(self):
@@ -368,6 +370,63 @@ class PCBDefectAnalyzer:
                 except Exception as e:
                     logger.debug(f"Could not load design {p}: {e}")
             print(f"[PCBDefectAnalyzer] โหลดต้นแบบอ้างอิง {len(self.designs_cache)} แบบ: {list(self.designs_cache.keys())}")
+
+    def _get_design_from_bytes(self, template_bytes: Optional[bytes] = None) -> Any:
+        """แปลง template_bytes เป็น design object พร้อมระบบแคชเพื่อความเร็วสูงสุด"""
+        if not template_bytes:
+            return None
+        if self._cached_template_bytes == template_bytes and self._cached_design is not None:
+            return self._cached_design
+
+        try:
+            np_arr = np.frombuffer(template_bytes, np.uint8)
+            tpl_img = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
+            if tpl_img is not None:
+                if tpl_img.ndim == 3 and tpl_img.shape[2] == 4:
+                    a = tpl_img[..., 3:4].astype(np.float32) / 255.0
+                    tpl_img = (tpl_img[..., :3] * a + 255.0 * (1.0 - a)).astype(np.uint8)
+                elif tpl_img.ndim == 2:
+                    tpl_img = cv2.cvtColor(tpl_img, cv2.COLOR_GRAY2BGR)
+
+                b, g, r = cv2.split(tpl_img)
+                color_diff = float(np.mean(np.abs(b.astype(int) - g.astype(int))) + np.mean(np.abs(g.astype(int) - r.astype(int))))
+                if color_diff < 18.0:
+                    design = pc.load_design(tpl_img, copper="auto")
+                else:
+                    extractor = CopperTraceExtractor.get_instance()
+                    tpl_mask = extractor.predict(tpl_img)
+                    design = pc.load_design(tpl_mask, copper="white")
+                self._cached_template_bytes = template_bytes
+                self._cached_design = design
+                return design
+        except Exception as e:
+            logger.error(f"Error parsing user template: {e}")
+        return None
+
+    def fast_check_similarity(
+        self,
+        copper_mask: np.ndarray,
+        template_bytes: Optional[bytes] = None,
+        threshold: float = 0.75,
+    ) -> Tuple[bool, float, float]:
+        """
+        วัดความเหมือน/ต่างของ copper_mask กับ template อย่างรวดเร็ว (~60ms) เพื่อคัดแยกและสั่งงาน Servo แบบ Real-Time
+        คืนค่า: (is_same_board: bool, similarity_score: float, elapsed_seconds: float)
+        """
+        t0 = time.time()
+        design_to_compare = self._get_design_from_bytes(template_bytes)
+
+        if design_to_compare is None:
+            if self.designs_cache:
+                first_key = next(iter(self.designs_cache))
+                design_to_compare = self.designs_cache[first_key]
+            elif pc is not None:
+                design_to_compare = pc.load_design(copper_mask, copper="white")
+
+        if pc is not None and hasattr(pc, "fast_pcb_similarity") and design_to_compare is not None:
+            return pc.fast_pcb_similarity(copper_mask, design_to_compare, threshold=threshold)
+
+        return True, 1.0, float(time.time() - t0)
 
     def analyze(
         self,
@@ -382,34 +441,7 @@ class PCBDefectAnalyzer:
         photo_bgr: ภาพถ่ายจริงของแผ่นบอร์ด สำหรับใช้วาดกรอบและ overlay
         """
         t0 = time.time()
-        design_to_compare = None
-
-        # 1. เตรียมต้นแบบที่ต้องการเปรียบเทียบ
-        if template_bytes:
-            try:
-                np_arr = np.frombuffer(template_bytes, np.uint8)
-                tpl_img = cv2.imdecode(np_arr, cv2.IMREAD_UNCHANGED)
-                if tpl_img is not None:
-                    # แปลงภาพ 4 channels (RGBA) หรือ Grayscale ให้เป็น BGR มาตรฐาน
-                    if tpl_img.ndim == 3 and tpl_img.shape[2] == 4:
-                        a = tpl_img[..., 3:4].astype(np.float32) / 255.0
-                        tpl_img = (tpl_img[..., :3] * a + 255.0 * (1.0 - a)).astype(np.uint8)
-                    elif tpl_img.ndim == 2:
-                        tpl_img = cv2.cvtColor(tpl_img, cv2.COLOR_GRAY2BGR)
-
-                    # ตรวจสอบว่าภาพต้นแบบเป็น CAD ขาวดำ หรือเป็นภาพถ่ายบอร์ด
-                    b, g, r = cv2.split(tpl_img)
-                    color_diff = float(np.mean(np.abs(b.astype(int) - g.astype(int))) + np.mean(np.abs(g.astype(int) - r.astype(int))))
-                    if color_diff < 18.0:
-                        # เป็นไฟล์ CAD / Gerber ขาวดำ -> ส่งเข้า load_design ตรงๆ (ตรวจจับ polarity auto)
-                        design_to_compare = pc.load_design(tpl_img, copper="auto")
-                    else:
-                        # เป็นภาพถ่ายบอร์ดจริง -> สกัดลายทองแดงด้วย TinyUNet ก่อนทำเป็นต้นแบบ
-                        extractor = CopperTraceExtractor.get_instance()
-                        tpl_mask = extractor.predict(tpl_img)
-                        design_to_compare = pc.load_design(tpl_mask, copper="white")
-            except Exception as e:
-                logger.error(f"Error parsing user template: {e}")
+        design_to_compare = self._get_design_from_bytes(template_bytes)
 
         # ถ้าไม่มี template เฉพาะ หรือ parse ไม่สำเร็จ ให้ใช้ชุด reference designs หรือใช้ copper_mask ชั่วคราว
         if design_to_compare is None:

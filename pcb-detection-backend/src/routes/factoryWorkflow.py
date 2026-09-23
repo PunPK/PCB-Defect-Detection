@@ -220,6 +220,16 @@ def save_initial_pcb_result(
     }
 
 
+async def reset_servo_after_delay(nano: Any, delay: float = 2.0):
+    """หน่วงเวลาให้ชิ้นงานพ้นรางคัดแยกไปก่อน แล้วจึงหมุน Servo กลับมารอกึ่งกลางเพื่อเตรียมรับชิ้นงานถัดไป"""
+    try:
+        await asyncio.sleep(delay)
+        if nano:
+            nano.servo_mid()
+    except Exception as e:
+        logger.debug(f"Error in reset_servo_after_delay: {e}")
+
+
 # ==============================================================================
 # Helper: รันโมเดลวิเคราะห์ตำหนิ (Defect Analyzer) ใน Background Task แบบไม่บล็อก
 # ==============================================================================
@@ -322,23 +332,17 @@ async def run_background_defect_analysis(
         except Exception:
             pass
 
-        # สั่งการ Servo คัดแยก, แสดงผล LCD และ Pilot Lamp ตามผลวิเคราะห์
-        # กฎ: แผ่นสมบูรณ์ -> ลง CENTER (nano.servo_mid)
-        #     แผ่นมีตำหนิ -> ไปทางขวา (nano.servo_right) แล้วหมุนกลับ center
+        # แสดงผล LCD และ Pilot Lamp ตามผลวิเคราะห์ตำหนิ (การคัดแยก Servo ทางกายภาพดำเนินการไปแล้วตอน Real-Time)
         if nano:
             try:
                 if verdict == "PASS" or verdict == "WARN" or accuracy >= 70.0:
                     nano.lcd_show_result(accuracy)
                     nano.light_on(1)
-                    nano.servo_mid()  # ชิ้นงานสมบูรณ์ -> อยู่/ลงกึ่งกลาง
                 else:
                     nano.lcd_show_log("Defect", accuracy)
                     nano.light_off(1)
-                    nano.servo_right()  # ชิ้นงานมีตำหนิ -> ปัดไปทางขวา
-                    await asyncio.sleep(1.2)
-                    nano.servo_mid()  # หมุนกลับมารอกึ่งกลางสำหรับชิ้นถัดไป
             except Exception as e:
-                logger.warning(f"Error actuating sorting hardware: {e}")
+                logger.warning(f"Error updating status display: {e}")
 
     except Exception as err:
         logger.error(f"❌ Error in background defect analysis for Result ID {result_id}: {err}", exc_info=True)
@@ -363,7 +367,7 @@ async def websocket_endpoint(
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
         nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(50)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
+        nano.belt_forward(70)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
         # 2. เตรียมโมเดล AI
@@ -479,6 +483,8 @@ async def websocket_endpoint(
                     # ชิ้นงานเดิมพ้นขอบเขตกล้องไปแล้วเรียบร้อย -> กลับสู่โหมด SEARCHING สำหรับชิ้นงานถัดไป
                     state = "SEARCHING"
                     exit_detect_start = None
+                    if nano:
+                        nano.servo_mid()  # เตรียมพร้อมที่ตำแหน่งกึ่งกลางเสมอสำหรับชิ้นงานถัดไป
 
             # --- เมื่อเข้าสู่โหมด INSPECTING ---
             if state == "INSPECTING":
@@ -531,6 +537,35 @@ async def websocket_endpoint(
                     trace_view = latest_trace_view
                     current_result_id = init_res["result_id"]
 
+                    # ⚡ วัดความเหมือน/ความต่าง (Fast Similarity Check) แบบ Real-Time (~60ms) เพื่อควบคุม Servo คัดแยกทันที!
+                    is_same_board = True
+                    sim_score = 1.0
+                    try:
+                        sim_res = await asyncio.to_thread(
+                            defect_analyzer.fast_check_similarity,
+                            init_res["copper_mask"],
+                            original_bytes,
+                            0.75,
+                        )
+                        is_same_board, sim_score, sim_time = sim_res
+                        logger.info(f"⚡ Fast Similarity: is_same={is_same_board}, score={sim_score:.3f} (time: {sim_time*1000:.1f}ms)")
+                        print(f"=====> Fast Similarity: {'MATCH (Same Board)' if is_same_board else 'DIFF (Different Board)'} | Score: {sim_score:.3f} ({sim_time*1000:.1f}ms)")
+                    except Exception as e:
+                        logger.warning(f"Error in fast similarity check: {e}")
+
+                    # 🎛️ สั่งการ Servo คัดแยกชิ้นงานแบบ Real-Time:
+                    # แผ่นเดียวกันกับต้นแบบ -> กึ่งกลาง (servo_mid)
+                    # คนละแผ่น/ต่างรุ่น -> หมุนไปทางขวา (servo_right)
+                    if nano:
+                        if is_same_board:
+                            nano.servo_mid()
+                            nano.lcd_show_log("Match", int(sim_score * 100))
+                        else:
+                            nano.servo_right()
+                            nano.lcd_show_log("Diff", int(sim_score * 100))
+                            # หน่วงเวลาให้ชิ้นงานพ้นรางคัดแยกไปก่อน แล้วหมุน Servo กลับมารอกึ่งกลาง
+                            asyncio.create_task(reset_servo_after_delay(nano, delay=2.0))
+
                     print(f"=====> บันทึกผลเบื้องต้นสำเร็จ! Result ID: {current_result_id} | เริ่มเดินสายพานต่อทันที...")
 
                     # ส่งสัญญาณแจ้งเตือน Frontend ให้ดึงข้อมูลผลลัพธ์มาแสดง (รูปที่ 1, 2, 3 แสดงทันที, รูปที่ 4 ขึ้นสถานะรอดำเนินการ)
@@ -561,7 +596,7 @@ async def websocket_endpoint(
                 finally:
                     # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 50 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
                     if nano:
-                        nano.belt_forward(50)
+                        nano.belt_forward(70)
                         nano.light_on(1)
                         nano.lcd_running()
                     # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่
