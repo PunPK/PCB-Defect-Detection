@@ -151,6 +151,11 @@ def save_initial_pcb_result(
         warped_pcb, conf_thresh=0.5, color=(0, 255, 200), alpha=0.55
     )
 
+    copper_ratio = float(np.count_nonzero(copper_mask) / copper_mask.size)
+    if copper_ratio < 0.02:
+        logger.warning(f"⚠️ copper_ratio ต่ำเกินไป ({copper_ratio*100:.2f}%) ไม่พบวงจรทองแดงจริง — ข้ามการบันทึกผล")
+        return None
+
     # 2. สร้างภาพแสดงผลเบื้องต้นสำหรับรูปที่ 4 (สถานะรอดำเนินการวิเคราะห์)
     interim_result = create_interim_result_image(warped_pcb, trace_view)
 
@@ -467,8 +472,9 @@ async def websocket_endpoint(
 
             # --- จัดการ State Machine ---
             if state == "SEARCHING":
-                if is_centered:
-                    # ตรวจพบแผ่น PCB อยู่กึ่งกลาง -> เข้าสู่โหมด INSPECTING ทันที ไม่รอหน่วงเวลา เพื่อให้เบรกตรงกลางพอดี
+                sensor_hit = bool(nano and getattr(nano, "is_sensor_triggered", False))
+                if is_centered or sensor_hit:
+                    # ตรวจพบแผ่น PCB อยู่กึ่งกลาง หรือเซนเซอร์ตรวจจับชิ้นงาน -> เข้าสู่โหมด INSPECTING ทันที
                     state = "INSPECTING"
                     center_detect_start = None
                 else:
@@ -476,15 +482,16 @@ async def websocket_endpoint(
 
             elif state == "WAIT_EXIT":
                 # อยู่ในระยะที่ชิ้นงานที่ตรวจเสร็จแล้วกำลังเคลื่อนที่ออกจากจุดตรวจ
-                # ต้องรอให้เวลาผ่านไปอย่างน้อย 2.5 วินาที เพื่อให้แผ่นเดิมเคลื่อนที่พ้นขอบเขตกล้อง
-                # และตรวจสอบว่าไม่ได้อยู่กึ่งกลางแล้ว (not is_centered) เพื่อป้องกันการตรวจจับซ้ำชิ้นเดิม
+                # หลังผ่านไป 1.5 วินาที หากแผ่นเดิมพ้นกึ่งกลาง (not is_centered) หรือครบเวลาความปลอดภัยสูงสุด 3.0 วินาที
+                # ให้กลับสู่โหมด SEARCHING ทันทีเพื่อพร้อมตรวจจับชิ้นงานถัดไปแบบอัตโนมัติ 100%
                 time_since_exit = now - exit_detect_start if exit_detect_start else 0
-                if time_since_exit >= 2.5 and not is_centered:
-                    # ชิ้นงานเดิมพ้นขอบเขตกล้องไปแล้วเรียบร้อย -> กลับสู่โหมด SEARCHING สำหรับชิ้นงานถัดไป
-                    state = "SEARCHING"
-                    exit_detect_start = None
-                    if nano:
-                        nano.servo_mid()  # เตรียมพร้อมที่ตำแหน่งกึ่งกลางเสมอสำหรับชิ้นงานถัดไป
+                if time_since_exit >= 1.5:
+                    if not is_centered or time_since_exit >= 3.0:
+                        # ชิ้นงานเดิมพ้นขอบเขตกล้องไปแล้วเรียบร้อย -> กลับสู่โหมด SEARCHING สำหรับชิ้นงานถัดไป
+                        state = "SEARCHING"
+                        exit_detect_start = None
+                        if nano:
+                            nano.servo_mid()  # เตรียมพร้อมที่ตำแหน่งกึ่งกลางเสมอสำหรับชิ้นงานถัดไป
 
             # --- เมื่อเข้าสู่โหมด INSPECTING ---
             if state == "INSPECTING":
@@ -497,13 +504,17 @@ async def websocket_endpoint(
                 print("=====> ตรวจพบ PCB อยู่กึ่งกลางกล้อง! หยุดสายพานและรอให้นิ่งสนิท...")
 
                 # ส่งสถานะกำลังประมวลผลไปยัง Frontend
-                await websocket.send_json({
-                    "type": "analyzing",
-                    "message": "PCB อยู่กึ่งกลางกล้อง! กำลังหยุดสายพานและรอให้นิ่งสนิท...",
-                })
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_json({
+                            "type": "analyzing",
+                            "message": "PCB อยู่กึ่งกลางกล้อง! กำลังหยุดสายพานและรอให้นิ่งสนิท...",
+                        })
+                    except Exception:
+                        pass
 
-                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.6 วินาที)
-                await asyncio.sleep(0.6)
+                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.5 วินาที)
+                await asyncio.sleep(0.5)
 
                 # ล้างภาพเก่าที่ตกค้างใน Hardware Buffer ของกล้องออกทั้งหมด แล้วดึงภาพใหม่ที่คมชัดที่สุด
                 for _ in range(5):
@@ -515,12 +526,14 @@ async def websocket_endpoint(
                 # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 6% เพื่อไม่ให้ตัดลายทองแดง และคงสัดส่วน Aspect Ratio)
                 warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=None, margin=0.06)
                 if warped_pcb is None:
-                    crop_w = int(w * 0.7)
-                    crop_h = int(h * 0.7)
-                    warped_pcb = frame[
-                        max(0, h // 2 - crop_h // 2) : min(h, h // 2 + crop_h // 2),
-                        max(0, w // 2 - crop_w // 2) : min(w, w // 2 + crop_w // 2),
-                    ]
+                    logger.warning("⚠️ ไม่พบแผ่น PCB จริงหลังหยุดสายพาน (สายพานเปล่าหรือแสงจ้า) — ยกเลิกและเดินสายพานต่อ")
+                    print("=====> ไม่พบแผ่น PCB จริงหลังหยุดสายพาน — กลับสู่โหมด SEARCHING และเดินสายพานต่อทันที...")
+                    state = "SEARCHING"
+                    if nano:
+                        nano.belt_forward(53)
+                        nano.light_on(1)
+                        nano.lcd_running()
+                    continue
 
                 try:
                     # 🛠️ สกัดลายทองแดงและบันทึกผลเบื้องต้นลงฐานข้อมูลใน Worker Thread อย่างรวดเร็ว (~40ms)
@@ -532,6 +545,16 @@ async def websocket_endpoint(
                         pcb_id,
                         db,
                     )
+
+                    if init_res is None:
+                        logger.warning("⚠️ ไม่พบลายทองแดงที่ถูกต้องบนชิ้นงาน (copper < 2%) — ข้ามการประมวลผล")
+                        print("=====> ไม่พบลายทองแดงจริง — กลับสู่โหมด SEARCHING และเดินสายพานต่อ...")
+                        state = "SEARCHING"
+                        if nano:
+                            nano.belt_forward(53)
+                            nano.light_on(1)
+                            nano.lcd_running()
+                        continue
 
                     latest_trace_view = init_res["trace_view"]
                     trace_view = latest_trace_view
@@ -569,14 +592,18 @@ async def websocket_endpoint(
                     print(f"=====> บันทึกผลเบื้องต้นสำเร็จ! Result ID: {current_result_id} | เริ่มเดินสายพานต่อทันที...")
 
                     # ส่งสัญญาณแจ้งเตือน Frontend ให้ดึงข้อมูลผลลัพธ์มาแสดง (รูปที่ 1, 2, 3 แสดงทันที, รูปที่ 4 ขึ้นสถานะรอดำเนินการ)
-                    await websocket.send_json({
-                        "type": "new_result",
-                        "message": "PCB copper trace extracted",
-                        "result_id": current_result_id,
-                        "accuracy": 95.0,
-                        "verdict": "PASS",
-                        "counts": {"open": 0, "short": 0, "minor": 0},
-                    })
+                    if websocket.client_state == WebSocketState.CONNECTED:
+                        try:
+                            await websocket.send_json({
+                                "type": "new_result",
+                                "message": "PCB copper trace extracted",
+                                "result_id": current_result_id,
+                                "accuracy": 95.0,
+                                "verdict": "PASS",
+                                "counts": {"open": 0, "short": 0, "minor": 0},
+                            })
+                        except Exception:
+                            pass
 
                     # 🚀 รันโมเดลวิเคราะห์ Short / Open (รูปที่ 4) ใน Background Task โดยไม่บล็อกสายพานและวิดีโอสด!
                     asyncio.create_task(
@@ -594,9 +621,9 @@ async def websocket_endpoint(
                 except Exception as err:
                     logger.error(f"Error saving initial PCB: {err}", exc_info=True)
                 finally:
-                    # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 50 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
+                    # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 53 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
                     if nano:
-                        nano.belt_forward(70)
+                        nano.belt_forward(53)
                         nano.light_on(1)
                         nano.lcd_running()
                     # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่
@@ -604,18 +631,24 @@ async def websocket_endpoint(
                     exit_detect_start = time.time()
 
             # ส่งเฟรมภาพ 2 ภาพผ่าน WebSocket แบบ Binary
-            # ภาพที่ 1: กล้องสดพร้อมกรอบบอร์ด (display_frame)
-            _, display_buf = cv2.imencode(".jpg", display_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            await websocket.send_bytes(display_buf.tobytes())
+            if websocket.client_state == WebSocketState.CONNECTED:
+                try:
+                    # ภาพที่ 1: กล้องสดพร้อมกรอบบอร์ด (display_frame)
+                    _, display_buf = cv2.imencode(".jpg", display_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    await websocket.send_bytes(display_buf.tobytes())
 
-            # ภาพที่ 2: ภาพการดึงลายทองแดง Real-Time (trace_view)
-            if trace_view is not None:
-                _, trace_buf = cv2.imencode(".jpg", trace_view, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                await websocket.send_bytes(trace_buf.tobytes())
+                    # ภาพที่ 2: ภาพการดึงลายทองแดง Real-Time (trace_view)
+                    if trace_view is not None:
+                        _, trace_buf = cv2.imencode(".jpg", trace_view, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                        await websocket.send_bytes(trace_buf.tobytes())
+                    else:
+                        empty = np.zeros((100, 100, 3), dtype=np.uint8)
+                        _, empty_buf = cv2.imencode(".jpg", empty)
+                        await websocket.send_bytes(empty_buf.tobytes())
+                except Exception:
+                    break
             else:
-                empty = np.zeros((100, 100, 3), dtype=np.uint8)
-                _, empty_buf = cv2.imencode(".jpg", empty)
-                await websocket.send_bytes(empty_buf.tobytes())
+                break
 
             await asyncio.sleep(camera_manager.frame_interval)
 

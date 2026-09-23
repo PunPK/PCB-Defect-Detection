@@ -122,15 +122,6 @@ def extract_pcb_board(
     board_closed = cv2.morphologyEx(board_seed, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k)))
 
     cnts, _ = cv2.findContours(board_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Fallback หากไม่พบลักษณะสี substrate ด้านบน ลองใช้ copper/general contour
-    if not cnts:
-        lower_copper = np.array([5, 30, 20])
-        upper_copper = np.array([45, 255, 255])
-        c_mask = cv2.inRange(hsv, lower_copper, upper_copper)
-        c_mask = cv2.morphologyEx(c_mask, cv2.MORPH_CLOSE, np.ones((9, 9), np.uint8))
-        cnts, _ = cv2.findContours(c_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
     if not cnts:
         return None, None, None
 
@@ -147,6 +138,13 @@ def extract_pcb_board(
         return None, None, None
 
     rect = cv2.minAreaRect(hull)
+    rw, rh = rect[1]
+    if rw <= 0 or rh <= 0:
+        return None, None, None
+    aspect = max(rw, rh) / min(rw, rh)
+    if aspect > 3.0:
+        return None, None, None
+
     peri = cv2.arcLength(hull, True)
     approx = cv2.approxPolyDP(hull, 0.03 * peri, True)
 
@@ -188,13 +186,17 @@ def extract_pcb_board(
     warped = cv2.warpPerspective(frame, M, (tw, th), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
 
     # กรองกรณีแสงสว่างจ้าบนสายพานเปล่า (Empty Overexposed Light / Glare):
-    # แผ่น PCB จริงจะต้องมีเส้นลายทองแดง รูเจาะ หรือมาร์กิ้งที่มี contrast และ edge_density
-    # ขณะที่แสงสว่างเปล่าจะเรียบเนียนเกือบไร้เส้นขอบ (edge_density < 0.010)
+    # แผ่น PCB จริงจะต้องมีเส้นลายทองแดง รูเจาะ หรือมาร์กิ้งที่มี contrast, edge_density, และ gradient ชัดเจน
+    # ขณะที่แสงสว่างเปล่าจะเรียบเนียนเกือบไร้เส้นขอบ (mean_grad < 28.0, edge_density < 0.018)
     gray_warped = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
     contrast = float(np.std(gray_warped))
     edges = cv2.Canny(gray_warped, 40, 120)
     edge_density = float(np.count_nonzero(edges) / edges.size)
-    if contrast < 16.0 or edge_density < 0.010:
+    grad_x = cv2.Sobel(gray_warped, cv2.CV_32F, 1, 0, ksize=3)
+    grad_y = cv2.Sobel(gray_warped, cv2.CV_32F, 0, 1, ksize=3)
+    mean_grad = float(np.sqrt(grad_x**2 + grad_y**2).mean())
+
+    if contrast < 18.0 or edge_density < 0.018 or mean_grad < 28.0:
         return None, None, None
 
     board_mask_orig = np.zeros((h, w), dtype=np.uint8)
