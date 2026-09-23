@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime
+import json
 import base64
 import asyncio
 import logging
@@ -33,6 +34,9 @@ from ..function.pcb_ai import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Active workflow recheck signal event (accessible via WebSocket or REST API)
+active_workflow_recheck_event: Optional[asyncio.Event] = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "..", "..", "database.db", "tmp")
@@ -366,16 +370,42 @@ async def websocket_endpoint(
     logger.info(f"WebSocket connected. Total: {camera_manager.active_connections}")
 
     nano = None
+    reader_task = None
     try:
         # 1. เริ่มต้นการเชื่อมต่อ Arduino Nano
         nano = NanoController()
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
         nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(70)  # เริ่มเดินสายพานด้วยความเร็ว 50 (relay 13 เปิดไฟทำงาน)
+        nano.belt_forward(53)  # เริ่มเดินสายพานด้วยความเร็ว 53 ตามมาตรฐาน
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
-        # 2. เตรียมโมเดล AI
+        # 2. จัดเตรียม Recheck Event และ Task ฟังคำสั่งจาก WebSocket
+        recheck_event = asyncio.Event()
+        global active_workflow_recheck_event
+        active_workflow_recheck_event = recheck_event
+
+        async def listen_client_messages():
+            try:
+                while True:
+                    data = await websocket.receive_text()
+                    try:
+                        msg = json.loads(data)
+                        if msg.get("action") == "recheck":
+                            logger.info("Received RECHECK command via WebSocket")
+                            recheck_event.set()
+                    except Exception as e:
+                        logger.warning(f"Error parsing incoming ws message: {e}")
+            except WebSocketDisconnect:
+                pass
+            except asyncio.CancelledError:
+                pass
+            except Exception:
+                pass
+
+        reader_task = asyncio.create_task(listen_client_messages())
+
+        # 3. เตรียมโมเดล AI
         copper_extractor = CopperTraceExtractor.get_instance()
         defect_analyzer = PCBDefectAnalyzer.get_instance()
 
@@ -384,7 +414,7 @@ async def websocket_endpoint(
             await websocket.close()
             return
 
-        # 3. โหลดรูปภาพต้นแบบจากฐานข้อมูล
+        # 4. โหลดรูปภาพต้นแบบจากฐานข้อมูล
         original_bytes = None
         try:
             original_bytes = database.get_pcb_original_images(db=db, pcb_id=pcb_id)
@@ -392,9 +422,10 @@ async def websocket_endpoint(
             logger.warning(f"No original PCB image in DB for pcb_id {pcb_id}: {e}")
 
         # State Machine สำหรับการทำงานแบบต่อเนื่อง (Continuous Operation)
-        # "SEARCHING": สายพานวิ่ง 50 กำลังสแกนหาชิ้นงาน PCB ที่เข้ามาตรงกลาง
+        # "SEARCHING": สายพานวิ่ง 53 กำลังสแกนหาชิ้นงาน PCB ที่เข้ามาตรงกลาง
         # "INSPECTING": หยุดสายพาน รัน AI สกัดลายทองแดง ขยับเซอร์โว
-        # "WAIT_EXIT": เดินสายพานต่อที่ 50 รอให้ชิ้นงานเดิมพ้นกึ่งกลางก่อนตรวจชิ้นถัดไป
+        # "WAIT_EXIT": เดินสายพานต่อที่ 53 รอให้ชิ้นงานเดิมพ้นกึ่งกลางก่อนตรวจชิ้นถัดไป
+        # "RECHECKING": ย้อนสายพานถอยหลังเพื่อตรวจจับซ้ำ
         state = "SEARCHING"
         center_detect_start = None
         exit_detect_start = None
@@ -402,6 +433,93 @@ async def websocket_endpoint(
         consecutive_read_failures = 0
 
         while True:
+            # --- ตรวจสอบคำสั่ง RECHECK จาก Frontend (ตรวจจับซ้ำ / ย้อนสายพาน) ---
+            if recheck_event.is_set():
+                recheck_event.clear()
+                logger.info("🔄 Initiating Conveyor Recheck sequence...")
+                print("=====> กำลังดำเนินการ Recheck: สั่งสายพานถอยหลังเพื่อตรวจจับซ้ำ...")
+
+                state = "RECHECKING"
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_json({
+                            "type": "rechecking",
+                            "message": "กำลังย้อนสายพานเพื่อตรวจจับซ้ำ...",
+                        })
+                    except Exception:
+                        pass
+
+                # 1. หยุดสายพานและตั้งค่าเซอร์โวกลับกึ่งกลาง
+                if nano:
+                    nano.belt_stop()
+                    nano.light_off(1)
+                    nano.servo_mid()
+                    nano.lcd_print("Rechecking......", "Reversing Belt")
+                await asyncio.sleep(0.2)
+
+                # 2. ถอยหลังสายพานด้วยความเร็ว 53
+                if nano:
+                    nano.belt_backward(53)
+
+                # 3. ถอยหลังเป็นเวลา ~2.2 วินาที พร้อมส่งภาพสดต่อเนื่องให้ผู้ใช้เห็นความเคลื่อนไหว
+                rev_start = time.time()
+                while time.time() - rev_start < 2.2:
+                    ret_rev, frame_rev = camera.read()
+                    if ret_rev and frame_rev is not None:
+                        h_r, w_r = frame_rev.shape[:2]
+                        cx_r = w_r // 2
+                        disp_rev = frame_rev.copy()
+                        cv2.line(disp_rev, (cx_r, 0), (cx_r, h_r), (0, 165, 255), 2)
+                        cv2.putText(
+                            disp_rev,
+                            "RECHECKING - BELT REVERSING",
+                            (30, 45),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.7,
+                            (0, 165, 255),
+                            2,
+                        )
+                        if websocket.client_state == WebSocketState.CONNECTED:
+                            try:
+                                _, b_disp = cv2.imencode(".jpg", disp_rev, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                                await websocket.send_bytes(b_disp.tobytes())
+                                if latest_trace_view is not None:
+                                    _, b_tr = cv2.imencode(".jpg", latest_trace_view, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                                    await websocket.send_bytes(b_tr.tobytes())
+                                else:
+                                    emp = np.zeros((100, 100, 3), dtype=np.uint8)
+                                    _, b_emp = cv2.imencode(".jpg", emp)
+                                    await websocket.send_bytes(b_emp.tobytes())
+                            except Exception:
+                                break
+                    await asyncio.sleep(0.05)
+
+                # 4. หยุดสายพานหลังจากถอยหลังเสร็จ
+                if nano:
+                    nano.belt_stop()
+                await asyncio.sleep(0.2)
+
+                # 5. เดินสายพานไปข้างหน้าตามปกติด้วยความเร็ว 53 และเข้าสู่โหมด SEARCHING เพื่อตรวจจับกึ่งกลาง
+                if nano:
+                    nano.belt_forward(53)
+                    nano.light_on(1)
+                    nano.lcd_running()
+
+                state = "SEARCHING"
+                center_detect_start = None
+                exit_detect_start = None
+
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_json({
+                            "type": "recheck_centering",
+                            "message": "สายพานกำลังเดินหน้าเข้าสู่กึ่งกลางกล้อง...",
+                        })
+                    except Exception:
+                        pass
+
+                continue
+
             ret, frame = camera.read()
             if not ret or frame is None:
                 consecutive_read_failures += 1
@@ -659,6 +777,10 @@ async def websocket_endpoint(
     except Exception as e:
         logger.error(f"WebSocket error in factory workflow: {e}", exc_info=True)
     finally:
+        if reader_task and not reader_task.done():
+            reader_task.cancel()
+        active_workflow_recheck_event = None
+
         if nano:
             try:
                 nano.close()
@@ -680,6 +802,20 @@ async def websocket_endpoint(
 # ==============================================================================
 # REST API Endpoints
 # ==============================================================================
+@router.post("/recheck")
+async def trigger_recheck():
+    """สั่งสายพานย้อนกลับเพื่อตรวจจับชิ้นงาน PCB ซ้ำ (Recheck)"""
+    global active_workflow_recheck_event
+    if active_workflow_recheck_event is not None:
+        active_workflow_recheck_event.set()
+        logger.info("Triggered recheck via REST API endpoint /recheck")
+        return {"status": "success", "message": "Recheck signal dispatched to conveyor workflow"}
+    return JSONResponse(
+        status_code=400,
+        content={"status": "error", "message": "No active conveyor workflow running"}
+    )
+
+
 @router.get("/get_images/{pcb_id}")
 async def get_images(
     pcb_id: int,

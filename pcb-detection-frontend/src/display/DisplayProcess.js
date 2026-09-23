@@ -17,6 +17,7 @@ import {
   Cpu,
   X,
   ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDisplay } from "./DisplayContext.js";
@@ -32,8 +33,10 @@ export default function DisplayProcess({ onNavigateTab }) {
   const [fps, setFps] = useState(0);
   const [status, setStatus] = useState("Disconnected");
   const [sensorTriggered, setSensorTriggered] = useState(false);
+  const [isRechecking, setIsRechecking] = useState(false);
+  const [recheckStatus, setRecheckStatus] = useState(null);
 
-  // PCB On Conveyor State: "none" | "approaching" | "inspecting" | "ejecting"
+  // PCB On Conveyor State: "none" | "approaching" | "inspecting" | "ejecting" | "rechecking"
   // User note: "โดยจะมีการตรวจจับ PCB ทีละแผ่น ถ้ามี PCB จะแสดงบนสายพาน และเมื่อประมวลผลเสร็จ จะขึ้นมาที่ด้านข้าง"
   const [conveyorPcbState, setConveyorPcbState] = useState("none");
 
@@ -160,7 +163,21 @@ export default function DisplayProcess({ onNavigateTab }) {
       } else {
         try {
           const message = JSON.parse(event.data);
-          if (message.type === "new_result") {
+          if (message.type === "rechecking") {
+            setIsRechecking(true);
+            setRecheckStatus(message.message || "กำลังย้อนสายพานเพื่อตรวจจับซ้ำ...");
+            setConveyorPcbState("rechecking");
+          } else if (message.type === "recheck_centering") {
+            setIsRechecking(false);
+            setRecheckStatus(message.message || "สายพานกำลังเดินหน้าเข้าสู่กึ่งกลางกล้อง...");
+            setConveyorPcbState("approaching");
+            setTimeout(() => setRecheckStatus(null), 3000);
+          } else if (message.type === "analyzing") {
+            setConveyorPcbState("inspecting");
+            setRecheckStatus(message.message || "กำลังวิเคราะห์...");
+          } else if (message.type === "new_result") {
+            setIsRechecking(false);
+            setRecheckStatus(null);
             // A PCB is detected and inspected!
             setSensorTriggered(true);
             setConveyorPcbState("inspecting");
@@ -193,6 +210,37 @@ export default function DisplayProcess({ onNavigateTab }) {
     };
   };
 
+  // Recheck Conveyor Function
+  const handleRecheck = async () => {
+    if (!isStreaming) return;
+    setIsRechecking(true);
+    setRecheckStatus("กำลังส่งคำสั่งย้อนสายพาน (Recheck)...");
+    setConveyorPcbState("rechecking");
+
+    // 1. ส่งคำสั่งผ่าน WebSocket ทันที
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      try {
+        wsRef.current.send(JSON.stringify({ action: "recheck" }));
+      } catch (err) {
+        console.warn("WebSocket recheck error:", err);
+      }
+    }
+
+    // 2. เรียก REST API เป็น fallback เพื่อความแน่นอน 100%
+    try {
+      await fetch(`http://${window.location.hostname}:8000/factory/recheck`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.warn("API recheck error:", err);
+    }
+
+    // Safety timeout เผื่อไม่มีข้อความตอบรับ
+    setTimeout(() => {
+      setIsRechecking(false);
+    }, 5000);
+  };
+
   // Stop Detection WebSocket
   const stopDetection = () => {
     stopFpsCounter();
@@ -202,6 +250,8 @@ export default function DisplayProcess({ onNavigateTab }) {
     }
     setIsStreaming(false);
     setIsRunning(false);
+    setIsRechecking(false);
+    setRecheckStatus(null);
     setStatus("Disconnected");
     setConveyorPcbState("none");
     setFps(0);
@@ -370,6 +420,14 @@ export default function DisplayProcess({ onNavigateTab }) {
                     <span>{fps} FPS</span>
                   </div>
 
+                  {/* Recheck Banner Overlay */}
+                  {recheckStatus && (
+                    <div className="absolute top-1.5 right-1.5 bg-amber-950/85 backdrop-blur-md px-2.5 py-1 rounded-md border border-amber-500/50 text-[10px] font-mono text-amber-300 flex items-center gap-1.5 pointer-events-none animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                      <RotateCcw className="w-3 h-3 text-amber-400 animate-spin" />
+                      <span>{recheckStatus}</span>
+                    </div>
+                  )}
+
                   {/* Inspection Bounding Box on Detected PCB */}
                   {sensorTriggered && (
                     <div className="absolute inset-x-[25%] inset-y-[15%] border-2 border-emerald-400 rounded-lg pointer-events-none animate-pulse shadow-[0_0_12px_rgba(52,211,153,0.5)]">
@@ -432,8 +490,12 @@ export default function DisplayProcess({ onNavigateTab }) {
                 </h2>
               </div>
               <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-blue-600 dark:text-cyan-400 font-mono font-semibold">
-                <span>ทิศทางการลำเลียง</span>
-                <ArrowRight className="w-3 h-3" />
+                <span>{conveyorPcbState === "rechecking" ? "ย้อนสายพาน (ตรวจซ้ำ)" : "ทิศทางการลำเลียง"}</span>
+                {conveyorPcbState === "rechecking" ? (
+                  <RotateCcw className="w-3 h-3 text-amber-400 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-3 h-3" />
+                )}
               </div>
             </div>
 
@@ -588,6 +650,8 @@ export default function DisplayProcess({ onNavigateTab }) {
                         ? 250
                         : conveyorPcbState === "inspecting"
                         ? 420
+                        : conveyorPcbState === "rechecking"
+                        ? 260
                         : conveyorPcbState === "ejecting"
                         ? 680
                         : 420
@@ -601,15 +665,31 @@ export default function DisplayProcess({ onNavigateTab }) {
                       width="60"
                       height="22"
                       rx="4"
-                      fill={sensorTriggered ? "#064e3b" : "#0d332d"}
-                      stroke={sensorTriggered ? "#34d399" : "#06b6d4"}
+                      fill={
+                        conveyorPcbState === "rechecking"
+                          ? "#78350f"
+                          : sensorTriggered
+                          ? "#064e3b"
+                          : "#0d332d"
+                      }
+                      stroke={
+                        conveyorPcbState === "rechecking"
+                          ? "#f59e0b"
+                          : sensorTriggered
+                          ? "#34d399"
+                          : "#06b6d4"
+                      }
                       strokeWidth="2"
-                      className={sensorTriggered ? "animate-pulse" : ""}
+                      className={
+                        conveyorPcbState === "rechecking" || sensorTriggered
+                          ? "animate-pulse"
+                          : ""
+                      }
                     />
                     {/* Chip / IC */}
-                    <rect x="20" y="5" width="20" height="12" rx="2" fill="#0284c7" />
-                    <circle cx="10" cy="11" r="3" fill="#38bdf8" />
-                    <circle cx="50" cy="11" r="3" fill="#38bdf8" />
+                    <rect x="20" y="5" width="20" height="12" rx="2" fill={conveyorPcbState === "rechecking" ? "#d97706" : "#0284c7"} />
+                    <circle cx="10" cy="11" r="3" fill={conveyorPcbState === "rechecking" ? "#fbbf24" : "#38bdf8"} />
+                    <circle cx="50" cy="11" r="3" fill={conveyorPcbState === "rechecking" ? "#fbbf24" : "#38bdf8"} />
                     {/* Label Tag */}
                     <text
                       x="30"
@@ -619,7 +699,11 @@ export default function DisplayProcess({ onNavigateTab }) {
                       fontWeight="bold"
                       textAnchor="middle"
                     >
-                      {conveyorPcbState === "inspecting" ? "INSPECT" : "PCB"}
+                      {conveyorPcbState === "inspecting"
+                        ? "INSPECT"
+                        : conveyorPcbState === "rechecking"
+                        ? "RECHECK"
+                        : "PCB"}
                     </text>
                   </g>
                 )}
@@ -751,6 +835,29 @@ export default function DisplayProcess({ onNavigateTab }) {
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>เริ่มการทำงาน</span>
+              </button>
+
+              {/* Recheck Button */}
+              <button
+                onClick={handleRecheck}
+                disabled={!isStreaming || isRechecking}
+                className={`touch-btn flex-1 h-full rounded-lg font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer ${
+                  !isStreaming
+                    ? isDark
+                      ? "bg-slate-800/50 border border-slate-700/50 text-slate-500 opacity-50 cursor-not-allowed"
+                      : "bg-slate-100 border border-slate-300 text-slate-400 opacity-60 cursor-not-allowed"
+                    : isRechecking
+                    ? isDark
+                      ? "bg-amber-950/80 border border-amber-500/50 text-amber-300 animate-pulse cursor-wait"
+                      : "bg-amber-100 border border-amber-400 text-amber-800 animate-pulse cursor-wait"
+                    : isDark
+                    ? "bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-[0_0_12px_rgba(245,158,11,0.35)] border border-amber-400/40"
+                    : "bg-amber-500 hover:bg-amber-600 text-white shadow-sm border border-amber-500"
+                }`}
+                title="ย้อนสายพานเพื่อตรวจจับชิ้นงานนี้ซ้ำ"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isRechecking ? "animate-spin" : ""}`} />
+                <span>{isRechecking ? "กำลังย้อนสายพาน..." : "ตรวจซ้ำ (Recheck)"}</span>
               </button>
 
               {/* Stop Button */}

@@ -24,6 +24,10 @@ const BUTTON_VARIANTS = {
     "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 border-transparent dark:hover:bg-emerald-500 shadow-sm",
   danger:
     "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 border-transparent dark:hover:bg-rose-500 shadow-sm",
+  warning:
+    "bg-amber-500 text-white hover:bg-amber-600 active:bg-amber-700 border-transparent dark:bg-amber-600 dark:hover:bg-amber-500 shadow-sm",
+  "warning-outline":
+    "bg-white text-amber-600 border-amber-300 hover:bg-amber-50 dark:bg-transparent dark:text-amber-400 dark:border-amber-500/40 dark:hover:bg-amber-500/10 shadow-sm",
   secondary:
     "bg-white text-slate-700 border-slate-300 hover:bg-slate-50 active:bg-slate-100 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700 shadow-sm",
   "danger-outline":

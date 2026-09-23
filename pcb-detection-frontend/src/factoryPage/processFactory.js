@@ -19,6 +19,7 @@ import {
   Eye,
   ClipboardList,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import ExportPdfModal from "./ExportPdfModal.js";
@@ -91,6 +92,7 @@ export default function ProcessFactoryWorkflow() {
   const [previewImage, setPreviewImage] = useState(null);
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRechecking, setIsRechecking] = useState(false);
 
   const wsRef = useRef(null);
   const frameCountRef = useRef(0);
@@ -183,7 +185,14 @@ export default function ProcessFactoryWorkflow() {
           const message = JSON.parse(event.data);
           if (message.type === "analyzing") {
             setAnalyzingStatus(message.message || "AI กำลังวิเคราะห์ลายเส้นทองแดง...");
+          } else if (message.type === "rechecking") {
+            setIsRechecking(true);
+            setAnalyzingStatus(message.message || "กำลังย้อนสายพานเพื่อตรวจจับซ้ำ...");
+          } else if (message.type === "recheck_centering") {
+            setIsRechecking(false);
+            setAnalyzingStatus(message.message || "สายพานกำลังเดินหน้าเข้าสู่กึ่งกลางกล้อง...");
           } else if (message.type === "new_result") {
+            setIsRechecking(false);
             setAnalyzingStatus(null);
             fetchResultData(pcb_id);
           }
@@ -212,6 +221,33 @@ export default function ProcessFactoryWorkflow() {
     createWebSocket(result_Id);
   };
 
+  const handleRecheck = async () => {
+    if (!isStreaming) return;
+    setIsRechecking(true);
+    setAnalyzingStatus("กำลังส่งคำสั่งย้อนสายพาน (Recheck)...");
+
+    // 1. ส่งคำสั่งผ่าน WebSocket ทันที
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      try {
+        wsRef.current.send(JSON.stringify({ action: "recheck" }));
+      } catch (err) {
+        console.warn("WebSocket recheck error:", err);
+      }
+    }
+
+    // 2. เรียก REST API เป็น fallback เพิ่มเติม
+    try {
+      await fetch(`${API_BASE}/factory/recheck`, { method: "POST" });
+    } catch (err) {
+      console.warn("API recheck error:", err);
+    }
+
+    // Safety timeout หากไม่มีการตอบกลับภายใน 5 วินาที
+    setTimeout(() => {
+      setIsRechecking(false);
+    }, 5000);
+  };
+
   const stopDetection = () => {
     stopFpsCounter();
     if (wsRef.current) {
@@ -219,6 +255,7 @@ export default function ProcessFactoryWorkflow() {
       wsRef.current = null;
     }
     setIsStreaming(false);
+    setIsRechecking(false);
     setStatus("Disconnected");
     setFps(0);
     imageQueueRef.current = [];
@@ -445,9 +482,20 @@ export default function ProcessFactoryWorkflow() {
           icon={Activity}
           actions={
             isStreaming ? (
-              <Button variant="danger" icon={StopCircle} onClick={stopDetection}>
-                หยุดสายพาน
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="warning"
+                  icon={RotateCcw}
+                  loading={isRechecking}
+                  onClick={handleRecheck}
+                  title="ย้อนสายพานเพื่อตรวจจับชิ้นงานนี้ซ้ำ"
+                >
+                  {isRechecking ? "กำลังย้อนสายพาน..." : "ตรวจซ้ำ (Recheck)"}
+                </Button>
+                <Button variant="danger" icon={StopCircle} onClick={stopDetection}>
+                  หยุดสายพาน
+                </Button>
+              </div>
             ) : (
               <Button
                 variant="success"
