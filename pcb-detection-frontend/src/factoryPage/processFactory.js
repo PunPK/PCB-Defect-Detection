@@ -191,6 +191,12 @@ export default function ProcessFactoryWorkflow() {
           } else if (message.type === "recheck_centering") {
             setIsRechecking(false);
             setAnalyzingStatus(message.message || "สายพานกำลังเดินหน้าเข้าสู่กึ่งกลางกล้อง...");
+          } else if (message.type === "centering") {
+            setAnalyzingStatus(message.message || "กำลังขยับสายพานปรับตำแหน่งกึ่งกลาง...");
+          } else if (message.type === "focusing") {
+            setAnalyzingStatus(message.message || "กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุด...");
+          } else if (message.type === "stabilizing") {
+            setAnalyzingStatus(message.message || "รอนิ่งสนิทและบันทึกภาพคุณภาพสูงสุด...");
           } else if (message.type === "new_result") {
             setIsRechecking(false);
             setAnalyzingStatus(null);

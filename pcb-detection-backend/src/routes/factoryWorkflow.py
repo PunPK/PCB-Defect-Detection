@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime
 import json
+import subprocess
 import base64
 import asyncio
 import logging
@@ -80,7 +81,16 @@ class CameraManager:
                 self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                 self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                 self.camera.set(cv2.CAP_PROP_FPS, 20)
-                logger.info("Camera opened (640x480)")
+                try:
+                    subprocess.run(
+                        ["v4l2-ctl", "-d", "/dev/video0", "--set-ctrl=focus_automatic_continuous=0"],
+                        capture_output=True,
+                        timeout=0.2,
+                    )
+                except Exception:
+                    pass
+                self.camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+                logger.info("Camera opened (640x480, Manual Focus Ready)")
             return self.camera
 
     async def reconnect_camera(self):
@@ -99,6 +109,15 @@ class CameraManager:
                     self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
                     self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                     self.camera.set(cv2.CAP_PROP_FPS, 20)
+                    try:
+                        subprocess.run(
+                            ["v4l2-ctl", "-d", "/dev/video0", "--set-ctrl=focus_automatic_continuous=0"],
+                            capture_output=True,
+                            timeout=0.2,
+                        )
+                    except Exception:
+                        pass
+                    self.camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
                     logger.info(f"Camera reconnected on index {cam_idx}")
                     return self.camera
             logger.error("Reconnection failed: no camera found")
@@ -113,6 +132,115 @@ class CameraManager:
 
 
 camera_manager = CameraManager()
+
+
+# ==============================================================================
+# Helper: ฟังก์ชันควบคุมโฟกัสกล้องและวัดความคมชัดของภาพแผ่น PCB
+# ==============================================================================
+def measure_pcb_sharpness(frame: np.ndarray, quad: Optional[np.ndarray] = None) -> float:
+    """วัดค่าความคมชัดของภาพในบริเวณแผ่น PCB ด้วย Laplacian Variance"""
+    if frame is None:
+        return 0.0
+    h, w = frame.shape[:2]
+    if quad is not None:
+        try:
+            x_min = max(0, int(np.min(quad[:, 0])))
+            x_max = min(w, int(np.max(quad[:, 0])))
+            y_min = max(0, int(np.min(quad[:, 1])))
+            y_max = min(h, int(np.max(quad[:, 1])))
+            if (x_max - x_min) > 40 and (y_max - y_min) > 40:
+                crop = frame[y_min:y_max, x_min:x_max]
+            else:
+                crop = frame
+        except Exception:
+            crop = frame
+    else:
+        cx, cy = w // 2, h // 2
+        crop = frame[max(0, cy - 120):min(h, cy + 120), max(0, cx - 120):min(w, cx + 120)]
+
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def set_camera_focus_hw(camera: Optional[cv2.VideoCapture], focus_val: int):
+    """ตั้งค่า Focus มอเตอร์กล้องผ่าน V4L2 และ OpenCV"""
+    focus_val = int(max(0, min(255, focus_val)))
+    try:
+        subprocess.run(
+            ["v4l2-ctl", "-d", "/dev/video0", "--set-ctrl=focus_automatic_continuous=0"],
+            capture_output=True,
+            timeout=0.2,
+        )
+        subprocess.run(
+            ["v4l2-ctl", "-d", "/dev/video0", f"--set-ctrl=focus_absolute={focus_val}"],
+            capture_output=True,
+            timeout=0.2,
+        )
+    except Exception:
+        pass
+    if camera:
+        camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+        camera.set(cv2.CAP_PROP_FOCUS, focus_val)
+
+
+async def optimize_pcb_focus(
+    camera: cv2.VideoCapture,
+    quad: Optional[np.ndarray] = None,
+    cached_focus: Optional[int] = None,
+) -> int:
+    """ปรับ Focus มอเตอร์กล้องให้ได้ความคมชัดสูงสุดบนลายทองแดง PCB"""
+    best_focus = cached_focus if cached_focus is not None else 60
+    max_sharpness = -1.0
+
+    if cached_focus is not None:
+        # Fine-tune สั้นๆ รอบค่าเดิม (เช่น +- 20)
+        candidates = [
+            max(0, cached_focus - 20),
+            max(0, cached_focus - 10),
+            cached_focus,
+            min(255, cached_focus + 10),
+            min(255, cached_focus + 20),
+        ]
+    else:
+        # Coarse sweep ครั้งแรก: 15 ถึง 225
+        candidates = list(range(15, 230, 30))
+
+    for f in candidates:
+        set_camera_focus_hw(camera, f)
+        await asyncio.sleep(0.06)
+        camera.grab()
+        ret, fr = camera.read()
+        if ret and fr is not None:
+            score = measure_pcb_sharpness(fr, quad)
+            if score > max_sharpness:
+                max_sharpness = score
+                best_focus = f
+
+    # หากเป็นการหาครั้งแรก ทำการ Fine-tune ละเอียดรอบจุดที่ชัดที่สุด
+    if cached_focus is None:
+        fine_candidates = [
+            max(0, best_focus - 15),
+            max(0, best_focus - 8),
+            best_focus,
+            min(255, best_focus + 8),
+            min(255, best_focus + 15),
+        ]
+        for f in fine_candidates:
+            set_camera_focus_hw(camera, f)
+            await asyncio.sleep(0.05)
+            camera.grab()
+            ret, fr = camera.read()
+            if ret and fr is not None:
+                score = measure_pcb_sharpness(fr, quad)
+                if score > max_sharpness:
+                    max_sharpness = score
+                    best_focus = f
+
+    # ล็อคโฟกัสที่จุดที่ดีที่สุด
+    set_camera_focus_hw(camera, best_focus)
+    logger.info(f"🎯 Optimal PCB Focus locked: {best_focus} (sharpness: {max_sharpness:.1f})")
+    print(f"=====> ปรับ Focus สำเร็จ: {best_focus} (Sharpness: {max_sharpness:.1f})")
+    return best_focus
 
 
 # ==============================================================================
@@ -377,7 +505,7 @@ async def websocket_endpoint(
         nano.light_on(1)  # ไฟเขียวแสดงว่าระบบพร้อมทำงาน
         nano.light_on(3)
         nano.servo_mid()
-        nano.belt_forward(53)  # เริ่มเดินสายพานด้วยความเร็ว 53 ตามมาตรฐาน
+        nano.belt_forward(60)  # เริ่มเดินสายพานด้วยความเร็ว 60 ตามมาตรฐาน
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
         # 2. จัดเตรียม Recheck Event และ Task ฟังคำสั่งจาก WebSocket
@@ -422,15 +550,16 @@ async def websocket_endpoint(
             logger.warning(f"No original PCB image in DB for pcb_id {pcb_id}: {e}")
 
         # State Machine สำหรับการทำงานแบบต่อเนื่อง (Continuous Operation)
-        # "SEARCHING": สายพานวิ่ง 53 กำลังสแกนหาชิ้นงาน PCB ที่เข้ามาตรงกลาง
-        # "INSPECTING": หยุดสายพาน รัน AI สกัดลายทองแดง ขยับเซอร์โว
-        # "WAIT_EXIT": เดินสายพานต่อที่ 53 รอให้ชิ้นงานเดิมพ้นกึ่งกลางก่อนตรวจชิ้นถัดไป
+        # "SEARCHING": สายพานวิ่ง 60 กำลังสแกนหาชิ้นงาน PCB ที่เข้ามา
+        # "INSPECTING": จัดตำแหน่งกึ่งกลาง (Micro-jog) + ปรับโฟกัส (Auto-focus) + สกัดลายทองแดง + ขยับเซอร์โว
+        # "WAIT_EXIT": เดินสายพานต่อที่ 60 รอให้ชิ้นงานเดิมพ้นกึ่งกลางก่อนตรวจชิ้นถัดไป
         # "RECHECKING": ย้อนสายพานถอยหลังเพื่อตรวจจับซ้ำ
         state = "SEARCHING"
         center_detect_start = None
         exit_detect_start = None
         latest_trace_view = None
         consecutive_read_failures = 0
+        session_cached_focus = None
 
         while True:
             # --- ตรวจสอบคำสั่ง RECHECK จาก Frontend (ตรวจจับซ้ำ / ย้อนสายพาน) ---
@@ -457,9 +586,9 @@ async def websocket_endpoint(
                     nano.lcd_print("Rechecking......", "Reversing Belt")
                 await asyncio.sleep(0.2)
 
-                # 2. ถอยหลังสายพานด้วยความเร็ว 53
+                # 2. ถอยหลังสายพานด้วยความเร็ว 65
                 if nano:
-                    nano.belt_backward(53)
+                    nano.belt_backward(65)
 
                 # 3. ถอยหลังเป็นเวลา ~2.2 วินาที พร้อมส่งภาพสดต่อเนื่องให้ผู้ใช้เห็นความเคลื่อนไหว
                 rev_start = time.time()
@@ -499,9 +628,9 @@ async def websocket_endpoint(
                     nano.belt_stop()
                 await asyncio.sleep(0.2)
 
-                # 5. เดินสายพานไปข้างหน้าตามปกติด้วยความเร็ว 53 และเข้าสู่โหมด SEARCHING เพื่อตรวจจับกึ่งกลาง
+                # 5. เดินสายพานไปข้างหน้าตามปกติด้วยความเร็ว 60 และเข้าสู่โหมด SEARCHING เพื่อตรวจจับกึ่งกลาง
                 if nano:
-                    nano.belt_forward(53)
+                    nano.belt_forward(60)
                     nano.light_on(1)
                     nano.lcd_running()
 
@@ -591,8 +720,8 @@ async def websocket_endpoint(
             # --- จัดการ State Machine ---
             if state == "SEARCHING":
                 sensor_hit = bool(nano and getattr(nano, "is_sensor_triggered", False))
-                if is_centered or sensor_hit:
-                    # ตรวจพบแผ่น PCB อยู่กึ่งกลาง หรือเซนเซอร์ตรวจจับชิ้นงาน -> เข้าสู่โหมด INSPECTING ทันที
+                # หากตรวจพบบอร์ด PCB ในกล้อง หรือเซนเซอร์ตรวจจับได้ ให้เข้าสู่โหมด INSPECTING เพื่อเริ่มกระบวนการจัดตำแหน่งกึ่งกลางและโฟกัส
+                if (quad is not None and warped_pcb is not None) or sensor_hit:
                     state = "INSPECTING"
                     center_detect_start = None
                 else:
@@ -611,22 +740,91 @@ async def websocket_endpoint(
                         if nano:
                             nano.servo_mid()  # เตรียมพร้อมที่ตำแหน่งกึ่งกลางเสมอสำหรับชิ้นงานถัดไป
 
-            # --- เมื่อเข้าสู่โหมด INSPECTING ---
+            # --- เมื่อเข้าสู่โหมด INSPECTING (Fine-Centering + Auto-Focus + High-Clarity Inspection) ---
             if state == "INSPECTING":
                 if nano:
                     nano.is_sensor_triggered = False
-                    nano.belt_stop()  # สั่งหยุดสายพานและล็อคเบรกทันที
-                    nano.light_off(1)  # ปิดไฟเขียวขณะกำลังวิเคราะห์
+                    nano.belt_stop()  # สั่งหยุดสายพานทันที
+                    nano.light_off(1)  # ปิดไฟเขียวขณะกำลังจัดตำแหน่งและวิเคราะห์
                     nano.lcd_processing()  # จอ LCD แสดงสถานะ Processing........
 
-                print("=====> ตรวจพบ PCB อยู่กึ่งกลางกล้อง! หยุดสายพานและรอให้นิ่งสนิท...")
+                print("=====> ตรวจพบ PCB! สั่งหยุดสายพานและเริ่มกระบวนการจัดตำแหน่งกึ่งกลาง...")
 
-                # ส่งสถานะกำลังประมวลผลไปยัง Frontend
+                # --- ขั้นตอนที่ 1: Micro-Jogging จัดตำแหน่งให้กึ่งกลางเป๊ะๆ (Fine-Centering) ---
+                TIGHT_TOLERANCE = 15  # ความคลาดเคลื่อนยอมรับได้ไม่เกิน +-15 พิกเซล
+                max_jogs = 8
+
+                current_quad = quad
+                if current_quad is not None:
+                    cx = int(current_quad[:, 0].mean())
+                    dx = cx - center_x
+                else:
+                    dx = 0
+
+                if abs(dx) > TIGHT_TOLERANCE and nano:
+                    print(f"=====> PCB ยังไม่ตรงกึ่งกลาง (เยื้อง {dx:+d}px) — เริ่มขยับสายพานทีละนิด...")
+                    if websocket.client_state == WebSocketState.CONNECTED:
+                        try:
+                            await websocket.send_json({
+                                "type": "centering",
+                                "message": f"กำลังขยับสายพานปรับตำแหน่งกึ่งกลาง (คลาดเคลื่อน {dx:+d}px)...",
+                            })
+                        except Exception:
+                            pass
+
+                    for jog_i in range(max_jogs):
+                        if dx < -TIGHT_TOLERANCE:
+                            # แผ่นอยู่ทางซ้าย (ยังไม่ถึงกึ่งกลาง) -> กระตุกเดินหน้าสั้นๆ 65ms
+                            nano.belt_forward(60)
+                            await asyncio.sleep(0.065)
+                            nano.belt_stop()
+                        elif dx > TIGHT_TOLERANCE:
+                            # แผ่นเลยไปทางขวา -> กระตุกถอยหลังสั้นๆ 65ms
+                            nano.belt_backward(60)
+                            await asyncio.sleep(0.065)
+                            nano.belt_stop()
+                        else:
+                            break
+
+                        # รอแรงสั่นสะเทือนนิ่งแล้วอ่านเฟรมใหม่
+                        await asyncio.sleep(0.12)
+                        for _ in range(3):
+                            camera.grab()
+                        ret_j, frame_j = camera.read()
+                        if ret_j and frame_j is not None:
+                            _, quad_j, _ = extract_pcb_board(frame_j, target_size=(256, 256))
+                            if quad_j is not None:
+                                current_quad = quad_j
+                                cx = int(current_quad[:, 0].mean())
+                                dx = cx - center_x
+                                if abs(dx) <= TIGHT_TOLERANCE:
+                                    print(f"=====> จัดตำแหน่งกึ่งกลางสำเร็จ! (คลาดเคลื่อน {dx:+d}px) ในการกระตุก {jog_i+1} ครั้ง")
+                                    break
+
+                # --- ขั้นตอนที่ 2: Auto-Focus Optimization (ปรับ Focus ให้คมชัดสูงสุดบนแผ่น PCB) ---
+                print("=====> ปรับ Focus เลนส์กล้องให้คมชัดสูงสุดบนลายทองแดง PCB...")
                 if websocket.client_state == WebSocketState.CONNECTED:
                     try:
                         await websocket.send_json({
-                            "type": "analyzing",
-                            "message": "PCB อยู่กึ่งกลางกล้อง! กำลังหยุดสายพานและรอให้นิ่งสนิท...",
+                            "type": "focusing",
+                            "message": "กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุดบนผิว PCB...",
+                        })
+                    except Exception:
+                        pass
+
+                session_cached_focus = await optimize_pcb_focus(
+                    camera=camera,
+                    quad=current_quad,
+                    cached_focus=session_cached_focus,
+                )
+
+                # --- ขั้นตอนที่ 3: Stabilization & Buffer Flush (รอให้นิ่งสนิทและล้าง Buffer ก่อนบันทึก) ---
+                print("=====> รอให้นิ่งสนิทและล้างภาพเก่าใน Buffer ก่อนบันทึกภาพ...")
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    try:
+                        await websocket.send_json({
+                            "type": "stabilizing",
+                            "message": "รอนิ่งสนิทและบันทึกภาพคุณภาพสูงสุด...",
                         })
                     except Exception:
                         pass
@@ -635,7 +833,7 @@ async def websocket_endpoint(
                 await asyncio.sleep(0.5)
 
                 # ล้างภาพเก่าที่ตกค้างใน Hardware Buffer ของกล้องออกทั้งหมด แล้วดึงภาพใหม่ที่คมชัดที่สุด
-                for _ in range(5):
+                for _ in range(8):
                     camera.grab()
                 ret_stop, frame_stop = camera.read()
                 if ret_stop and frame_stop is not None:
@@ -648,7 +846,7 @@ async def websocket_endpoint(
                     print("=====> ไม่พบแผ่น PCB จริงหลังหยุดสายพาน — กลับสู่โหมด SEARCHING และเดินสายพานต่อทันที...")
                     state = "SEARCHING"
                     if nano:
-                        nano.belt_forward(53)
+                        nano.belt_forward(60)
                         nano.light_on(1)
                         nano.lcd_running()
                     continue
@@ -669,7 +867,7 @@ async def websocket_endpoint(
                         print("=====> ไม่พบลายทองแดงจริง — กลับสู่โหมด SEARCHING และเดินสายพานต่อ...")
                         state = "SEARCHING"
                         if nano:
-                            nano.belt_forward(53)
+                            nano.belt_forward(60)
                             nano.light_on(1)
                             nano.lcd_running()
                         continue
@@ -739,9 +937,9 @@ async def websocket_endpoint(
                 except Exception as err:
                     logger.error(f"Error saving initial PCB: {err}", exc_info=True)
                 finally:
-                    # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 53 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
+                    # สั่งสายพานเดินต่อทันทีด้วยความเร็ว 60 โดยไม่ต้องรอให้การวิเคราะห์ตำหนิเสร็จ!
                     if nano:
-                        nano.belt_forward(53)
+                        nano.belt_forward(60)
                         nano.light_on(1)
                         nano.lcd_running()
                     # เปลี่ยนสถานะเป็น WAIT_EXIT เพื่อรอให้ชิ้นนี้พ้นกึ่งกลางก่อนเริ่มตรวจชิ้นใหม่

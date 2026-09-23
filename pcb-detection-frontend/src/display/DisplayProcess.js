@@ -172,6 +172,15 @@ export default function DisplayProcess({ onNavigateTab }) {
             setRecheckStatus(message.message || "สายพานกำลังเดินหน้าเข้าสู่กึ่งกลางกล้อง...");
             setConveyorPcbState("approaching");
             setTimeout(() => setRecheckStatus(null), 3000);
+          } else if (message.type === "centering") {
+            setConveyorPcbState("inspecting");
+            setRecheckStatus(message.message || "กำลังขยับสายพานปรับตำแหน่งกึ่งกลาง...");
+          } else if (message.type === "focusing") {
+            setConveyorPcbState("inspecting");
+            setRecheckStatus(message.message || "กำลังปรับ Focus เลนส์กล้องให้คมชัดสูงสุด...");
+          } else if (message.type === "stabilizing") {
+            setConveyorPcbState("inspecting");
+            setRecheckStatus(message.message || "รอนิ่งสนิทและบันทึกภาพคุณภาพสูงสุด...");
           } else if (message.type === "analyzing") {
             setConveyorPcbState("inspecting");
             setRecheckStatus(message.message || "กำลังวิเคราะห์...");
