@@ -131,6 +131,10 @@ export default function ProcessFactoryWorkflow() {
   }, []);
 
   const processImageQueue = () => {
+    // ป้องกัน Frame คั่งค้างใน Memory จนหน้าจอค้าง: ทิ้งเฟรมเก่าและเก็บเฉพาะ 2 เฟรมล่าสุด
+    if (imageQueueRef.current.length > 4) {
+      imageQueueRef.current = imageQueueRef.current.slice(-2);
+    }
     if (imageQueueRef.current.length >= 2) {
       const [cameraData, pcbData] = imageQueueRef.current.splice(0, 2);
 
@@ -261,9 +265,17 @@ export default function ProcessFactoryWorkflow() {
   const stopDetection = () => {
     stopFpsCounter();
     if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          wsRef.current.send(JSON.stringify({ action: "stop" }));
+        } catch (e) {}
+      }
       wsRef.current.close();
       wsRef.current = null;
     }
+    try {
+      fetch(`${API_BASE}/factory/stop`, { method: "POST" });
+    } catch (e) {}
     setIsStreaming(false);
     setIsRechecking(false);
     setStatus("Disconnected");

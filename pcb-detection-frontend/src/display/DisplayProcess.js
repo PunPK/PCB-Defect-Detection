@@ -96,6 +96,10 @@ export default function DisplayProcess({ onNavigateTab }) {
 
   // WebSocket Image Queue Processor
   const processImageQueue = () => {
+    // ป้องกัน Frame คั่งค้างใน Memory จนหน้าจอค้าง: ทิ้งเฟรมเก่าและเก็บเฉพาะ 2 เฟรมล่าสุด
+    if (imageQueueRef.current.length > 4) {
+      imageQueueRef.current = imageQueueRef.current.slice(-2);
+    }
     if (imageQueueRef.current.length >= 2) {
       const [cameraData] = imageQueueRef.current.splice(0, 2);
       const cameraBlob = new Blob([cameraData], { type: "image/jpeg" });
@@ -260,9 +264,19 @@ export default function DisplayProcess({ onNavigateTab }) {
   const stopDetection = () => {
     stopFpsCounter();
     if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          wsRef.current.send(JSON.stringify({ action: "stop" }));
+        } catch (e) {}
+      }
       wsRef.current.close();
       wsRef.current = null;
     }
+    try {
+      fetch(`http://${window.location.hostname}:8000/factory/stop`, {
+        method: "POST",
+      });
+    } catch (e) {}
     setIsStreaming(false);
     setIsRunning(false);
     setIsRechecking(false);

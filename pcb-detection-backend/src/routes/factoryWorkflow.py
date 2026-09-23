@@ -36,8 +36,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Active workflow recheck signal event (accessible via WebSocket or REST API)
+# Active workflow signals (accessible via WebSocket or REST API)
 active_workflow_recheck_event: Optional[asyncio.Event] = None
+active_workflow_stop_event: Optional[asyncio.Event] = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SAVE_DIR = os.path.join(BASE_DIR, "..", "..", "database.db", "tmp")
@@ -162,53 +163,81 @@ def measure_pcb_sharpness(frame: np.ndarray, quad: Optional[np.ndarray] = None) 
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
 
+def get_v4l2_device_path() -> str:
+    """ค้นหาพอร์ตกล้อง V4L2 จริงที่มีการรองรับ focus_absolute อัตโนมัติ (เช่น /dev/video1)"""
+    for dev in ["/dev/video1", "/dev/video0", "/dev/video2", "/dev/video3"]:
+        if os.path.exists(dev):
+            try:
+                res = subprocess.run(
+                    ["v4l2-ctl", "-d", dev, "--list-ctrls"],
+                    capture_output=True,
+                    text=True,
+                    timeout=0.25,
+                )
+                if "focus_absolute" in res.stdout:
+                    return dev
+            except Exception:
+                pass
+    return "/dev/video1"
+
+
 def set_camera_focus_hw(camera: Optional[cv2.VideoCapture], focus_val: int):
     """ตั้งค่า Focus มอเตอร์กล้องผ่าน V4L2 และ OpenCV"""
     focus_val = int(max(0, min(255, focus_val)))
+    dev_path = get_v4l2_device_path()
     try:
         subprocess.run(
-            ["v4l2-ctl", "-d", "/dev/video0", "--set-ctrl=focus_automatic_continuous=0"],
+            ["v4l2-ctl", "-d", dev_path, "--set-ctrl=focus_automatic_continuous=0"],
             capture_output=True,
             timeout=0.2,
         )
         subprocess.run(
-            ["v4l2-ctl", "-d", "/dev/video0", f"--set-ctrl=focus_absolute={focus_val}"],
+            ["v4l2-ctl", "-d", dev_path, f"--set-ctrl=focus_absolute={focus_val}"],
             capture_output=True,
             timeout=0.2,
         )
     except Exception:
         pass
     if camera:
-        camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
-        camera.set(cv2.CAP_PROP_FOCUS, focus_val)
+        try:
+            camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+            camera.set(cv2.CAP_PROP_FOCUS, focus_val)
+        except Exception:
+            pass
 
 
 async def optimize_pcb_focus(
     camera: cv2.VideoCapture,
     quad: Optional[np.ndarray] = None,
     cached_focus: Optional[int] = None,
+    recheck_event: Optional[asyncio.Event] = None,
+    stop_event: Optional[asyncio.Event] = None,
 ) -> int:
-    """ปรับ Focus มอเตอร์กล้องให้ได้ความคมชัดสูงสุดบนลายทองแดง PCB"""
-    best_focus = cached_focus if cached_focus is not None else 60
+    """ปรับ Focus มอเตอร์กล้องให้ได้ความคมชัดสูงสุดบนลายทองแดง PCB (Macro Close-up 210-255)"""
+    # ค่าโฟกัสที่คมชัดสูงสุดบนสายพานจริงคือ 240 (Sharpness > 2500)
+    best_focus = cached_focus if cached_focus is not None else 240
     max_sharpness = -1.0
 
     if cached_focus is not None:
-        # Fine-tune สั้นๆ รอบค่าเดิม (เช่น +- 20)
         candidates = [
-            max(0, cached_focus - 20),
-            max(0, cached_focus - 10),
+            max(0, cached_focus - 15),
+            max(0, cached_focus - 8),
             cached_focus,
-            min(255, cached_focus + 10),
-            min(255, cached_focus + 20),
+            min(255, cached_focus + 8),
+            min(255, cached_focus + 15),
         ]
     else:
-        # Coarse sweep ครั้งแรก: 15 ถึง 225
-        candidates = list(range(15, 230, 30))
+        # สแกนย่าน Close-Up Macro จริงรอบ 240
+        candidates = [200, 220, 235, 245, 255]
 
     for f in candidates:
-        set_camera_focus_hw(camera, f)
-        await asyncio.sleep(0.06)
-        camera.grab()
+        if (recheck_event and recheck_event.is_set()) or (stop_event and stop_event.is_set()):
+            logger.info("⚡ Focus optimization aborted due to Web UI interrupt")
+            break
+        await asyncio.to_thread(set_camera_focus_hw, camera, f)
+        await asyncio.sleep(0.08)  # รอเลนส์กล้องขยับถึงตำแหน่ง
+        for _ in range(2):
+            camera.grab()
         ret, fr = camera.read()
         if ret and fr is not None:
             score = measure_pcb_sharpness(fr, quad)
@@ -216,28 +245,8 @@ async def optimize_pcb_focus(
                 max_sharpness = score
                 best_focus = f
 
-    # หากเป็นการหาครั้งแรก ทำการ Fine-tune ละเอียดรอบจุดที่ชัดที่สุด
-    if cached_focus is None:
-        fine_candidates = [
-            max(0, best_focus - 15),
-            max(0, best_focus - 8),
-            best_focus,
-            min(255, best_focus + 8),
-            min(255, best_focus + 15),
-        ]
-        for f in fine_candidates:
-            set_camera_focus_hw(camera, f)
-            await asyncio.sleep(0.05)
-            camera.grab()
-            ret, fr = camera.read()
-            if ret and fr is not None:
-                score = measure_pcb_sharpness(fr, quad)
-                if score > max_sharpness:
-                    max_sharpness = score
-                    best_focus = f
-
-    # ล็อคโฟกัสที่จุดที่ดีที่สุด
-    set_camera_focus_hw(camera, best_focus)
+    # ล็อคโฟกัสที่จุดที่ดีที่สุดแบบไม่บล็อก Event Loop
+    await asyncio.to_thread(set_camera_focus_hw, camera, best_focus)
     logger.info(f"🎯 Optimal PCB Focus locked: {best_focus} (sharpness: {max_sharpness:.1f})")
     print(f"=====> ปรับ Focus สำเร็จ: {best_focus} (Sharpness: {max_sharpness:.1f})")
     return best_focus
@@ -508,10 +517,12 @@ async def websocket_endpoint(
         nano.belt_forward(60)  # เริ่มเดินสายพานด้วยความเร็ว 60 ตามมาตรฐาน
         nano.lcd_running()  # จอ LCD แสดงสถานะ Running........
 
-        # 2. จัดเตรียม Recheck Event และ Task ฟังคำสั่งจาก WebSocket
+        # 2. จัดเตรียม Priority #1 Events (Recheck, Stop) และ Task ฟังคำสั่งจาก WebSocket
         recheck_event = asyncio.Event()
-        global active_workflow_recheck_event
+        stop_event = asyncio.Event()
+        global active_workflow_recheck_event, active_workflow_stop_event
         active_workflow_recheck_event = recheck_event
+        active_workflow_stop_event = stop_event
 
         async def listen_client_messages():
             try:
@@ -519,17 +530,22 @@ async def websocket_endpoint(
                     data = await websocket.receive_text()
                     try:
                         msg = json.loads(data)
-                        if msg.get("action") == "recheck":
-                            logger.info("Received RECHECK command via WebSocket")
+                        action = msg.get("action")
+                        if action == "recheck":
+                            logger.info("⚡ [PRIORITY #1] Received RECHECK command from Web UI")
                             recheck_event.set()
+                        elif action in ("stop", "pause"):
+                            logger.info(f"⚡ [PRIORITY #1] Received {action.upper()} command from Web UI")
+                            stop_event.set()
                     except Exception as e:
                         logger.warning(f"Error parsing incoming ws message: {e}")
             except WebSocketDisconnect:
-                pass
+                logger.info("⚡ [PRIORITY #1] Client WebSocket disconnected")
+                stop_event.set()
             except asyncio.CancelledError:
                 pass
             except Exception:
-                pass
+                stop_event.set()
 
         reader_task = asyncio.create_task(listen_client_messages())
 
@@ -560,13 +576,21 @@ async def websocket_endpoint(
         latest_trace_view = None
         consecutive_read_failures = 0
         session_cached_focus = None
+        prev_dx: Optional[int] = None
 
         while True:
-            # --- ตรวจสอบคำสั่ง RECHECK จาก Frontend (ตรวจจับซ้ำ / ย้อนสายพาน) ---
+            # --- ลำดับความสำคัญอันดับ 1: ตรวจสอบคำสั่งหยุด (STOP) จากหน้าเว็บ ---
+            if stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                logger.info("⚡ [PRIORITY #1] Exiting workflow loop due to Web STOP or Disconnect")
+                if nano:
+                    nano.belt_stop()
+                break
+
+            # --- ลำดับความสำคัญอันดับ 1: คำสั่งย้อนสายพาน (RECHECK) จากหน้าเว็บ ---
             if recheck_event.is_set():
                 recheck_event.clear()
-                logger.info("🔄 Initiating Conveyor Recheck sequence...")
-                print("=====> กำลังดำเนินการ Recheck: สั่งสายพานถอยหลังเพื่อตรวจจับซ้ำ...")
+                logger.info("⚡ [PRIORITY #1] Initiating Conveyor Recheck sequence...")
+                print("=====> [PRIORITY #1] กำลังดำเนินการ Recheck: สั่งสายพานถอยหลังเพื่อตรวจจับซ้ำ...")
 
                 state = "RECHECKING"
                 if websocket.client_state == WebSocketState.CONNECTED:
@@ -593,6 +617,10 @@ async def websocket_endpoint(
                 # 3. ถอยหลังเป็นเวลา ~2.2 วินาที พร้อมส่งภาพสดต่อเนื่องให้ผู้ใช้เห็นความเคลื่อนไหว
                 rev_start = time.time()
                 while time.time() - rev_start < 2.2:
+                    if stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                        if nano:
+                            nano.belt_stop()
+                        break
                     ret_rev, frame_rev = camera.read()
                     if ret_rev and frame_rev is not None:
                         h_r, w_r = frame_rev.shape[:2]
@@ -637,6 +665,7 @@ async def websocket_endpoint(
                 state = "SEARCHING"
                 center_detect_start = None
                 cooldown_start = None
+                prev_dx = None
 
                 if websocket.client_state == WebSocketState.CONNECTED:
                     try:
@@ -718,12 +747,36 @@ async def websocket_endpoint(
             # --- จัดการ State Machine ---
             if state == "SEARCHING":
                 sensor_hit = bool(nano and getattr(nano, "is_sensor_triggered", False))
-                # หากตรวจพบบอร์ด PCB ในกล้อง หรือเซนเซอร์ตรวจจับได้ สั่งตัดเข้าสู่โหมด INSPECTING และหยุดสายพานทันที!
-                if (quad is not None and warped_pcb is not None) or sensor_hit:
-                    state = "INSPECTING"
-                    center_detect_start = None
+
+                if quad is not None and warped_pcb is not None:
+                    cx = int(quad[:, 0].mean())
+                    dx = cx - center_x
+                    dist = abs(dx)
+
+                    # ผู้ใช้กำหนด: รอให้แผ่น PCB เข้าใกล้กึ่งกลางกล้องจริงๆ ก่อน แล้วค่อยหยุดและเริ่มปรับกล้อง
+                    # ตรวจสอบว่าแผ่น PCB เข้าสู่ช่วงกึ่งกลางแล้วหรือยัง (dist <= 28 พิกเซล หรือตัดผ่านเส้นกึ่งกลางพอดี)
+                    is_at_center = (dist <= 28) or (prev_dx is not None and (prev_dx * dx < 0))
+
+                    if is_at_center:
+                        print(f"=====> PCB ถึงกึ่งกลางกล้องแล้ว! (dx={dx:+d}px) สั่งหยุดสายพานทันทีและเริ่มปรับกล้อง...")
+                        if nano:
+                            nano.belt_stop()
+                        state = "INSPECTING"
+                        prev_dx = None
+                    else:
+                        # แผ่น PCB กำลังเคลื่อนที่เข้าหากึ่งกลาง: สายพานเดินหน้าต่อเนื่องที่ความเร็ว 60 (ไม่หยุด ไม่กระตุก)
+                        prev_dx = dx
+                        cv2.putText(
+                            display_frame,
+                            f"APPROACHING CENTER ({dx:+d}px)",
+                            (center_x - 140, 35),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.65,
+                            (0, 255, 255),
+                            2,
+                        )
                 else:
-                    center_detect_start = None
+                    prev_dx = None
 
             elif state == "COOLDOWN":
                 # ผู้ใช้กำหนด: พักไม่ตรวจเป็นเวลา 5 วินาที แต่ระบบสายพานยังหมุนปกติที่ความเร็ว 60 แล้วจึงกลับมาตรวจเหมือนเดิม
@@ -755,6 +808,7 @@ async def websocket_endpoint(
                     print("=====> พักการตรวจครบ 5 วินาทีแล้ว! ชิ้นงานเดิมพ้นกล้องเรียบร้อย -> กลับสู่โหมด SEARCHING พร้อมตรวจชิ้นถัดไป")
                     state = "SEARCHING"
                     cooldown_start = None
+                    prev_dx = None
                     if nano:
                         nano.servo_mid()  # เซอร์โวกลับมากึ่งกลางเสมอพร้อมรับชิ้นงานถัดไป
                     if websocket.client_state == WebSocketState.CONNECTED:
@@ -768,34 +822,39 @@ async def websocket_endpoint(
 
             # --- เมื่อเข้าสู่โหมด INSPECTING (Fine-Centering + Auto-Focus + High-Clarity Inspection) ---
             if state == "INSPECTING":
+                # ตรวจสอบคำสั่ง Priority #1 จากเว็บทันทีก่อนเริ่ม
+                if recheck_event.is_set() or stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                    continue
+
                 if nano:
                     nano.is_sensor_triggered = False
-                    nano.belt_stop()  # สั่งหยุดสายพานทันที! จอดรอจัดตำแหน่ง
+                    nano.belt_stop()  # สั่งหยุดสายพานทันที!
                     nano.light_off(1)  # ปิดไฟเขียวขณะกำลังจัดตำแหน่งและวิเคราะห์
                     nano.lcd_processing()  # จอ LCD แสดงสถานะ Processing........
 
-                print("=====> ตรวจพบ PCB! สั่งหยุดสายพานทันที และเริ่มกระบวนการจัดตำแหน่งกึ่งกลางละเอียด...")
-                await asyncio.sleep(0.2)  # รอแรงเฉื่อยจากการหยุดนิ่งลง
+                print("=====> บอร์ดอยู่กึ่งกลางแล้ว! เริ่มกระบวนการจัดตำแหน่งละเอียด + ปรับโฟกัส...")
+                await asyncio.sleep(0.15)  # รอแรงเฉื่อยจากการหยุดนิ่งลง
 
-                # --- ขั้นตอนที่ 1: Precision Adaptive Centering ("ใจเย็น ทำนานๆได้ จัดให้อยู่กึ่งกลางจริงๆ") ---
+                # --- ขั้นตอนที่ 1: Precision Centering สั้นๆ (สายพานพามาถึงกึ่งกลางแล้ว ปรับสั้นๆ ไม่เกิน 6 ครั้ง) ---
                 TIGHT_TOLERANCE = 10  # ความคลาดเคลื่อนยอมรับได้ไม่เกิน +-10 พิกเซล
-                max_jogs = 25  # อนุญาตให้ปรับได้สูงสุด 25 ครั้งอย่างใจเย็น
-                dir_sign = 1   # 1 = belt_forward ลดค่า cx (เคลื่อนไปทางซ้าย), -1 = สลับด้าน
-
+                max_jogs = 6
                 current_quad = quad
+
                 for jog_i in range(max_jogs):
-                    # ล้าง Buffer สั้นๆ และอ่านเฟรมใหม่ที่นิ่งแล้ว
+                    # Priority #1 Check: ยกเลิกทันทีหากผู้ใช้กด Recheck หรือ Stop จากหน้าเว็บ
+                    if recheck_event.is_set() or stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                        break
+
                     for _ in range(2):
                         camera.grab()
                     ret_j, frame_j = camera.read()
                     if not ret_j or frame_j is None:
-                        await asyncio.sleep(0.05)
+                        await asyncio.sleep(0.04)
                         continue
 
-                    _, quad_j, _ = extract_pcb_board(frame_j, target_size=(256, 256))
+                    _, quad_j, _ = extract_pcb_board(frame_j, target_size=(256, 256), margin=0.06)
                     if quad_j is None:
-                        # หากมองไม่เห็นชั่วคราวขณะขยับ ให้อ่านเฟรมถัดไป
-                        await asyncio.sleep(0.06)
+                        await asyncio.sleep(0.04)
                         continue
 
                     current_quad = quad_j
@@ -841,42 +900,20 @@ async def websocket_endpoint(
                         break
 
                     if nano:
-                        # ความเร็วสายพานขั้นต่ำคือ 60 เสมอตามข้อกำหนดฮาร์ดแวร์
                         speed = 60
-                        if dist > 150:
-                            pulse_time = 0.20
-                        elif dist > 70:
-                            pulse_time = 0.12
-                        elif dist > 25:
-                            pulse_time = 0.065
-                        else:
-                            pulse_time = 0.045
-
-                        # ตัดสินใจทิศทางตาม dir_sign
-                        move_forward = (dx > 0 and dir_sign == 1) or (dx < 0 and dir_sign == -1)
-
+                        pulse_time = 0.055 if dist > 20 else 0.040
+                        move_forward = (dx > 0)
                         if move_forward:
                             nano.belt_forward(speed)
-                            await asyncio.sleep(pulse_time)
-                            nano.belt_stop()
                         else:
                             nano.belt_backward(speed)
-                            await asyncio.sleep(pulse_time)
-                            nano.belt_stop()
+                        await asyncio.sleep(pulse_time)
+                        nano.belt_stop()
+                        await asyncio.sleep(0.10)
 
-                        await asyncio.sleep(0.12)  # รอแรงเฉื่อยสายพานนิ่ง
-
-                        # ตรวจสอบ Adaptive Direction: หากระยะห่างเพิ่มขึ้น แปลว่าทิศทางกลับด้าน ให้กลับทิศทางทันที
-                        for _ in range(2):
-                            camera.grab()
-                        ret_chk, frame_chk = camera.read()
-                        if ret_chk and frame_chk is not None:
-                            _, quad_chk, _ = extract_pcb_board(frame_chk, target_size=(256, 256))
-                            if quad_chk is not None:
-                                new_dist = abs(int(quad_chk[:, 0].mean()) - center_x)
-                                if new_dist > dist + 10:
-                                    dir_sign = -dir_sign
-                                    logger.info(f"🔄 Adaptive centering: flipped direction sign to {dir_sign}")
+                # ตรวจสอบ Priority #1 อีกครั้งก่อนปรับ Focus
+                if recheck_event.is_set() or stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                    continue
 
                 # --- ขั้นตอนที่ 2: Auto-Focus Optimization (ปรับ Focus ให้คมชัดสูงสุดบนแผ่น PCB) ---
                 print("=====> ปรับ Focus เลนส์กล้องให้คมชัดสูงสุดบนลายทองแดง PCB...")
@@ -893,7 +930,12 @@ async def websocket_endpoint(
                     camera=camera,
                     quad=current_quad,
                     cached_focus=session_cached_focus,
+                    recheck_event=recheck_event,
+                    stop_event=stop_event,
                 )
+
+                if recheck_event.is_set() or stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                    continue
 
                 # --- ขั้นตอนที่ 3: Stabilization & Buffer Flush (รอให้นิ่งสนิทและล้าง Buffer ก่อนบันทึก) ---
                 print("=====> นิ่งสนิทและล้างภาพเก่าใน Buffer ก่อนบันทึกภาพ...")
@@ -906,18 +948,20 @@ async def websocket_endpoint(
                     except Exception:
                         pass
 
-                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.6 วินาที)
-                await asyncio.sleep(0.6)
+                # หน่วงเวลารอให้สายพานหยุดนิ่งสนิท 100% ปราศจากแรงสั่นสะเทือน (0.35 วินาที)
+                await asyncio.sleep(0.35)
+                if recheck_event.is_set() or stop_event.is_set() or websocket.client_state != WebSocketState.CONNECTED:
+                    continue
 
                 # ล้างภาพเก่าที่ตกค้างใน Hardware Buffer ของกล้องออกทั้งหมด แล้วดึงภาพใหม่ที่คมชัดที่สุด
-                for _ in range(8):
+                for _ in range(6):
                     camera.grab()
                 ret_stop, frame_stop = camera.read()
                 if ret_stop and frame_stop is not None:
                     frame = frame_stop
 
-                # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 12% เพื่อให้เก็บครบทั้งแผ่น รูเจาะมุม และขอบลายทองแดงไม่ถูกตัด)
-                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(512, 512), margin=0.12)
+                # สกัดภาพบอร์ด PCB จากภาพนิ่งแบบเต็มแผ่น (เผื่อขอบ 6% เพื่อเก็บครบทั้งแผ่น รูเจาะมุม และขอบลายทองแดงไม่ถูกตัด)
+                warped_pcb, quad, board_mask = extract_pcb_board(frame, target_size=(512, 512), margin=0.06)
                 if warped_pcb is None:
                     logger.warning("⚠️ ไม่พบแผ่น PCB จริงหลังหยุดสายพาน (สายพานเปล่าหรือแสงจ้า) — ยกเลิกและเดินสายพานต่อ")
                     print("=====> ไม่พบแผ่น PCB จริงหลังหยุดสายพาน — กลับสู่โหมด SEARCHING และเดินสายพานต่อทันที...")
@@ -1068,6 +1112,7 @@ async def websocket_endpoint(
         if reader_task and not reader_task.done():
             reader_task.cancel()
         active_workflow_recheck_event = None
+        active_workflow_stop_event = None
 
         if nano:
             try:
@@ -1088,16 +1133,30 @@ async def websocket_endpoint(
 
 
 # ==============================================================================
-# REST API Endpoints
+# REST API Endpoints (Priority #1 Controls from Web UI)
 # ==============================================================================
 @router.post("/recheck")
 async def trigger_recheck():
-    """สั่งสายพานย้อนกลับเพื่อตรวจจับชิ้นงาน PCB ซ้ำ (Recheck)"""
+    """สั่งสายพานย้อนกลับเพื่อตรวจจับชิ้นงาน PCB ซ้ำ (Priority #1 Recheck)"""
     global active_workflow_recheck_event
     if active_workflow_recheck_event is not None:
         active_workflow_recheck_event.set()
-        logger.info("Triggered recheck via REST API endpoint /recheck")
+        logger.info("⚡ [PRIORITY #1] Triggered recheck via REST API endpoint /recheck")
         return {"status": "success", "message": "Recheck signal dispatched to conveyor workflow"}
+    return JSONResponse(
+        status_code=400,
+        content={"status": "error", "message": "No active conveyor workflow running"}
+    )
+
+
+@router.post("/stop")
+async def trigger_stop():
+    """สั่งหยุดสายพานทันทีจากหน้าเว็บ (Priority #1 Stop)"""
+    global active_workflow_stop_event
+    if active_workflow_stop_event is not None:
+        active_workflow_stop_event.set()
+        logger.info("⚡ [PRIORITY #1] Triggered stop via REST API endpoint /stop")
+        return {"status": "success", "message": "Stop signal dispatched to conveyor workflow"}
     return JSONResponse(
         status_code=400,
         content={"status": "error", "message": "No active conveyor workflow running"}

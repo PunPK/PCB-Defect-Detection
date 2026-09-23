@@ -125,25 +125,44 @@ def extract_pcb_board(
     if not cnts:
         return None, None, None
 
-    largest = max(cnts, key=cv2.contourArea)
-    area = cv2.contourArea(largest)
     total_area = h * w
-    # กรองขนาดแผ่นบอร์ด: ต้องไม่เล็กเกินไป (< 4%) และต้องไม่กินพื้นที่ทั้งเฟรมภาพ (> 85% เช่น แสงสว่างจ้าคลุมทั้งสายพาน)
-    if area < 0.04 * total_area or area > 0.85 * total_area:
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    valid_candidates = []
+
+    for c in cnts:
+        c_area = cv2.contourArea(c)
+        # กรองขนาดแผ่นบอร์ด: แผ่น PCB จริงมีพื้นที่ประมาณ 3% ถึง 55% ของเฟรม (ตัดกล่องอะคริลิกใสขนาดใหญ่หรือแสงจ้าทั้งจอ > 60% ออก)
+        if c_area < 0.03 * total_area or c_area > 0.60 * total_area:
+            continue
+
+        c_hull = cv2.convexHull(c)
+        c_hull_area = cv2.contourArea(c_hull)
+        if c_hull_area <= 0 or (c_area / c_hull_area) < 0.65:
+            continue
+
+        c_rect = cv2.minAreaRect(c_hull)
+        rw, rh = c_rect[1]
+        if rw <= 0 or rh <= 0:
+            continue
+        aspect = max(rw, rh) / min(rw, rh)
+        # บอร์ด PCB จริงมีสัดส่วนใกล้เคียงสี่เหลี่ยมจัตุรัส ไม่เกิน 1.85 เท่า
+        if aspect > 1.85:
+            continue
+
+        # คำนวณ Contrast / Texture ภายใน Contour เพื่อแยกแผ่น PCB ที่มีลายทองแดง ออกจากฐานอะคริลิกใส
+        mask_c = np.zeros((h, w), dtype=np.uint8)
+        cv2.drawContours(mask_c, [c_hull], -1, 255, -1)
+        _, std_v = cv2.meanStdDev(gray_frame, mask=mask_c)
+        contrast_score = float(std_v[0, 0])
+        score = contrast_score * (1.0 / aspect)
+        valid_candidates.append((score, c, c_hull, c_rect, c_area))
+
+    if not valid_candidates:
         return None, None, None
 
-    hull = cv2.convexHull(largest)
-    hull_area = cv2.contourArea(hull)
-    if hull_area <= 0 or (area / hull_area) < 0.70:
-        return None, None, None
-
-    rect = cv2.minAreaRect(hull)
-    rw, rh = rect[1]
-    if rw <= 0 or rh <= 0:
-        return None, None, None
-    aspect = max(rw, rh) / min(rw, rh)
-    if aspect > 3.0:
-        return None, None, None
+    # เลือก Candidate ที่มีลายเส้น/คอนทราสต์ของ PCB ชัดเจนที่สุด
+    valid_candidates.sort(key=lambda x: x[0], reverse=True)
+    _, best_c, hull, rect, area = valid_candidates[0]
 
     peri = cv2.arcLength(hull, True)
     approx = cv2.approxPolyDP(hull, 0.03 * peri, True)
