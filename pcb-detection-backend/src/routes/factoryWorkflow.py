@@ -1028,13 +1028,13 @@ async def websocket_endpoint(
 
                     # 🎛️ สั่งการ Servo คัดแยกชิ้นงานแบบ Real-Time:
                     # แผ่นเดียวกันกับต้นแบบ -> กึ่งกลาง (servo_mid)
-                    # คนละแผ่น/ต่างรุ่น -> หมุนไปทางขวา (servo_right)
+                    # คนละแผ่น/ต่างรุ่น -> หมุนไปทางซ้าย
                     if nano:
                         if is_same_board:
                             nano.servo_mid()
                             nano.lcd_show_log("Match", int(sim_score * 100))
                         else:
-                            nano.servo_right()
+                            nano.servo_left()
                             nano.lcd_show_log("Diff", int(sim_score * 100))
                             # หน่วงเวลาให้ชิ้นงานพ้นรางคัดแยกไปก่อน แล้วหมุน Servo กลับมารอกึ่งกลาง
                             asyncio.create_task(reset_servo_after_delay(nano, delay=2.0))
