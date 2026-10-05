@@ -1,0 +1,24 @@
+Filename,Class Label,Category,Description for Academic Report
+CAD_reference_TEST1.png,CAD Master,Reference Template,Golden standard CAD Gerber layout without defects used for differential alignment
+open/pcb_0011_20260920_180517_016.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+open/pcb_0011_20260920_180517_018.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+open/pcb_0011_20260920_180517_022.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+open/pcb_0011_20260920_180517_027.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+open/pcb_0011_20260920_180517_030.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+open/pcb_0011_20260920_180517_033.png,OPEN,Open,Broken copper track causing electrical disconnection (Open Circuit defect)
+short/pcb_0001_20260920_182218_019.png,SHORT,Short,Unintended copper bridge connecting adjacent isolated tracks (Short Circuit defect)
+short/pcb_0011_20260920_180517_023.png,SHORT,Short,Unintended copper bridge connecting adjacent isolated tracks (Short Circuit defect)
+short/pcb_0012_20260920_180518_036.png,SHORT,Short,Unintended copper bridge connecting adjacent isolated tracks (Short Circuit defect)
+short/pcb_0012_20260920_180518_042.png,SHORT,Short,Unintended copper bridge connecting adjacent isolated tracks (Short Circuit defect)
+minor/pcb_0011_20260920_180517_031.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+minor/pcb_0011_20260920_180517_046.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+minor/pcb_0013_20260920_180519_000.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+minor/pcb_0013_20260920_180519_028.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+minor/pcb_0013_20260920_180519_036.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+minor/pcb_0014_20260920_180520_027.png,MINOR,Minor,"Minor track flaw (Mousebite notch, spurious copper protrusion, or pinhole)"
+normal/pcb_0011_20260920_180517_013.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
+normal/pcb_0011_20260920_180517_014.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
+normal/pcb_0011_20260920_180517_015.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
+normal/pcb_0011_20260920_180517_017.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
+normal/pcb_0011_20260920_180517_019.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
+normal/pcb_0011_20260920_180517_020.png,NORMAL,Normal,Tolerable edge roughness / camera lighting shadow (Benign Non-Defect)
