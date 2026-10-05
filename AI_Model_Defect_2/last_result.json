@@ -1,0 +1,3161 @@
+{
+ "verdict": "FAIL",
+ "matched_design": "test4",
+ "counts": {
+  "open": 18,
+  "short": 3,
+  "minor": 15,
+  "normal": 17
+ },
+ "n_candidates": 53,
+ "align": {
+  "score": 0.9347,
+  "angle": 355.1,
+  "mirrored": true,
+  "scale": 0.5036,
+  "polarity": "black",
+  "time_s": 4.945
+ },
+ "trace_width_px": 8.4,
+ "trace_width_mask_px": 4.23,
+ "tol_px": 3,
+ "unresolved_frac": 0.1427,
+ "canon_size": [
+  488,
+  370
+ ],
+ "model": "rf",
+ "warnings": [
+  "LOW_RES: 14% ของบอร์ดมีช่องว่าง/ลายที่แคบเกินกว่าจะตรวจ open/short ได้ (ควร < 8%) — ควรใช้ mask ความละเอียดสูงขึ้น"
+ ],
+ "defects": [
+  {
+   "cls": "open",
+   "prob": 0.945,
+   "probs": {
+    "minor": 0.029,
+    "normal": 0.016,
+    "open": 0.945,
+    "short": 0.01
+   },
+   "rule": "open",
+   "bbox": [
+    98,
+    2,
+    25,
+    20
+   ],
+   "poly_mask": [
+    [
+     192.6,
+     36.0
+    ],
+    [
+     182.2,
+     35.3
+    ],
+    [
+     182.2,
+     47.1
+    ],
+    [
+     192.6,
+     47.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.7653,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.3571,
+    "miss_depth": 0.6421,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.08,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.9762,
+    "bbox_aspect": 1.25,
+    "region_solidity": 0.6353,
+    "miss_frac_local": 0.0973,
+    "extra_frac_local": 0.0162,
+    "near_border": 1.4286,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.3148
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.478,
+   "probs": {
+    "minor": 0.267,
+    "normal": 0.478,
+    "open": 0.16,
+    "short": 0.094
+   },
+   "rule": "open",
+   "bbox": [
+    125,
+    8,
+    32,
+    21
+   ],
+   "poly_mask": [
+    [
+     181.4,
+     38.7
+    ],
+    [
+     168.0,
+     37.7
+    ],
+    [
+     168.0,
+     50.3
+    ],
+    [
+     181.4,
+     51.2
+    ]
+   ],
+   "features": {
+    "area_miss": 0.411,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.5949,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.2,
+    "width_mean": 0.2,
+    "extra_width_max": 0.0,
+    "bbox_long": 3.8095,
+    "bbox_aspect": 1.5238,
+    "region_solidity": 0.4265,
+    "miss_frac_local": 0.1016,
+    "extra_frac_local": 0.0446,
+    "near_border": 2.2024,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7612,
+    "unc_frac": 0.5172
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.542,
+   "probs": {
+    "minor": 0.542,
+    "normal": 0.255,
+    "open": 0.112,
+    "short": 0.091
+   },
+   "rule": "normal",
+   "bbox": [
+    196,
+    9,
+    26,
+    13
+   ],
+   "poly_mask": [
+    [
+     151.4,
+     37.1
+    ],
+    [
+     140.2,
+     36.3
+    ],
+    [
+     140.2,
+     44.1
+    ],
+    [
+     151.4,
+     44.9
+    ]
+   ],
+   "features": {
+    "area_miss": 0.5244,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.4762,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 3.0952,
+    "bbox_aspect": 2.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0347,
+    "extra_frac_local": 0.0344,
+    "near_border": 1.8452,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.2162
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.57,
+   "probs": {
+    "minor": 0.57,
+    "normal": 0.326,
+    "open": 0.071,
+    "short": 0.032
+   },
+   "rule": "normal",
+   "bbox": [
+    358,
+    11,
+    17,
+    19
+   ],
+   "poly_mask": [
+    [
+     79.8,
+     33.0
+    ],
+    [
+     72.0,
+     32.5
+    ],
+    [
+     71.9,
+     44.3
+    ],
+    [
+     79.7,
+     44.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.2409,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.5,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.2619,
+    "bbox_aspect": 1.1176,
+    "region_solidity": 0.5763,
+    "miss_frac_local": 0.0304,
+    "extra_frac_local": 0.0,
+    "near_border": 2.4405,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.9025,
+    "unc_frac": 0.5294
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.862,
+   "probs": {
+    "minor": 0.035,
+    "normal": 0.862,
+    "open": 0.01,
+    "short": 0.092
+   },
+   "rule": "normal",
+   "bbox": [
+    165,
+    21,
+    15,
+    14
+   ],
+   "poly_mask": [
+    [
+     164.6,
+     45.3
+    ],
+    [
+     158.2,
+     44.8
+    ],
+    [
+     158.2,
+     53.2
+    ],
+    [
+     164.6,
+     53.6
+    ]
+   ],
+   "features": {
+    "area_miss": 0.085,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.2615,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.3333,
+    "width_mean": 0.3333,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.7857,
+    "bbox_aspect": 1.0714,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0365,
+    "extra_frac_local": 0.0521,
+    "near_border": 3.3333,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.6667
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.505,
+   "probs": {
+    "minor": 0.368,
+    "normal": 0.112,
+    "open": 0.016,
+    "short": 0.505
+   },
+   "rule": "minor",
+   "bbox": [
+    296,
+    23,
+    16,
+    25
+   ],
+   "poly_mask": [
+    [
+     107.7,
+     42.4
+    ],
+    [
+     100.5,
+     41.9
+    ],
+    [
+     100.4,
+     57.3
+    ],
+    [
+     107.6,
+     57.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.5244,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.4548,
+    "bbox_long": 2.9762,
+    "bbox_aspect": 1.5625,
+    "region_solidity": 0.8506,
+    "miss_frac_local": 0.0194,
+    "extra_frac_local": 0.0403,
+    "near_border": 4.2262,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 2.1429,
+    "unc_frac": 0.1081
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.698,
+   "probs": {
+    "minor": 0.033,
+    "normal": 0.007,
+    "open": 0.698,
+    "short": 0.262
+   },
+   "rule": "open",
+   "bbox": [
+    42,
+    25,
+    46,
+    34
+   ],
+   "poly_mask": [
+    [
+     215.4,
+     51.2
+    ],
+    [
+     196.7,
+     49.9
+    ],
+    [
+     196.7,
+     69.9
+    ],
+    [
+     215.5,
+     71.1
+    ]
+   ],
+   "features": {
+    "area_miss": 0.8929,
+    "area_extra": 0.6944,
+    "miss_skel_len": 0.5952,
+    "miss_depth": 0.5231,
+    "extra_out": 0.8333,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.065,
+    "extra_width_max": 0.5534,
+    "bbox_long": 5.4762,
+    "bbox_aspect": 1.3529,
+    "region_solidity": 0.2295,
+    "miss_frac_local": 0.0409,
+    "extra_frac_local": 0.0373,
+    "near_border": 5.0,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.0461,
+    "unc_frac": 0.3661
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.476,
+   "probs": {
+    "minor": 0.476,
+    "normal": 0.268,
+    "open": 0.185,
+    "short": 0.072
+   },
+   "rule": "normal",
+   "bbox": [
+    120,
+    35,
+    18,
+    25
+   ],
+   "poly_mask": [
+    [
+     183.5,
+     54.9
+    ],
+    [
+     176.0,
+     54.4
+    ],
+    [
+     176.0,
+     69.3
+    ],
+    [
+     183.5,
+     69.7
+    ]
+   ],
+   "features": {
+    "area_miss": 0.5527,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.5949,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.9762,
+    "bbox_aspect": 1.3889,
+    "region_solidity": 0.8041,
+    "miss_frac_local": 0.069,
+    "extra_frac_local": 0.0347,
+    "near_border": 5.6548,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.5231,
+    "unc_frac": 0.3846
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.343,
+   "probs": {
+    "minor": 0.341,
+    "normal": 0.343,
+    "open": 0.26,
+    "short": 0.056
+   },
+   "rule": "normal",
+   "bbox": [
+    212,
+    38,
+    13,
+    12
+   ],
+   "poly_mask": [
+    [
+     144.5,
+     54.1
+    ],
+    [
+     138.9,
+     53.7
+    ],
+    [
+     138.8,
+     61.0
+    ],
+    [
+     144.5,
+     61.3
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0567,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3571,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.125,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.5476,
+    "bbox_aspect": 1.0833,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0205,
+    "extra_frac_local": 0.0389,
+    "near_border": 5.2381,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.75
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.507,
+   "probs": {
+    "minor": 0.507,
+    "normal": 0.41,
+    "open": 0.011,
+    "short": 0.072
+   },
+   "rule": "normal",
+   "bbox": [
+    287,
+    49,
+    15,
+    12
+   ],
+   "poly_mask": [
+    [
+     111.6,
+     58.7
+    ],
+    [
+     104.9,
+     58.2
+    ],
+    [
+     104.8,
+     65.6
+    ],
+    [
+     111.5,
+     66.0
+    ]
+   ],
+   "features": {
+    "area_miss": 0.1134,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.4762,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.7857,
+    "bbox_aspect": 1.25,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0135,
+    "extra_frac_local": 0.0696,
+    "near_border": 6.5476,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.9524,
+    "unc_frac": 0.625
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.541,
+   "probs": {
+    "minor": 0.226,
+    "normal": 0.541,
+    "open": 0.171,
+    "short": 0.062
+   },
+   "rule": "normal",
+   "bbox": [
+    155,
+    58,
+    12,
+    12
+   ],
+   "poly_mask": [
+    [
+     168.8,
+     67.6
+    ],
+    [
+     163.7,
+     67.3
+    ],
+    [
+     163.7,
+     74.5
+    ],
+    [
+     168.8,
+     74.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0425,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.1786,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.4286,
+    "bbox_aspect": 1.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0295,
+    "extra_frac_local": 0.1716,
+    "near_border": 7.619,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.6667,
+    "unc_frac": 0.6667
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.527,
+   "probs": {
+    "minor": 0.233,
+    "normal": 0.095,
+    "open": 0.145,
+    "short": 0.527
+   },
+   "rule": "minor",
+   "bbox": [
+    125,
+    64,
+    53,
+    46
+   ],
+   "poly_mask": [
+    [
+     181.4,
+     72.0
+    ],
+    [
+     159.0,
+     70.7
+    ],
+    [
+     159.0,
+     98.4
+    ],
+    [
+     181.4,
+     99.5
+    ]
+   ],
+   "features": {
+    "area_miss": 0.7937,
+    "area_extra": 2.3951,
+    "miss_skel_len": 0.0,
+    "miss_depth": 1.1667,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.5534,
+    "bbox_long": 6.3095,
+    "bbox_aspect": 1.1522,
+    "region_solidity": 0.2641,
+    "miss_frac_local": 0.0298,
+    "extra_frac_local": 0.1377,
+    "near_border": 10.3571,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.2178
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.59,
+   "probs": {
+    "minor": 0.053,
+    "normal": 0.02,
+    "open": 0.59,
+    "short": 0.336
+   },
+   "rule": "open",
+   "bbox": [
+    210,
+    64,
+    51,
+    45
+   ],
+   "poly_mask": [
+    [
+     145.3,
+     69.9
+    ],
+    [
+     123.0,
+     68.5
+    ],
+    [
+     122.9,
+     96.1
+    ],
+    [
+     145.2,
+     97.2
+    ]
+   ],
+   "features": {
+    "area_miss": 5.5981,
+    "area_extra": 1.0346,
+    "miss_skel_len": 3.4524,
+    "miss_depth": 1.6179,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0398,
+    "extra_width_max": 0.652,
+    "bbox_long": 6.0714,
+    "bbox_aspect": 1.1333,
+    "region_solidity": 0.4671,
+    "miss_frac_local": 0.0947,
+    "extra_frac_local": 0.0897,
+    "near_border": 10.2976,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.0812
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.802,
+   "probs": {
+    "minor": 0.065,
+    "normal": 0.04,
+    "open": 0.802,
+    "short": 0.093
+   },
+   "rule": "open",
+   "bbox": [
+    52,
+    78,
+    47,
+    28
+   ],
+   "poly_mask": [
+    [
+     211.5,
+     82.0
+    ],
+    [
+     192.2,
+     80.9
+    ],
+    [
+     192.2,
+     97.6
+    ],
+    [
+     211.5,
+     98.5
+    ]
+   ],
+   "features": {
+    "area_miss": 1.2897,
+    "area_extra": 0.0,
+    "miss_skel_len": 1.6667,
+    "miss_depth": 0.6421,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.0681,
+    "extra_width_max": 0.0,
+    "bbox_long": 5.5952,
+    "bbox_aspect": 1.6786,
+    "region_solidity": 0.245,
+    "miss_frac_local": 0.0341,
+    "extra_frac_local": 0.0322,
+    "near_border": 8.9881,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.3516
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.639,
+   "probs": {
+    "minor": 0.165,
+    "normal": 0.121,
+    "open": 0.639,
+    "short": 0.074
+   },
+   "rule": "open",
+   "bbox": [
+    260,
+    79,
+    19,
+    16
+   ],
+   "poly_mask": [
+    [
+     123.4,
+     77.8
+    ],
+    [
+     115.0,
+     77.3
+    ],
+    [
+     114.9,
+     87.1
+    ],
+    [
+     123.4,
+     87.6
+    ]
+   ],
+   "features": {
+    "area_miss": 0.4393,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.2381,
+    "miss_depth": 0.7143,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0917,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.2619,
+    "bbox_aspect": 1.1875,
+    "region_solidity": 0.8611,
+    "miss_frac_local": 0.0806,
+    "extra_frac_local": 0.051,
+    "near_border": 10.3571,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.3548
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.888,
+   "probs": {
+    "minor": 0.033,
+    "normal": 0.077,
+    "open": 0.002,
+    "short": 0.888
+   },
+   "rule": "minor",
+   "bbox": [
+    305,
+    81,
+    34,
+    23
+   ],
+   "poly_mask": [
+    [
+     103.4,
+     77.9
+    ],
+    [
+     88.0,
+     77.1
+    ],
+    [
+     87.9,
+     91.4
+    ],
+    [
+     103.3,
+     92.1
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 1.4456,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.8333,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.652,
+    "bbox_long": 4.0476,
+    "bbox_aspect": 1.4783,
+    "region_solidity": 0.5152,
+    "miss_frac_local": 0.0269,
+    "extra_frac_local": 0.053,
+    "near_border": 11.0119,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.6667,
+    "unc_frac": 0.2059
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.88,
+   "probs": {
+    "minor": 0.03,
+    "normal": 0.08,
+    "open": 0.009,
+    "short": 0.88
+   },
+   "rule": "open",
+   "bbox": [
+    357,
+    82,
+    33,
+    34
+   ],
+   "poly_mask": [
+    [
+     79.8,
+     77.2
+    ],
+    [
+     64.5,
+     76.4
+    ],
+    [
+     64.3,
+     97.8
+    ],
+    [
+     79.5,
+     98.5
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 2.8628,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.7612,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 1.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.6821,
+    "bbox_long": 4.0476,
+    "bbox_aspect": 1.0303,
+    "region_solidity": 0.4633,
+    "miss_frac_local": 0.0747,
+    "extra_frac_local": 0.0659,
+    "near_border": 11.7857,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.8073,
+    "unc_frac": 0.1683
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.634,
+   "probs": {
+    "minor": 0.018,
+    "normal": 0.021,
+    "open": 0.634,
+    "short": 0.327
+   },
+   "rule": "open",
+   "bbox": [
+    391,
+    106,
+    31,
+    94
+   ],
+   "poly_mask": [
+    [
+     63.9,
+     91.5
+    ],
+    [
+     49.3,
+     90.8
+    ],
+    [
+     48.5,
+     150.9
+    ],
+    [
+     63.1,
+     151.2
+    ]
+   ],
+   "features": {
+    "area_miss": 1.9133,
+    "area_extra": 1.644,
+    "miss_skel_len": 0.3571,
+    "miss_depth": 0.5949,
+    "extra_out": 0.7143,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 2.0,
+    "split_local": 1.0,
+    "split_global": 1.0,
+    "width_min": 0.0,
+    "width_mean": 0.1176,
+    "extra_width_max": 0.6821,
+    "bbox_long": 11.1905,
+    "bbox_aspect": 3.0323,
+    "region_solidity": 0.2226,
+    "miss_frac_local": 0.0722,
+    "extra_frac_local": 0.0874,
+    "near_border": 9.7024,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.5231,
+    "unc_frac": 0.0916
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.535,
+   "probs": {
+    "minor": 0.032,
+    "normal": 0.03,
+    "open": 0.535,
+    "short": 0.403
+   },
+   "rule": "short",
+   "bbox": [
+    214,
+    111,
+    124,
+    112
+   ],
+   "poly_mask": [
+    [
+     143.4,
+     98.3
+    ],
+    [
+     88.3,
+     95.8
+    ],
+    [
+     87.6,
+     166.3
+    ],
+    [
+     143.2,
+     167.1
+    ]
+   ],
+   "features": {
+    "area_miss": 2.4943,
+    "area_extra": 8.1349,
+    "miss_skel_len": 2.5,
+    "miss_depth": 0.7846,
+    "extra_out": 0.7846,
+    "nets_bridged_local": 3.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0664,
+    "extra_width_max": 0.9095,
+    "bbox_long": 14.7619,
+    "bbox_aspect": 1.1071,
+    "region_solidity": 0.1179,
+    "miss_frac_local": 0.0412,
+    "extra_frac_local": 0.1059,
+    "near_border": 19.881,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.1905,
+    "unc_frac": 0.2761
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.601,
+   "probs": {
+    "minor": 0.601,
+    "normal": 0.112,
+    "open": 0.002,
+    "short": 0.286
+   },
+   "rule": "normal",
+   "bbox": [
+    312,
+    128,
+    18,
+    19
+   ],
+   "poly_mask": [
+    [
+     100.0,
+     106.9
+    ],
+    [
+     91.8,
+     106.6
+    ],
+    [
+     91.7,
+     118.5
+    ],
+    [
+     99.9,
+     118.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.4535,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.5231,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.5534,
+    "bbox_long": 2.2619,
+    "bbox_aspect": 1.0556,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0213,
+    "extra_frac_local": 0.0412,
+    "near_border": 16.369,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.6667,
+    "unc_frac": 0.2188
+   }
+  },
+  {
+   "cls": "short",
+   "prob": 0.925,
+   "probs": {
+    "minor": 0.016,
+    "normal": 0.058,
+    "open": 0.001,
+    "short": 0.925
+   },
+   "rule": "short",
+   "bbox": [
+    106,
+    138,
+    36,
+    33
+   ],
+   "poly_mask": [
+    [
+     189.3,
+     116.6
+    ],
+    [
+     174.2,
+     116.0
+    ],
+    [
+     174.2,
+     135.9
+    ],
+    [
+     189.4,
+     136.4
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 2.466,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.6667,
+    "nets_bridged_local": 2.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.7808,
+    "bbox_long": 4.2857,
+    "bbox_aspect": 1.0909,
+    "region_solidity": 0.4366,
+    "miss_frac_local": 0.0095,
+    "extra_frac_local": 0.1246,
+    "near_border": 14.7619,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7612,
+    "unc_frac": 0.2408
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.425,
+   "probs": {
+    "minor": 0.425,
+    "normal": 0.223,
+    "open": 0.307,
+    "short": 0.045
+   },
+   "rule": "normal",
+   "bbox": [
+    66,
+    141,
+    15,
+    14
+   ],
+   "poly_mask": [
+    [
+     205.9,
+     119.0
+    ],
+    [
+     199.7,
+     118.8
+    ],
+    [
+     199.7,
+     127.1
+    ],
+    [
+     205.9,
+     127.3
+    ]
+   ],
+   "features": {
+    "area_miss": 0.1276,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.4762,
+    "miss_depth": 0.4282,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.0667,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.7857,
+    "bbox_aspect": 1.0714,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0114,
+    "extra_frac_local": 0.0352,
+    "near_border": 8.75,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.8889
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.523,
+   "probs": {
+    "minor": 0.523,
+    "normal": 0.351,
+    "open": 0.003,
+    "short": 0.123
+   },
+   "rule": "normal",
+   "bbox": [
+    358,
+    144,
+    13,
+    20
+   ],
+   "poly_mask": [
+    [
+     78.9,
+     116.1
+    ],
+    [
+     72.9,
+     115.9
+    ],
+    [
+     72.7,
+     128.6
+    ],
+    [
+     78.8,
+     128.7
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.2126,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 0.0,
+    "nets_bridged_global": 0.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.326,
+    "bbox_long": 2.381,
+    "bbox_aspect": 1.5385,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0013,
+    "extra_frac_local": 0.088,
+    "near_border": 14.7024,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 2.3795,
+    "unc_frac": 0.6667
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.697,
+   "probs": {
+    "minor": 0.161,
+    "normal": 0.087,
+    "open": 0.697,
+    "short": 0.055
+   },
+   "rule": "open",
+   "bbox": [
+    439,
+    148,
+    19,
+    16
+   ],
+   "poly_mask": [
+    [
+     40.9,
+     117.3
+    ],
+    [
+     31.8,
+     117.0
+    ],
+    [
+     31.6,
+     127.3
+    ],
+    [
+     40.7,
+     127.6
+    ]
+   ],
+   "features": {
+    "area_miss": 0.4535,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.2381,
+    "miss_depth": 0.7143,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0833,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.2619,
+    "bbox_aspect": 1.1875,
+    "region_solidity": 0.8,
+    "miss_frac_local": 0.0475,
+    "extra_frac_local": 0.0389,
+    "near_border": 4.7024,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.1875
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.977,
+   "probs": {
+    "minor": 0.012,
+    "normal": 0.977,
+    "open": 0.002,
+    "short": 0.008
+   },
+   "rule": "normal",
+   "bbox": [
+    23,
+    152,
+    14,
+    14
+   ],
+   "poly_mask": [
+    [
+     223.4,
+     126.1
+    ],
+    [
+     217.7,
+     125.9
+    ],
+    [
+     217.8,
+     134.2
+    ],
+    [
+     223.4,
+     134.4
+    ]
+   ],
+   "features": {
+    "area_miss": 0.085,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.2615,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.3333,
+    "width_mean": 0.3333,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.6667,
+    "bbox_aspect": 1.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0035,
+    "extra_frac_local": 0.0106,
+    "near_border": 3.5714,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7612,
+    "unc_frac": 0.8333
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.86,
+   "probs": {
+    "minor": 0.018,
+    "normal": 0.121,
+    "open": 0.002,
+    "short": 0.86
+   },
+   "rule": "minor",
+   "bbox": [
+    345,
+    152,
+    45,
+    43
+   ],
+   "poly_mask": [
+    [
+     84.8,
+     121.4
+    ],
+    [
+     64.0,
+     120.7
+    ],
+    [
+     63.6,
+     148.0
+    ],
+    [
+     84.5,
+     148.5
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 2.9904,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.9993,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.9095,
+    "bbox_long": 5.3571,
+    "bbox_aspect": 1.0465,
+    "region_solidity": 0.332,
+    "miss_frac_local": 0.0216,
+    "extra_frac_local": 0.0859,
+    "near_border": 14.3452,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 2.1429,
+    "unc_frac": 0.1848
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.556,
+   "probs": {
+    "minor": 0.227,
+    "normal": 0.556,
+    "open": 0.172,
+    "short": 0.045
+   },
+   "rule": "normal",
+   "bbox": [
+    160,
+    162,
+    13,
+    14
+   ],
+   "poly_mask": [
+    [
+     166.6,
+     130.2
+    ],
+    [
+     161.0,
+     130.1
+    ],
+    [
+     161.0,
+     138.6
+    ],
+    [
+     166.6,
+     138.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.085,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.1667,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.6667,
+    "bbox_aspect": 1.0769,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0314,
+    "extra_frac_local": 0.0428,
+    "near_border": 19.8214,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.6667
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.356,
+   "probs": {
+    "minor": 0.181,
+    "normal": 0.138,
+    "open": 0.325,
+    "short": 0.356
+   },
+   "rule": "minor",
+   "bbox": [
+    156,
+    178,
+    39,
+    46
+   ],
+   "poly_mask": [
+    [
+     168.3,
+     140.0
+    ],
+    [
+     151.5,
+     139.6
+    ],
+    [
+     151.4,
+     167.8
+    ],
+    [
+     168.2,
+     168.1
+    ]
+   ],
+   "features": {
+    "area_miss": 0.2693,
+    "area_extra": 0.6803,
+    "miss_skel_len": 0.2381,
+    "miss_depth": 0.3571,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.2262,
+    "extra_width_max": 0.4548,
+    "bbox_long": 5.4762,
+    "bbox_aspect": 1.1795,
+    "region_solidity": 0.1202,
+    "miss_frac_local": 0.0588,
+    "extra_frac_local": 0.0341,
+    "near_border": 20.119,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.4058
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.554,
+   "probs": {
+    "minor": 0.057,
+    "normal": 0.015,
+    "open": 0.554,
+    "short": 0.374
+   },
+   "rule": "short",
+   "bbox": [
+    94,
+    192,
+    36,
+    55
+   ],
+   "poly_mask": [
+    [
+     194.4,
+     149.1
+    ],
+    [
+     179.3,
+     148.8
+    ],
+    [
+     179.3,
+     182.2
+    ],
+    [
+     194.4,
+     182.3
+    ]
+   ],
+   "features": {
+    "area_miss": 0.5102,
+    "area_extra": 1.6865,
+    "miss_skel_len": 0.8333,
+    "miss_depth": 0.4762,
+    "extra_out": 0.6897,
+    "nets_bridged_local": 3.0,
+    "nets_bridged_global": 3.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.0992,
+    "extra_width_max": 0.5534,
+    "bbox_long": 6.5476,
+    "bbox_aspect": 1.5278,
+    "region_solidity": 0.1848,
+    "miss_frac_local": 0.1184,
+    "extra_frac_local": 0.0482,
+    "near_border": 13.3333,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.4146
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.841,
+   "probs": {
+    "minor": 0.035,
+    "normal": 0.121,
+    "open": 0.003,
+    "short": 0.841
+   },
+   "rule": "minor",
+   "bbox": [
+    279,
+    209,
+    36,
+    39
+   ],
+   "poly_mask": [
+    [
+     114.4,
+     157.9
+    ],
+    [
+     98.2,
+     157.6
+    ],
+    [
+     98.0,
+     182.2
+    ],
+    [
+     114.3,
+     182.4
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 2.5368,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.7615,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.8794,
+    "bbox_long": 4.6429,
+    "bbox_aspect": 1.0833,
+    "region_solidity": 0.3804,
+    "miss_frac_local": 0.0094,
+    "extra_frac_local": 0.1546,
+    "near_border": 16.8452,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.6667,
+    "unc_frac": 0.2346
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.544,
+   "probs": {
+    "minor": 0.105,
+    "normal": 0.123,
+    "open": 0.228,
+    "short": 0.544
+   },
+   "rule": "minor",
+   "bbox": [
+    378,
+    208,
+    32,
+    38
+   ],
+   "poly_mask": [
+    [
+     69.2,
+     156.4
+    ],
+    [
+     54.1,
+     156.2
+    ],
+    [
+     53.8,
+     180.6
+    ],
+    [
+     68.9,
+     180.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.085,
+    "area_extra": 1.4456,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3333,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 2.0,
+    "width_min": 0.0,
+    "width_mean": 0.1667,
+    "extra_width_max": 0.6821,
+    "bbox_long": 4.5238,
+    "bbox_aspect": 1.1875,
+    "region_solidity": 0.3017,
+    "miss_frac_local": 0.0193,
+    "extra_frac_local": 0.0668,
+    "near_border": 11.1905,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.6667,
+    "unc_frac": 0.2222
+   }
+  },
+  {
+   "cls": "short",
+   "prob": 0.887,
+   "probs": {
+    "minor": 0.026,
+    "normal": 0.078,
+    "open": 0.009,
+    "short": 0.887
+   },
+   "rule": "short",
+   "bbox": [
+    39,
+    210,
+    39,
+    45
+   ],
+   "poly_mask": [
+    [
+     217.0,
+     160.4
+    ],
+    [
+     201.0,
+     160.1
+    ],
+    [
+     201.1,
+     187.2
+    ],
+    [
+     217.1,
+     187.3
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 2.6077,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.8333,
+    "nets_bridged_local": 3.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 2.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.6821,
+    "bbox_long": 5.3571,
+    "bbox_aspect": 1.1538,
+    "region_solidity": 0.3386,
+    "miss_frac_local": 0.1422,
+    "extra_frac_local": 0.0922,
+    "near_border": 6.9643,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.3122
+   }
+  },
+  {
+   "cls": "short",
+   "prob": 0.473,
+   "probs": {
+    "minor": 0.423,
+    "normal": 0.099,
+    "open": 0.005,
+    "short": 0.473
+   },
+   "rule": "short",
+   "bbox": [
+    236,
+    215,
+    21,
+    14
+   ],
+   "poly_mask": [
+    [
+     133.5,
+     162.0
+    ],
+    [
+     124.2,
+     161.8
+    ],
+    [
+     124.2,
+     170.6
+    ],
+    [
+     133.5,
+     170.7
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.3685,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 3.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.4548,
+    "bbox_long": 2.5,
+    "bbox_aspect": 1.5,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0392,
+    "extra_frac_local": 0.1518,
+    "near_border": 17.619,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.2842,
+    "unc_frac": 0.0385
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.608,
+   "probs": {
+    "minor": 0.017,
+    "normal": 0.023,
+    "open": 0.608,
+    "short": 0.352
+   },
+   "rule": "short",
+   "bbox": [
+    260,
+    219,
+    77,
+    105
+   ],
+   "poly_mask": [
+    [
+     122.9,
+     164.3
+    ],
+    [
+     88.1,
+     163.8
+    ],
+    [
+     87.4,
+     230.8
+    ],
+    [
+     122.5,
+     230.3
+    ]
+   ],
+   "features": {
+    "area_miss": 1.7715,
+    "area_extra": 5.8532,
+    "miss_skel_len": 1.3095,
+    "miss_depth": 0.7143,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 2.0,
+    "nets_bridged_global": 2.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0489,
+    "extra_width_max": 0.9095,
+    "bbox_long": 12.5,
+    "bbox_aspect": 1.3636,
+    "region_solidity": 0.1556,
+    "miss_frac_local": 0.0448,
+    "extra_frac_local": 0.1291,
+    "near_border": 11.7262,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.6667,
+    "unc_frac": 0.2095
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.733,
+   "probs": {
+    "minor": 0.087,
+    "normal": 0.086,
+    "open": 0.733,
+    "short": 0.094
+   },
+   "rule": "open",
+   "bbox": [
+    423,
+    218,
+    35,
+    35
+   ],
+   "poly_mask": [
+    [
+     47.9,
+     162.5
+    ],
+    [
+     31.1,
+     162.2
+    ],
+    [
+     30.7,
+     185.0
+    ],
+    [
+     47.5,
+     185.1
+    ]
+   ],
+   "features": {
+    "area_miss": 1.4456,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.7143,
+    "miss_depth": 0.7143,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.152,
+    "extra_width_max": 0.0,
+    "bbox_long": 4.1667,
+    "bbox_aspect": 1.0,
+    "region_solidity": 0.2321,
+    "miss_frac_local": 0.0866,
+    "extra_frac_local": 0.0617,
+    "near_border": 5.6548,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.2941
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.682,
+   "probs": {
+    "minor": 0.017,
+    "normal": 0.009,
+    "open": 0.682,
+    "short": 0.293
+   },
+   "rule": "open",
+   "bbox": [
+    382,
+    224,
+    99,
+    78
+   ],
+   "poly_mask": [
+    [
+     67.2,
+     166.6
+    ],
+    [
+     19.9,
+     166.0
+    ],
+    [
+     19.0,
+     217.2
+    ],
+    [
+     66.6,
+     216.8
+    ]
+   ],
+   "features": {
+    "area_miss": 4.2375,
+    "area_extra": 2.0266,
+    "miss_skel_len": 4.1667,
+    "miss_depth": 0.5952,
+    "extra_out": 0.8333,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0441,
+    "extra_width_max": 0.4548,
+    "bbox_long": 11.7857,
+    "bbox_aspect": 1.2692,
+    "region_solidity": 0.1279,
+    "miss_frac_local": 0.0938,
+    "extra_frac_local": 0.0642,
+    "near_border": 6.7262,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.1905,
+    "unc_frac": 0.1527
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.757,
+   "probs": {
+    "minor": 0.114,
+    "normal": 0.757,
+    "open": 0.052,
+    "short": 0.077
+   },
+   "rule": "normal",
+   "bbox": [
+    158,
+    227,
+    17,
+    22
+   ],
+   "poly_mask": [
+    [
+     167.4,
+     169.9
+    ],
+    [
+     160.1,
+     169.8
+    ],
+    [
+     160.0,
+     183.3
+    ],
+    [
+     167.3,
+     183.4
+    ]
+   ],
+   "features": {
+    "area_miss": 0.1559,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.3333,
+    "width_mean": 0.3333,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.619,
+    "bbox_aspect": 1.2941,
+    "region_solidity": 0.4681,
+    "miss_frac_local": 0.1361,
+    "extra_frac_local": 0.0731,
+    "near_border": 15.7143,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.4545
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.549,
+   "probs": {
+    "minor": 0.206,
+    "normal": 0.549,
+    "open": 0.191,
+    "short": 0.053
+   },
+   "rule": "normal",
+   "bbox": [
+    231,
+    228,
+    13,
+    13
+   ],
+   "poly_mask": [
+    [
+     135.7,
+     170.1
+    ],
+    [
+     130.0,
+     170.0
+    ],
+    [
+     129.9,
+     178.1
+    ],
+    [
+     135.7,
+     178.2
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0709,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.1667,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.5476,
+    "bbox_aspect": 1.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0464,
+    "extra_frac_local": 0.0741,
+    "near_border": 16.131,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.4286,
+    "unc_frac": 0.6
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.538,
+   "probs": {
+    "minor": 0.053,
+    "normal": 0.019,
+    "open": 0.538,
+    "short": 0.391
+   },
+   "rule": "short",
+   "bbox": [
+    23,
+    233,
+    198,
+    68
+   ],
+   "poly_mask": [
+    [
+     223.6,
+     174.2
+    ],
+    [
+     140.1,
+     173.2
+    ],
+    [
+     139.9,
+     215.6
+    ],
+    [
+     223.8,
+     214.9
+    ]
+   ],
+   "features": {
+    "area_miss": 12.9677,
+    "area_extra": 3.7132,
+    "miss_skel_len": 13.2143,
+    "miss_depth": 1.1652,
+    "extra_out": 0.7377,
+    "nets_bridged_local": 3.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0243,
+    "extra_width_max": 0.6821,
+    "bbox_long": 23.5714,
+    "bbox_aspect": 2.9118,
+    "region_solidity": 0.1566,
+    "miss_frac_local": 0.1316,
+    "extra_frac_local": 0.071,
+    "near_border": 12.2619,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.9524,
+    "unc_frac": 0.2368
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.332,
+   "probs": {
+    "minor": 0.313,
+    "normal": 0.307,
+    "open": 0.332,
+    "short": 0.048
+   },
+   "rule": "normal",
+   "bbox": [
+    245,
+    233,
+    14,
+    14
+   ],
+   "poly_mask": [
+    [
+     129.5,
+     173.1
+    ],
+    [
+     123.3,
+     173.0
+    ],
+    [
+     123.2,
+     181.8
+    ],
+    [
+     129.4,
+     181.9
+    ]
+   ],
+   "features": {
+    "area_miss": 0.1417,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.2381,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.6667,
+    "bbox_aspect": 1.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0511,
+    "extra_frac_local": 0.0853,
+    "near_border": 15.4762,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.5692,
+    "unc_frac": 0.7
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.68,
+   "probs": {
+    "minor": 0.017,
+    "normal": 0.038,
+    "open": 0.68,
+    "short": 0.266
+   },
+   "rule": "open",
+   "bbox": [
+    0,
+    251,
+    23,
+    81
+   ],
+   "poly_mask": [
+    [
+     233.0,
+     185.0
+    ],
+    [
+     223.7,
+     185.0
+    ],
+    [
+     223.9,
+     233.6
+    ],
+    [
+     233.2,
+     233.5
+    ]
+   ],
+   "features": {
+    "area_miss": 1.1054,
+    "area_extra": 1.0771,
+    "miss_skel_len": 1.3095,
+    "miss_depth": 0.5952,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0308,
+    "extra_width_max": 0.2274,
+    "bbox_long": 9.6429,
+    "bbox_aspect": 3.5217,
+    "region_solidity": 0.2151,
+    "miss_frac_local": 0.1135,
+    "extra_frac_local": 0.0734,
+    "near_border": 1.369,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.9524,
+    "unc_frac": 0.513
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.894,
+   "probs": {
+    "minor": 0.06,
+    "normal": 0.011,
+    "open": 0.894,
+    "short": 0.035
+   },
+   "rule": "open",
+   "bbox": [
+    230,
+    260,
+    18,
+    19
+   ],
+   "poly_mask": [
+    [
+     136.0,
+     190.0
+    ],
+    [
+     128.1,
+     190.0
+    ],
+    [
+     128.0,
+     201.9
+    ],
+    [
+     136.0,
+     201.9
+    ]
+   ],
+   "features": {
+    "area_miss": 0.7937,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.7143,
+    "miss_depth": 0.5952,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.05,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.2619,
+    "bbox_aspect": 1.0556,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.1188,
+    "extra_frac_local": 0.0404,
+    "near_border": 11.9643,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.4286,
+    "unc_frac": 0.1607
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.468,
+   "probs": {
+    "minor": 0.386,
+    "normal": 0.468,
+    "open": 0.01,
+    "short": 0.136
+   },
+   "rule": "normal",
+   "bbox": [
+    125,
+    285,
+    17,
+    12
+   ],
+   "poly_mask": [
+    [
+     181.4,
+     205.5
+    ],
+    [
+     174.2,
+     205.5
+    ],
+    [
+     174.2,
+     212.9
+    ],
+    [
+     181.4,
+     212.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.1701,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 0.0,
+    "nets_bridged_global": 0.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.2274,
+    "bbox_long": 2.0238,
+    "bbox_aspect": 1.4167,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.2604,
+    "extra_frac_local": 0.0718,
+    "near_border": 9.4048,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.4286,
+    "unc_frac": 0.5833
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.643,
+   "probs": {
+    "minor": 0.188,
+    "normal": 0.162,
+    "open": 0.007,
+    "short": 0.643
+   },
+   "rule": "minor",
+   "bbox": [
+    325,
+    289,
+    72,
+    14
+   ],
+   "poly_mask": [
+    [
+     93.2,
+     208.3
+    ],
+    [
+     59.6,
+     208.5
+    ],
+    [
+     59.5,
+     217.5
+    ],
+    [
+     93.1,
+     217.2
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 1.7432,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.5952,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 2.0,
+    "split_local": 0.0,
+    "split_global": 1.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.4548,
+    "bbox_long": 8.5714,
+    "bbox_aspect": 5.1429,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0978,
+    "extra_frac_local": 0.1188,
+    "near_border": 8.8095,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.4286,
+    "unc_frac": 0.0325
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.825,
+   "probs": {
+    "minor": 0.022,
+    "normal": 0.013,
+    "open": 0.825,
+    "short": 0.139
+   },
+   "rule": "open",
+   "bbox": [
+    22,
+    292,
+    47,
+    32
+   ],
+   "poly_mask": [
+    [
+     224.2,
+     209.5
+    ],
+    [
+     204.9,
+     209.6
+    ],
+    [
+     204.9,
+     229.1
+    ],
+    [
+     224.3,
+     228.8
+    ]
+   ],
+   "features": {
+    "area_miss": 1.5164,
+    "area_extra": 0.0,
+    "miss_skel_len": 1.0714,
+    "miss_depth": 0.5952,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 5.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.0485,
+    "extra_width_max": 0.0,
+    "bbox_long": 5.5952,
+    "bbox_aspect": 1.4688,
+    "region_solidity": 0.311,
+    "miss_frac_local": 0.0794,
+    "extra_frac_local": 0.0726,
+    "near_border": 5.4167,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.9524,
+    "unc_frac": 0.3738
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.598,
+   "probs": {
+    "minor": 0.244,
+    "normal": 0.598,
+    "open": 0.009,
+    "short": 0.148
+   },
+   "rule": "normal",
+   "bbox": [
+    155,
+    301,
+    17,
+    12
+   ],
+   "poly_mask": [
+    [
+     168.6,
+     215.4
+    ],
+    [
+     161.3,
+     215.4
+    ],
+    [
+     161.2,
+     222.9
+    ],
+    [
+     168.6,
+     222.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 0.1134,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 0.0,
+    "nets_bridged_global": 0.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.2274,
+    "bbox_long": 2.0238,
+    "bbox_aspect": 1.4167,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.053,
+    "extra_frac_local": 0.0676,
+    "near_border": 7.5,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7612,
+    "unc_frac": 0.875
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.361,
+   "probs": {
+    "minor": 0.361,
+    "normal": 0.199,
+    "open": 0.245,
+    "short": 0.195
+   },
+   "rule": "minor",
+   "bbox": [
+    377,
+    303,
+    45,
+    22
+   ],
+   "poly_mask": [
+    [
+     68.9,
+     217.4
+    ],
+    [
+     47.6,
+     217.6
+    ],
+    [
+     47.4,
+     232.0
+    ],
+    [
+     68.7,
+     231.7
+    ]
+   ],
+   "features": {
+    "area_miss": 0.9212,
+    "area_extra": 0.326,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.5949,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 2.0,
+    "split_local": 0.0,
+    "split_global": 2.0,
+    "width_min": 0.2001,
+    "width_mean": 0.2165,
+    "extra_width_max": 0.2274,
+    "bbox_long": 5.3571,
+    "bbox_aspect": 2.0455,
+    "region_solidity": 0.4513,
+    "miss_frac_local": 0.0614,
+    "extra_frac_local": 0.1595,
+    "near_border": 6.6667,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.3068
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.405,
+   "probs": {
+    "minor": 0.257,
+    "normal": 0.405,
+    "open": 0.333,
+    "short": 0.005
+   },
+   "rule": "normal",
+   "bbox": [
+    143,
+    312,
+    13,
+    13
+   ],
+   "poly_mask": [
+    [
+     173.7,
+     222.1
+    ],
+    [
+     168.1,
+     222.2
+    ],
+    [
+     168.1,
+     230.2
+    ],
+    [
+     173.7,
+     230.1
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0709,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.119,
+    "miss_depth": 0.3333,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 1.5476,
+    "bbox_aspect": 1.0,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0664,
+    "extra_frac_local": 0.0198,
+    "near_border": 6.131,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.1897,
+    "unc_frac": 1.0
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.802,
+   "probs": {
+    "minor": 0.038,
+    "normal": 0.007,
+    "open": 0.802,
+    "short": 0.153
+   },
+   "rule": "open",
+   "bbox": [
+    292,
+    312,
+    24,
+    34
+   ],
+   "poly_mask": [
+    [
+     108.1,
+     222.8
+    ],
+    [
+     97.1,
+     223.0
+    ],
+    [
+     97.0,
+     244.7
+    ],
+    [
+     107.9,
+     244.5
+    ]
+   ],
+   "features": {
+    "area_miss": 0.8503,
+    "area_extra": 0.4393,
+    "miss_skel_len": 0.5952,
+    "miss_depth": 0.5949,
+    "extra_out": 0.4996,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.059,
+    "extra_width_max": 0.4548,
+    "bbox_long": 4.0476,
+    "bbox_aspect": 1.4167,
+    "region_solidity": 0.4959,
+    "miss_frac_local": 0.051,
+    "extra_frac_local": 0.1227,
+    "near_border": 4.881,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.8564,
+    "unc_frac": 0.2747
+   }
+  },
+  {
+   "cls": "open",
+   "prob": 0.807,
+   "probs": {
+    "minor": 0.135,
+    "normal": 0.005,
+    "open": 0.807,
+    "short": 0.053
+   },
+   "rule": "open",
+   "bbox": [
+    82,
+    318,
+    63,
+    20
+   ],
+   "poly_mask": [
+    [
+     199.5,
+     225.5
+    ],
+    [
+     172.9,
+     225.8
+    ],
+    [
+     172.8,
+     238.2
+    ],
+    [
+     199.5,
+     237.7
+    ]
+   ],
+   "features": {
+    "area_miss": 2.5085,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.3571,
+    "miss_depth": 0.5952,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 1.0,
+    "split_global": 5.0,
+    "width_min": 0.0,
+    "width_mean": 0.1,
+    "extra_width_max": 0.0,
+    "bbox_long": 7.5,
+    "bbox_aspect": 3.15,
+    "region_solidity": 0.62,
+    "miss_frac_local": 0.1111,
+    "extra_frac_local": 0.0245,
+    "near_border": 5.0,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 2.381,
+    "unc_frac": 0.0
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.631,
+   "probs": {
+    "minor": 0.631,
+    "normal": 0.302,
+    "open": 0.057,
+    "short": 0.009
+   },
+   "rule": "normal",
+   "bbox": [
+    169,
+    324,
+    20,
+    13
+   ],
+   "poly_mask": [
+    [
+     162.5,
+     229.7
+    ],
+    [
+     153.9,
+     229.8
+    ],
+    [
+     153.8,
+     237.9
+    ],
+    [
+     162.5,
+     237.8
+    ]
+   ],
+   "features": {
+    "area_miss": 0.2268,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.5952,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.381,
+    "bbox_aspect": 1.5385,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0483,
+    "extra_frac_local": 0.0123,
+    "near_border": 4.7024,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 2.381,
+    "unc_frac": 0.625
+   }
+  },
+  {
+   "cls": "minor",
+   "prob": 0.697,
+   "probs": {
+    "minor": 0.14,
+    "normal": 0.157,
+    "open": 0.006,
+    "short": 0.697
+   },
+   "rule": "minor",
+   "bbox": [
+    336,
+    325,
+    54,
+    15
+   ],
+   "poly_mask": [
+    [
+     87.9,
+     231.4
+    ],
+    [
+     62.6,
+     231.8
+    ],
+    [
+     62.5,
+     241.5
+    ],
+    [
+     87.8,
+     241.0
+    ]
+   ],
+   "features": {
+    "area_miss": 0.0,
+    "area_extra": 1.9983,
+    "miss_skel_len": 0.0,
+    "miss_depth": 0.0,
+    "extra_out": 0.4762,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 2.0,
+    "split_local": 0.0,
+    "split_global": 5.0,
+    "width_min": 1.0,
+    "width_mean": 1.0,
+    "extra_width_max": 0.6821,
+    "bbox_long": 6.4286,
+    "bbox_aspect": 3.6,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0426,
+    "extra_frac_local": 0.2009,
+    "near_border": 4.4643,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 0.7143,
+    "unc_frac": 0.1773
+   }
+  },
+  {
+   "cls": "normal",
+   "prob": 0.553,
+   "probs": {
+    "minor": 0.24,
+    "normal": 0.137,
+    "open": 0.553,
+    "short": 0.07
+   },
+   "rule": "minor",
+   "bbox": [
+    292,
+    352,
+    21,
+    16
+   ],
+   "poly_mask": [
+    [
+     107.9,
+     248.3
+    ],
+    [
+     98.3,
+     248.5
+    ],
+    [
+     98.2,
+     258.8
+    ],
+    [
+     107.8,
+     258.6
+    ]
+   ],
+   "features": {
+    "area_miss": 0.3401,
+    "area_extra": 0.0,
+    "miss_skel_len": 0.2381,
+    "miss_depth": 0.5231,
+    "extra_out": 0.0,
+    "nets_bridged_local": 1.0,
+    "nets_bridged_global": 1.0,
+    "split_local": 0.0,
+    "split_global": 0.0,
+    "width_min": 0.0,
+    "width_mean": 0.1069,
+    "extra_width_max": 0.0,
+    "bbox_long": 2.5,
+    "bbox_aspect": 1.3125,
+    "region_solidity": 1.0,
+    "miss_frac_local": 0.0967,
+    "extra_frac_local": 0.0482,
+    "near_border": 1.1905,
+    "align_score": 0.9347,
+    "extra_touch_nets": 0.0,
+    "gap_local": 1.0461,
+    "unc_frac": 0.3333
+   }
+  }
+ ],
+ "time_s": 5.828
+}

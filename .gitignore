@@ -12,4 +12,22 @@ runs
 train_ai_pcb
 train_ai_pcb copy
 train_ai_compare
+*.bak
+
+# Ignore large/heavy dataset dumps to prevent git repository bloat (>400MB)
+**/label_data/crops/
+label_data/crops/
+AI_Model_Defect_2/label_data/crops/
+AI_Model_Detect_Copper/dataset_v2/
+AI_Model_Detect_Copper/dataset_v4/raw_images/
+AI_Model_Detect_Copper/dataset_v4/masks_backup/
+
+# Ignore general loose PNGs, but allow presentation figures, results, design, and sample datasets for report
 *.png
+!**/presentation_figures/*.png
+!**/results/*.png
+!**/design/*.png
+!**/real-pcb/*.png
+!**/sample_dataset/**
+!AI_Model_Detect_Copper/dataset_v4/images/*.png
+!AI_Model_Detect_Copper/dataset_v4/masks/*.png
