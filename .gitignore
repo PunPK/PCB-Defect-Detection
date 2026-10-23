@@ -1,15 +1,56 @@
+# Python & Virtualenv
+__pycache__/
+*.py[cod]
+*$py.class
+pcb-env/
+.venv/
+env/
+
+# Jupyter Notebooks & Checkpoints (Excluded from git tracking for clean cloning)
+*.ipynb
+**/.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# Temporary, backup & OS files
+*.bak
+*.backup
+*~
+*.tmp
+*.swp
+.DS_Store
 *.zip
-content
-.ipynb_checkpoints
-__pycache__
-pcb-env
-img
-test
-train
-runs
+content/
+
+# Test & Legacy Training Dumps
+test/
+train/
+runs/
 /YOLO_Detect_PCB
 /YOLOv8_model
 train_ai_pcb
 train_ai_pcb copy
 train_ai_compare
+last_result.json
+
+# Ignore large/heavy dataset dumps to prevent git repository bloat (>400MB)
+**/label_data/crops/
+label_data/crops/
+AI_Model_Defect_2/label_data/crops/
+AI_Model_Detect_Copper/dataset_v2/
+AI_Model_Detect_Copper/dataset_v4/raw_images/
+AI_Model_Detect_Copper/dataset_v4/masks_backup/
+
+# Image handling: ignore loose images, but keep designs, results, presentation assets & report samples
 *.png
+*.jpg
+*.jpeg
+!**/presentation_figures/*.png
+!**/report_dataset_samples/**
+!**/design/*.png
+!**/designs/*.png
+!**/results/*.png
+!**/results/*.jpg
+!**/real-pcb/*.png
+!**/sample_dataset/**
+!AI_Model_Detect_Copper/dataset_v4/images/*.png
+!AI_Model_Detect_Copper/dataset_v4/masks/*.png

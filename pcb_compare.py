@@ -1305,3 +1305,33 @@ def load_labeled(out_dir="label_data", classes=None):
             y.append(l)
             ids.append(r["id"])
     return np.array(X, np.float32).reshape(-1, len(FEATURE_NAMES)), np.array(y), ids
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="PCB Copper Trace Differential Comparison & Defect Classifier CLI")
+    parser.add_argument("--board", default=None, help="Path to board copper mask or image")
+    parser.add_argument("--design", default="designs/TEST1.png", help="Path to reference CAD design template")
+    parser.add_argument("--model", default="models/defect_rf.joblib", help="Path to trained DefectClassifier (Random Forest)")
+    parser.add_argument("--out-dir", default="results", help="Directory to save inspection output images")
+    parser.add_argument("--show", action="store_true", help="Display inspection result window")
+    args = parser.parse_args()
+
+    if args.board:
+        print(f"🔍 Inspecting board: {args.board} against design: {args.design}")
+        clf = DefectClassifier.load(args.model) if os.path.exists(args.model) else None
+        design = load_design(args.design)
+        res, ctx = inspect(args.board, design, classifier=clf)
+        os.makedirs(args.out_dir, exist_ok=True)
+        out_path = os.path.join(args.out_dir, "inspection_result.jpg")
+        cv2.imwrite(out_path, res["vis_bgr"])
+        print(f"✅ Verdict: {res['verdict']} | Open: {res['open']} | Short: {res['short']} | Minor: {res['minor']}")
+        print(f"📁 Output saved to: {out_path}")
+        if args.show:
+            cv2.imshow("Inspection Result", res["vis_bgr"])
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+    else:
+        parser.print_help()
+
