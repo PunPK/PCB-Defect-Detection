@@ -55,3 +55,4 @@ AI_Model_Detect_Copper/dataset_v4/masks_backup/
 !AI_Model_Detect_Copper/dataset_v4/images/*.png
 !AI_Model_Detect_Copper/dataset_v4/masks/*.png
 /results
+!image.png
